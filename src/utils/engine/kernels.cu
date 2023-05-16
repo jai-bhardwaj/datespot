@@ -1311,3 +1311,528 @@ constexpr uint32_t MAXSPARSEANALOG = SM_5X_MAXSPARSEANALOG;
 constexpr uint32_t MAXSPARSE = SM_3X_MAXSPARSE;
 constexpr uint32_t MAXSPARSEANALOG = SM_3X_MAXSPARSEANALOG;
 #endif
+
+/**
+ * @brief CUDA kernel for calculating sparse Z values with improved optimizations.
+ *
+ * @param position        Starting position for the sparse indices.
+ * @param stride          Stride value for accessing data.
+ * @param pWeight         Pointer to the weight data.
+ * @param pSparseStart    Pointer to the start indices of the sparse data.
+ * @param pSparseEnd      Pointer to the end indices of the sparse data.
+ * @param pSparseIndex    Pointer to the sparse indices.
+ * @param pDataWeight     Pointer to the weight data (optional).
+ * @param pUnit           Pointer to the unit data.
+ * @param beta            Beta value for calculating the unit.
+ */
+__global__ void LAUNCH_BOUNDS256_kCalculateSparseZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat* pUnit, NNFloat beta)
+{
+    __shared__ uint32_t sOpos;
+    __shared__ uint32_t sOffset[MAXSPARSE];
+
+    position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+    uint64_t start = pSparseStart[position];
+    uint64_t end = pSparseEnd[position];
+    NNFloat w = (pDataWeight != nullptr) ? pDataWeight[position] : 1.0f;
+    pUnit += blockIdx.x * stride;
+
+    while (start < end)
+    {
+        sOpos = blockDim.x;
+        uint64_t inputs = min(end - start, static_cast<uint64_t>(MAXSPARSE));
+        uint64_t tend = start + inputs;
+        uint64_t tstart = start + threadIdx.x;
+        uint32_t pos = threadIdx.x;
+
+        while (tstart < tend)
+        {
+            sOffset[pos] = pSparseIndex[tstart] * stride;
+            pos += blockDim.x;
+            tstart += blockDim.x;
+        }
+
+        __syncthreads();
+
+        uint32_t tgx = threadIdx.x & cData._warpMask;
+        uint32_t opos = threadIdx.x - tgx;
+
+        while (opos < stride)
+        {
+            opos += tgx;
+
+            if (opos < stride)
+            {
+                NNFloat unit = (beta == 0.0f) ? 0.0f : (beta * pUnit[opos]);
+
+                for (uint32_t i = 0; i < inputs; i++)
+                {
+                    uint32_t offset = sOffset[i];
+                    unit += w * pWeight[offset + opos];
+                }
+
+                pUnit[opos] = unit;
+            }
+
+            opos -= tgx;
+
+            if (tgx == 0)
+            {
+                opos = __shfl_sync(0xFFFFFFFF, opos, 0);
+            }
+        }
+
+        start = tend;
+        beta = 1.0f;
+    }
+}
+
+/**
+ * @brief Calculates the sparse Z values for a given position and batch using CUDA.
+ *
+ * @param position The position index.
+ * @param batch The batch size.
+ * @param stride The stride value.
+ * @param pWeight Pointer to the weight array.
+ * @param pSparseStart Pointer to the array storing the start indices of sparse data.
+ * @param pSparseEnd Pointer to the array storing the end indices of sparse data.
+ * @param pSparseIndex Pointer to the array storing the indices of sparse data.
+ * @param pDataWeight Pointer to the array storing the weight values of sparse data.
+ * @param pUnit Pointer to the array storing the unit values.
+ * @param beta The beta value.
+ */
+void kCalculateSparseZ(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pWeight, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat* pUnit, NNFloat beta)
+{
+    constexpr uint32_t warpSize = getGpu()._warpSize;
+    constexpr uint32_t warpBits = getGpu()._warpBits;
+
+    uint32_t threads = min(256, ((stride + warpSize - 1) >> warpBits) << warpBits);
+    kCalculateSparseZ_kernel<<<batch, threads>>>(position, stride, pWeight, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pUnit, beta);
+    cudaError_t launchError = cudaGetLastError();
+    if (launchError != cudaSuccess) {
+        printf("CUDA kernel launch error: %s\n", cudaGetErrorString(launchError));
+    }
+}
+/**
+ * @brief CUDA kernel to calculate indexed sparse Z values with optimizations.
+ *
+ * @param position       Starting position in the sparse index.
+ * @param stride         Stride value for accessing weight and unit arrays.
+ * @param pWeight        Pointer to the weight array.
+ * @param pIndex         Pointer to the index array.
+ * @param pSparseStart   Pointer to the sparse start array.
+ * @param pSparseEnd     Pointer to the sparse end array.
+ * @param pSparseIndex   Pointer to the sparse index array.
+ * @param pDataWeight    Pointer to the data weight array.
+ * @param pUnit          Pointer to the unit array.
+ * @param beta           Beta value.
+ */
+
+__global__ void LAUNCH_BOUNDS256_kCalculateIndexedSparseZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat* pUnit, NNFloat beta)
+{
+    __shared__ uint32_t sOffset[MAXSPARSE];
+
+    uint32_t blockPosition = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+    uint64_t start = pSparseStart[blockPosition];
+    uint64_t end = pSparseEnd[blockPosition];
+    NNFloat w = (pDataWeight != NULL) ? pDataWeight[blockPosition] : (NNFloat)1.0;
+
+    pUnit += blockIdx.x * stride;
+
+    while (start < end)
+    {
+        uint32_t inputs = ullmin(end - start, static_cast<uint64_t>(MAXSPARSE));
+        uint64_t tstart = start + threadIdx.x;
+        uint64_t tend = start + inputs;
+
+        for (uint32_t pos = threadIdx.x; pos < inputs; pos += blockDim.x)
+        {
+            sOffset[pos] = pSparseIndex[tstart + pos] * stride;
+        }
+
+        __syncthreads();
+
+        uint32_t opos = threadIdx.x;
+
+        while (opos < stride)
+        {
+            NNFloat unit = (beta == (NNFloat)0.0) ? (NNFloat)0.0 : (beta * pUnit[opos]);
+
+            for (uint32_t i = 0; i < inputs; i++)
+            {
+                uint32_t offset = sOffset[i];
+                unit += w * pWeight[offset + opos];
+            }
+
+            pUnit[opos] = unit;
+
+            opos += blockDim.x;
+        }
+
+        start = tend;
+        __syncthreads();
+        beta = (NNFloat)1.0;
+    }
+}
+
+/**
+ * @brief Calculates indexed sparse Z values using CUDA.
+ *
+ * @param position     The position value.
+ * @param batch        The batch size.
+ * @param stride       The stride value.
+ * @param pWeight      Pointer to the weight array.
+ * @param pIndex       Pointer to the index array.
+ * @param pSparseStart Pointer to the start array of the sparse indices.
+ * @param pSparseEnd   Pointer to the end array of the sparse indices.
+ * @param pSparseIndex Pointer to the sparse index array.
+ * @param pDataWeight  Pointer to the data weight array.
+ * @param pUnit        Pointer to the unit array.
+ * @param beta         The beta value.
+ */
+void kCalculateIndexedSparseZ(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pWeight, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat* pUnit, NNFloat beta)
+{
+    // Calculate the number of threads per block
+    constexpr uint32_t kBlockSize = 256;
+    constexpr uint32_t kWarpSize = 32;
+    uint32_t threads = min(kBlockSize, ((stride + kWarpSize - 1) / kWarpSize) * kWarpSize);
+
+    // Launch the kernel with optimized parameters
+    dim3 grid(batch);
+    dim3 block(threads);
+    kCalculateIndexedSparseZ_kernel<<<grid, block>>>(position, stride, pWeight, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pUnit, beta);
+    LAUNCHERROR("kCalculateIndexedSparseZ_kernel");
+}
+/**
+ * @brief CUDA kernel to calculate sparse analog activations.
+ *
+ * @tparam T Data type for sparse data.
+ * @param position Starting position in the sparse data.
+ * @param stride Stride for accessing the unit data.
+ * @param pWeight Pointer to the weight data.
+ * @param pSparseStart Pointer to the start indices of sparse data.
+ * @param pSparseEnd Pointer to the end indices of sparse data.
+ * @param pSparseIndex Pointer to the index data of sparse data.
+ * @param pDataWeight Pointer to the weight data for sparse data (optional, can be nullptr).
+ * @param pSparseData Pointer to the sparse data.
+ * @param pUnit Pointer to the unit data.
+ * @param beta Beta value for unit multiplication.
+ */
+template<typename T>
+__global__ void kCalculateSparseAnalogZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, NNFloat* pUnit, NNFloat beta)
+{
+    __shared__ uint32_t sOffset[MAXSPARSEANALOG];
+    __shared__ T sValue[MAXSPARSEANALOG];
+
+    uint32_t threadIdxX = threadIdx.x;
+    uint32_t blockIdxX = blockIdx.x;
+    uint32_t positionIndex = position + blockIdxX;
+
+    if (cData._bShuffleIndices)
+        positionIndex = cData._pShuffleIndex[positionIndex];
+
+    uint64_t start = pSparseStart[positionIndex];
+    uint64_t end = pSparseEnd[positionIndex];
+    NNFloat w = (pDataWeight != nullptr) ? pDataWeight[positionIndex] : 1.0f;
+    pUnit += blockIdxX * stride;
+
+    while (start < end)
+    {
+        uint32_t inputs = min(static_cast<uint32_t>(end - start), MAXSPARSEANALOG);
+        uint64_t tend = start + inputs;
+        uint64_t tstart = start + threadIdxX;
+        uint32_t pos = threadIdxX;
+
+        while (tstart < tend)
+        {
+            sOffset[pos] = pSparseIndex[tstart] * stride;
+            sValue[pos] = w * pSparseData[tstart];
+            pos += blockDim.x;
+            tstart += blockDim.x;
+        }
+
+        __syncthreads();
+
+        uint32_t tgx = threadIdxX & cData._warpMask;
+        uint32_t opos = threadIdxX - tgx;
+
+        while (opos < stride)
+        {
+            opos += tgx;
+            if (opos < stride)
+            {
+                NNFloat unit = (beta == 0.0f) ? 0.0f : (beta * pUnit[opos]);
+
+                #pragma unroll
+                for (uint32_t i = 0; i < inputs; i++)
+                {
+                    uint32_t offset = sOffset[i];
+                    unit += pWeight[offset + opos] * sValue[i];
+                }
+
+                pUnit[opos] = unit;
+            }
+            opos -= tgx;
+
+            if (tgx == 0)
+            {
+                opos = atomicAdd(&sOpos, cData._warpSize);
+            }
+            opos = __shfl_sync(0xFFFFFFFF, opos, 0);
+        }
+
+        start = tend;
+    }
+}
+/**
+ * @brief CUDA kernel to calculate sparse analog activations.
+ *
+ * @tparam Unused Unused template parameter.
+ * @param position The position of the current neuron.
+ * @param stride The stride between consecutive neurons in the output layer.
+ * @param pWeight Pointer to the weight matrix.
+ * @param pSparseStart Pointer to the array of start indices for sparse connections.
+ * @param pSparseEnd Pointer to the array of end indices for sparse connections.
+ * @param pSparseIndex Pointer to the array of sparse indices.
+ * @param pDataWeight Pointer to the array of weight values for sparse connections (optional).
+ * @param pSparseData Pointer to the array of input data for sparse connections.
+ * @param pUnit Pointer to the output unit activations.
+ * @param beta The scaling factor for previous activations.
+ */
+template <>
+__global__ void LAUNCH_BOUNDS256()
+kCalculateSparseAnalogZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, unsigned char* pSparseData, NNFloat* pUnit, NNFloat beta)
+{
+    position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+    uint64_t start = pSparseStart[position];
+    uint64_t end = pSparseEnd[position];
+    NNFloat w = (pDataWeight != NULL) ? pDataWeight[position] : static_cast<NNFloat>(1.0);
+    pUnit += blockIdx.x * stride;
+
+    while (start < end)
+    {
+        uint32_t inputs = ullmin(end - start, static_cast<uint64_t>(MAXSPARSEANALOG));
+        uint64_t tend = start + inputs;
+
+        for (uint32_t tstart = start + threadIdx.x; tstart < tend; tstart += blockDim.x)
+        {
+            uint32_t sparseIndex = pSparseIndex[tstart];
+            NNFloat sparseData = static_cast<NNFloat>(pSparseData[tstart]) * static_cast<NNFloat>(1.0 / 256.0);
+
+            uint32_t offset = sparseIndex * stride;
+            NNFloat value = w * sparseData;
+
+            // Compute unit
+            NNFloat unit = (beta == static_cast<NNFloat>(0.0)) ? static_cast<NNFloat>(0.0) : (beta * pUnit[threadIdx.x]);
+            for (uint32_t i = 0; i < inputs; i++)
+            {
+                unit += pWeight[offset + i * blockDim.x + threadIdx.x] * value;
+            }
+
+            pUnit[threadIdx.x] = unit;
+        }
+
+        __syncthreads();
+
+        start = tend;
+        if (start < end)
+        {
+            __threadfence();
+            __syncthreads();
+        }
+        beta = static_cast<NNFloat>(1.0);
+    }
+}
+/**
+ * @brief CUDA kernel to calculate sparse analog activations (Z) for a given position and stride.
+ * 
+ * @tparam The template parameter (typically unused).
+ * @param position The position index.
+ * @param stride The stride value.
+ * @param pWeight Pointer to the weight data.
+ * @param pSparseStart Pointer to the start indices of sparse data.
+ * @param pSparseEnd Pointer to the end indices of sparse data.
+ * @param pSparseIndex Pointer to the indices of sparse data.
+ * @param pDataWeight Pointer to the weight data for sparse analog activations.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pUnit Pointer to the output units.
+ * @param beta The beta value for scaling previous unit values.
+ */
+template <>
+__global__ void LAUNCH_BOUNDS256()
+kCalculateSparseAnalogZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, char* pSparseData, NNFloat* pUnit, NNFloat beta)
+{
+    __shared__ uint32_t sOffset[MAXSPARSEANALOG];
+    __shared__ NNFloat sValue[MAXSPARSEANALOG];
+
+    uint32_t inputs;
+    uint64_t start;
+    uint64_t end;
+    NNFloat w;
+
+    position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+    start = pSparseStart[position];
+    end = pSparseEnd[position];
+    w = (pDataWeight != NULL) ? pDataWeight[position] : (NNFloat)1.0;
+
+    pUnit += blockIdx.x * stride;
+
+    while (start < end)
+    {
+        inputs = ullmin(end - start, (uint64_t)MAXSPARSEANALOG);
+        uint64_t tend = start + inputs;
+        uint64_t tstart = start + threadIdx.x;
+        uint32_t pos = threadIdx.x;
+
+        while (tstart < tend)
+        {
+            sOffset[pos] = pSparseIndex[tstart] * stride;
+            sValue[pos] = w * ((NNFloat)pSparseData[tstart] * (NNFloat)(1.0 / 256.0));
+            pos += blockDim.x;
+            tstart += blockDim.x;
+        }
+
+        __syncthreads();
+
+        uint32_t opos = threadIdx.x;
+        while (opos < stride)
+        {
+            NNFloat unit = (beta == (NNFloat)0.0) ? (NNFloat)0.0 : (beta * pUnit[opos]);
+
+            for (uint32_t i = 0; i < inputs; i++)
+            {
+                uint32_t offset = sOffset[i];
+                NNFloat weight = pWeight[offset + opos];
+                NNFloat value = sValue[i];
+                unit = fmaf(weight, value, unit);
+            }
+
+            pUnit[opos] = unit;
+
+            opos += blockDim.x;
+        }
+
+        start = tend;
+        __syncthreads();
+        beta = (NNFloat)1.0;
+    }
+}
+
+/**
+ * @brief Calculates the sparse analog Z using CUDA.
+ *
+ * This function calculates the sparse analog Z using CUDA for the given parameters.
+ *
+ * @tparam T The type of the sparse data.
+ * @param position The position parameter.
+ * @param batch The batch parameter.
+ * @param stride The stride parameter.
+ * @param pWeight Pointer to the weight data.
+ * @param pSparseStart Pointer to the sparse start data.
+ * @param pSparseEnd Pointer to the sparse end data.
+ * @param pSparseIndex Pointer to the sparse index data.
+ * @param pDataWeight Pointer to the data weight.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pUnit Pointer to the unit data.
+ * @param beta The beta parameter.
+ */
+template<typename T> 
+void kCalculateSparseAnalogZ(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pWeight, 
+                             uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, 
+                             NNFloat* pDataWeight, T* pSparseData, NNFloat* pUnit, NNFloat beta)
+{
+    uint32_t warpSize = getGpu()._warpSize;
+    uint32_t warpBits = getGpu()._warpBits;
+    uint32_t threads = min(256, ((stride + warpSize - 1) >> warpBits) << warpBits);
+    dim3 grid(batch);
+    dim3 block(threads);
+    kCalculateSparseAnalogZ_kernel<<<grid, block>>>(position, stride, pWeight, pSparseStart, 
+                                                    pSparseEnd, pSparseIndex, pDataWeight, 
+                                                    pSparseData, pUnit, beta);
+    LAUNCHERROR("kCalculateSparseAnalogZ_kernel");
+}
+/**
+ * @brief CUDA kernel to calculate indexed sparse analog Z values.
+ *
+ * @tparam T The data type of the sparse data.
+ * @param position The starting position in the index array.
+ * @param stride The stride value.
+ * @param pWeight Pointer to the weight array.
+ * @param pIndex Pointer to the index array.
+ * @param pSparseStart Pointer to the start array of sparse indices.
+ * @param pSparseEnd Pointer to the end array of sparse indices.
+ * @param pSparseIndex Pointer to the sparse index array.
+ * @param pDataWeight Pointer to the data weight array.
+ * @param pSparseData Pointer to the sparse data array.
+ * @param pUnit Pointer to the unit array.
+ * @param beta The beta value.
+ */
+template<typename T>
+__global__ void LAUNCH_BOUNDS256() kCalculateIndexedSparseAnalogZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, NNFloat* pUnit, NNFloat beta)
+{
+    __shared__ uint32_t sOffset[MAXSPARSEANALOG];
+    __shared__ T sValue[MAXSPARSEANALOG];
+
+    uint32_t inputs = 0;
+    uint64_t start = 0;
+    uint64_t end = 0;
+    NNFloat w = (NNFloat)1.0;
+
+    for (uint32_t blockIdx_x = blockIdx.x; blockIdx_x < gridDim.x; blockIdx_x += gridDim.x)
+    {
+        if (threadIdx.x == 0)
+        {
+            position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx_x] : position + blockIdx_x];
+            start = pSparseStart[position];
+            end = pSparseEnd[position];
+            w = (pDataWeight != NULL) ? pDataWeight[position] : (NNFloat)1.0;
+        }
+
+        __syncthreads();
+
+        while (start < end)
+        {
+            inputs = ullmin(end - start, (uint64_t)MAXSPARSEANALOG);
+            uint64_t tend = start + inputs;
+            uint64_t tstart = start + threadIdx.x;
+            uint32_t pos = threadIdx.x;
+
+            while (tstart < tend)
+            {
+                sOffset[pos] = pSparseIndex[tstart] * stride;
+                sValue[pos] = w * pSparseData[tstart];
+                pos += blockDim.x;
+                tstart += blockDim.x;
+            }
+
+            __syncthreads();
+
+            uint32_t tgx = threadIdx.x & cData._warpMask;
+            uint32_t opos = threadIdx.x - tgx;
+            NNFloat unit = (beta == (NNFloat)0.0) ? (NNFloat)0.0 : (beta * pUnit[opos]);
+
+            for (uint32_t i = 0; i < inputs; i++)
+            {
+                uint32_t offset = sOffset[i];
+                unit += pWeight[offset + opos] * sValue[i];
+            }
+
+            pUnit[opos] = unit;
+
+            for (uint32_t i = 1; i < cData._warpSize; i *= 2)
+            {
+                opos = __shfl_down_sync(0xFFFFFFFF, opos, i);
+                if (opos < stride)
+                {
+                    unit += pWeight[sOffset[threadIdx.x]] * sValue[threadIdx.x];
+                    pUnit[opos] = unit;
+                }
+            }
+
+            start = tend;
+
+            __syncthreads();
+
+            beta = (NNFloat)1.0;
+        }
+    }
+}
