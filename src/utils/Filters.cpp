@@ -196,14 +196,14 @@ void SamplesFilter::loadFilter(std::unordered_map<std::string, unsigned int>& xM
  *
  * This function applies a filter to a portion of the given array, starting from the specified offset and spanning the specified width.
  *
- * @param xArray The array to be filtered.
- * @param xSamplesIndex The index of the filter to be used from the sample filters.
- * @param offset The starting index of the portion to be filtered.
- * @param width The width of the portion to be filtered.
+ * @param xArray         The array to be filtered.
+ * @param xSamplesIndex  The index of the filter to be used from the sample filters.
+ * @param offset         The starting index of the portion to be filtered.
+ * @param width          The width of the portion to be filtered.
  */
 void SamplesFilter::applyFilter(float *xArray, int xSamplesIndex, int offset, int width) const
 {
-    unordered_map<int, float> *filter = (*samplefilters)[xSamplesIndex].get();
+    std::unordered_map<int, float> *filter = (*samplefilters)[xSamplesIndex].get();
     updateRecords(xArray, filter, offset, width);
 }
 
@@ -212,12 +212,12 @@ void SamplesFilter::applyFilter(float *xArray, int xSamplesIndex, int offset, in
  *
  * This function applies a filter to the entire given array using the specified filter index.
  *
- * @param xArray The array to be filtered.
- * @param xSamplesIndex The index of the filter to be used from the sample filters.
+ * @param xArray         The array to be filtered.
+ * @param xSamplesIndex  The index of the filter to be used from the sample filters.
  */
 void SamplesFilter::applyFilter(float *xArray, int xSamplesIndex) const
 {
-    unordered_map<int, float> *filter = (*samplefilters)[xSamplesIndex].get();
+    std::unordered_map<int, float> *filter = (*samplefilters)[xSamplesIndex].get();
     updateRecords(xArray, filter);
 }
 
@@ -242,7 +242,7 @@ FilterConfig* loadFilters(const std::string &samplesFilterFileName,
     samplesFilter->loadFilter(xMInput, xMSamples, samplesFilterFileName);
     filterConfig->setSamplesFilter(samplesFilter);
     filterConfig->setOutputFileName(outputFileName);
-    FILE *fp = fopen(outputFileName.c_str(), "w");
-    fclose(fp);
+    FILE *fp = std::fopen(outputFileName.c_str(), "w");
+    std::fclose(fp);
     return filterConfig;
 }
