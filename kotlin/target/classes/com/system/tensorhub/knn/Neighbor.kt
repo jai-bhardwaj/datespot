@@ -1,192 +1,142 @@
-package com.system.tensorhub.knn;
+package com.system.tensorhub.knn
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.Arrays
+import java.util.Objects
 
-/**
- * Represents a neighbor in a nearest neighbor search.
- */
-public class Neighbor {
-  /**
-   * Gets a builder for creating a new `Neighbor` instance.
-   *
-   * @return A builder for creating a new `Neighbor` instance.
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  /**
-   * Builder class for creating a `Neighbor` instance.
-   */
-  public static class Builder {
+class Neighbor private constructor() {
     /**
-     * The identifier for the neighbor.
+     * The ID of the neighbor.
      */
-    private String id;
+    var id: String? = null
+        private set
+    
+    /**
+     * The score of the neighbor.
+     */
+    var score: Float = 0f
+        private set
+
+    companion object {
+        /**
+         * Creates a new instance of the Neighbor.Builder.
+         *
+         * @return the Neighbor.Builder instance
+         */
+        fun builder(): Builder {
+            return Builder()
+        }
+    }
 
     /**
-     * Sets the identifier for the neighbor.
+     * The builder class for Neighbor.
+     */
+    class Builder {
+        private var id: String? = null
+        private var score: Float = 0f
+
+        /**
+         * Sets the ID of the neighbor in the builder.
+         *
+         * @param id the ID to set
+         * @return the Builder instance
+         */
+        fun withId(id: String): Builder {
+            this.id = id
+            return this
+        }
+
+        /**
+         * Sets the score of the neighbor in the builder.
+         *
+         * @param score the score to set
+         * @return the Builder instance
+         */
+        fun withScore(score: Float): Builder {
+            this.score = score
+            return this
+        }
+
+        /**
+         * Populates the Neighbor instance with the values from the builder.
+         *
+         * @param instance the Neighbor instance to populate
+         */
+        protected fun populate(instance: Neighbor) {
+            instance.id = this.id
+            instance.score = this.score
+        }
+
+        /**
+         * Builds a Neighbor instance with the set values.
+         *
+         * @return the built Neighbor instance
+         */
+        fun build(): Neighbor {
+            val instance = Neighbor()
+
+            populate(instance)
+
+            return instance
+        }
+    }
+
+    /**
+     * Calculates the hash code for the Neighbor object.
      *
-     * @param id The identifier for the neighbor.
-     * @return This builder.
+     * @return The hash code calculated for the Neighbor.
      */
-    public Builder withId(String id) {
-      this.id = id;
-      return this;
+    override fun hashCode(): Int {
+        return internalHashCodeCompute(classNameHashCode, id, score)
     }
 
     /**
-     * The score for the neighbor.
-     */
-    private float score;
-
-    /**
-     * Sets the score for the neighbor.
+     * Calculates the hash code for an array of objects.
      *
-     * @param score The score for the neighbor.
-     * @return This builder.
+     * @param objects The objects to calculate the hash code for.
+     * @return The hash code calculated for the objects array.
      */
-    public Builder withScore(float score) {
-      this.score = score;
-      return this;
+    private fun internalHashCodeCompute(vararg objects: Any?): Int {
+        return Arrays.hashCode(objects)
     }
 
     /**
-     * Populates the fields of a `Neighbor` instance with the builder's fields.
+     * Checks if the Neighbor object is equal to another object.
      *
-     * @param instance The `Neighbor` instance to populate.
+     * @param other The object to compare for equality.
+     * @return True if the Neighbor is equal to the other object, false otherwise.
      */
-    protected void populate(Neighbor instance) {
-      instance.setId(this.id);
-      instance.setScore(this.score);
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+
+        if (other !is Neighbor) {
+            return false
+        }
+
+        val that = other as Neighbor
+
+        return Objects.equals(id, that.id) &&
+                Objects.equals(score, that.score)
     }
 
     /**
-     * Builds a new `Neighbor` instance.
+     * Returns a string representation of the Neighbor object.
      *
-     * @return The new `Neighbor` instance.
+     * @return A string representation of the Neighbor.
      */
-    public Neighbor build() {
-      Neighbor instance = new Neighbor();
+    override fun toString(): String {
+        val ret = StringBuilder()
+        ret.append("Neighbor(")
 
-      populate(instance);
+        ret.append("id=")
+        ret.append(id)
+        ret.append(", ")
 
-      return instance;
+        ret.append("score=")
+        ret.append(score)
+        ret.append(")")
+
+        return ret.toString()
     }
-  };
-
-  /**
-   * The identifier for the neighbor.
-   */
-  private String id;
-
-  /**
-   * The score for the neighbor.
-   */
-  private float score;
-
-  /**
-   * Gets the identifier for the neighbor.
-   *
-   * @return The identifier for the neighbor.
-   */
-  public String getId() {
-    return this.id;
-  }
-
-  /**
-   * Sets the identifier for the neighbor.
-   *
-   * @param id The identifier for the neighbor.
-   */
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  /**
-   * Gets the score for the neighbor.
-   *
-   * @return The score for the neighbor.
-   */
-  public float getScore() {
-    return this.score;
-  }
-
-  /**
-   * Sets the score for the neighbor.
-   *
-   * @param score The score for the neighbor.
-   */
-  public void setScore(float score) {
-    this.score = score;
-  }
-
-  /**
-   * Hash code for the class name.
-   */
-  private static final int classNameHashCode =
-      internalHashCodeCompute("com.system.tensorhub.knn.Neighbor");
-
-  /**
-   * Returns a hash code value for the object.
-   *
-   * @return A hash code value for this object.
-   */
-  @Override
-  public int hashCode() {
-    return internalHashCodeCompute(
-        classNameHashCode,
-        getId(),
-        getScore());
-  }
-
-  /**
-   * Computes the hash code for a set of objects.
-   *
-   * @param objects The objects for which to compute the hash code.
-   * @return The hash code for the objects.
-   */
-  private static int internalHashCodeCompute(Object... objects) {
-    return Arrays.hashCode(objects);
-  }
-
-  /**
-   * Indicates whether some other object is "equal to" this one.
-   *
-   * @param other The reference object with which to compare.
-   * @return `true` if this object is the same as the `other` argument; `false` otherwise.
-   */
-  @Override
-  public boolean equals(final Object other) {
-    if (!(other instanceof Neighbor)) {
-      return false;
-    }
-
-    Neighbor that = (Neighbor) other;
-
-    return
-        Objects.equals(getId(), that.getId())
-        && Objects.equals(getScore(), that.getScore());
-  }
-  /**
-   * Returns a string representation of the Neighbor object.
-   *
-   * @return A string representation of the Neighbor object, in the format "Neighbor(id=<id>, score=<score>)".
-   */
-  @Override
-  public String toString() {
-    StringBuilder ret = new StringBuilder();
-    ret.append("Neighbor(");
-
-    ret.append("id=");
-    ret.append(String.valueOf(id));
-    ret.append(", ");
-
-    ret.append("score=");
-    ret.append(String.valueOf(score));
-    ret.append(")");
-
-    return ret.toString();
-  }
 }
