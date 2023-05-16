@@ -518,3 +518,578 @@ void kLoadIndexedSparseAnalogInputUnit(uint32_t position, uint32_t batch, uint32
     status = cudaGetLastError();
     RTERROR(status, "Kernel execution failed");
 }
+
+/**
+ * @brief CUDA kernel for loading sparse denoised input units.
+ *
+ * @param position    The starting position in the batch.
+ * @param batch       The number of elements to process in the batch.
+ * @param stride      The stride value.
+ * @param pUnit       Pointer to the output units.
+ * @param pSparseStart Pointer to the start indices of sparse data for each position.
+ * @param pSparseEnd   Pointer to the end indices of sparse data for each position.
+ * @param pSparseIndex Pointer to the indices of sparse data.
+ * @param pDataWeight  Pointer to the weight data.
+ * @param pRandom      Pointer to the random data.
+ */
+__global__ void kLoadSparseDenoisedInputUnit_kernel(uint32_t position, uint32_t batch, uint32_t stride,
+                                                    NNFloat* pUnit, uint64_t* pSparseStart, uint64_t* pSparseEnd,
+                                                    uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat* pRandom)
+{
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) / cData._warpSize;
+    if (pos < batch)
+    {                           
+        uint32_t pos1 = cData._bShuffleIndices ? cData._pShuffleIndex[pos + position] : pos + position;
+        uint64_t start = pSparseStart[pos1] + (threadIdx.x & cData._warpMask);
+        uint64_t end = pSparseEnd[pos1];
+        NNFloat w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[pos1] : (NNFloat)1.0);
+        uint64_t offset = pos * stride;
+
+        __shared__ NNFloat sDataWeight[BLOCK_SIZE];
+        if (pDataWeight != NULL && threadIdx.x < cData._warpSize)
+            sDataWeight[threadIdx.x] = pDataWeight[pos1];
+        
+        uint64_t loopEnd = end - cData._warpSize;
+
+        #pragma unroll
+        for (; start < loopEnd; start += cData._warpSize)
+        {
+            NNFloat value = pRandom[start];
+            uint64_t pos2 = offset + pSparseIndex[start];
+
+            NNFloat mask = __ballot_sync(FULL_MASK, value >= cData._denoising_p);
+            if (threadIdx.x % cData._warpSize == 0)
+                pUnit[pos2] = w * (__popc(mask) == cData._warpSize ? 1.0f : 0.0f);
+        }
+
+        if (start < end)
+        {
+            NNFloat value = pRandom[start];
+            uint64_t pos2 = offset + pSparseIndex[start];
+            NNFloat mask = __ballot_sync(FULL_MASK, value >= cData._denoising_p);
+            if (threadIdx.x % cData._warpSize == 0 && (start < loopEnd || threadIdx.x < (end - start)))
+                pUnit[pos2] = w * (__popc(mask) == cData._warpSize ? 1.0f : 0.0f);
+        }
+    }
+}
+
+/**
+ * @brief Loads sparse denoised input units into a CUDA device memory.
+ *
+ * This function sets the specified memory region to zero and then launches a CUDA kernel
+ * to load sparse denoised input units into the memory.
+ *
+ * @param position       Starting position of the input units.
+ * @param batch          Number of input units to load.
+ * @param stride         Stride of the input units.
+ * @param pUnit          Pointer to the device memory for storing the input units.
+ * @param pSparseStart   Pointer to the start indices of the sparse input units.
+ * @param pSparseEnd     Pointer to the end indices of the sparse input units.
+ * @param pSparseIndex   Pointer to the indices of the sparse input units.
+ * @param pDataWeight    Pointer to the data weights of the sparse input units.
+ * @param pRandom        Pointer to random values for sparse input generation.
+ */
+void kLoadSparseDenoisedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t *pSparseIndex, NNFloat* pDataWeight, NNFloat* pRandom)
+{
+    uint32_t last = position + batch;
+    uint32_t count = last - position;
+    uint32_t blocks = (count * getGpu()._warpSize + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock;
+
+    size_t unitSize = (uint64_t)batch * (uint64_t)stride * sizeof(NNFloat);
+
+    cudaError_t status = cudaMemsetAsync(pUnit, 0, unitSize);
+    RTERROR(status, "cudaMemsetAsync failed");
+
+    kLoadSparseDenoisedInputUnit_kernel<<<blocks, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pRandom);
+    CUDA_CHECK_ERROR("kLoadSparseDenoisedInputUnit_kernel launch failed");
+
+    cudaDeviceSynchronize();
+}
+
+/**
+ * @brief Kernel for loading indexed sparse denoised input units.
+ *
+ * @param position       Starting position in the input data.
+ * @param batch          Number of input samples to process.
+ * @param stride         Stride between consecutive input samples.
+ * @param pUnit          Pointer to the output unit array.
+ * @param pIndex         Pointer to the index array.
+ * @param pSparseStart   Pointer to the start indices of sparse data.
+ * @param pSparseEnd     Pointer to the end indices of sparse data.
+ * @param pSparseIndex   Pointer to the indices of sparse data.
+ * @param pDataWeight    Pointer to the weight array.
+ * @param pRandom        Pointer to the random values array.
+ */
+__global__ void LAUNCH_BOUNDS()
+kLoadIndexedSparseDenoisedInputUnit_kernel(uint32_t position, uint32_t batch, uint32_t stride,
+                                           NNFloat* pUnit, uint32_t* pIndex, uint64_t* pSparseStart,
+                                           uint64_t* pSparseEnd, uint32_t* pSparseIndex,
+                                           NNFloat* pDataWeight, NNFloat* pRandom)
+{
+    const uint32_t warpIndex = (blockIdx.x * blockDim.x + threadIdx.x) / cData._warpSize;
+    if (warpIndex < batch)
+    {
+        const uint32_t globalIndex = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[warpIndex + position] : warpIndex + position];
+        const uint64_t warpStart = pSparseStart[globalIndex] + (threadIdx.x & cData._warpMask);
+        const uint64_t warpEnd = pSparseEnd[globalIndex];
+        const NNFloat weight = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[globalIndex] : (NNFloat)1.0);
+        const uint64_t offset = warpIndex * stride;
+
+        for (uint64_t i = warpStart; i < warpEnd; i += cData._warpSize)
+        {
+            const NNFloat value = pRandom[i];
+            const uint64_t unitIndex = offset + pSparseIndex[i];
+
+            if (value >= cData._denoising_p)
+            {
+                pUnit[unitIndex] = weight;
+            }
+        }
+    }
+}
+
+/**
+ * @brief Loads denoised input units from indexed sparse data into a CUDA memory buffer.
+ *
+ * @param position The starting position of the input units.
+ * @param batch The number of input units to load.
+ * @param stride The stride of the input units.
+ * @param pUnit Pointer to the CUDA memory buffer to store the loaded units.
+ * @param pIndex Pointer to the index array containing the indices of the input units.
+ * @param pSparseStart Pointer to the array of starting positions for each index in the sparse data.
+ * @param pSparseEnd Pointer to the array of ending positions for each index in the sparse data.
+ * @param pSparseIndex Pointer to the array of indices for each data entry in the sparse data.
+ * @param pDataWeight Pointer to the weight values associated with each data entry in the sparse data.
+ * @param pRandom Pointer to the array of random values.
+ */
+void kLoadIndexedSparseDenoisedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t *pSparseIndex, NNFloat* pDataWeight, NNFloat* pRandom)
+{
+    uint32_t last = position + batch;
+    uint32_t count = last - position;
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    uint32_t blocks = (count * getGpu()._warpSize + threadsPerBlock - 1) / threadsPerBlock;
+
+    cudaError_t status = cudaMemset(pUnit, 0, static_cast<uint64_t>(batch) * static_cast<uint64_t>(stride) * sizeof(NNFloat));
+    RTERROR(status, "kLoadIndexedSparseDenoisedInputUnit failed");
+    kLoadIndexedSparseDenoisedInputUnit_kernel<<<blocks, threadsPerBlock>>>(position, batch, stride, pUnit, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pRandom);
+    LAUNCHERROR("kLoadIndexedSparseDenoisedInputUnit_kernel");
+}
+
+/**
+ * @brief Kernel function for loading sparse analog denoised input units.
+ *
+ * @tparam T The type of sparse data.
+ * @param position The position parameter.
+ * @param batch The batch parameter.
+ * @param stride The stride parameter.
+ * @param pUnit Pointer to the unit data.
+ * @param pSparseStart Pointer to the sparse start data.
+ * @param pSparseEnd Pointer to the sparse end data.
+ * @param pSparseIndex Pointer to the sparse index data.
+ * @param pDataWeight Pointer to the data weight.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pRandom Pointer to the random data.
+ */
+template<typename T>
+__global__ void LAUNCH_BOUNDS()
+kLoadSparseAnalogDenoisedInputUnit_kernel(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, NNFloat* pRandom)
+{
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) / cData._warpSize;
+    if (pos < batch)
+    {                           
+        uint32_t pos1 = cData._bShuffleIndices ? cData._pShuffleIndex[pos + position] : pos + position;
+        uint64_t start = pSparseStart[pos1] + (threadIdx.x & cData._warpMask);
+        uint64_t end = pSparseEnd[pos1];
+        NNFloat w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[pos1] : (NNFloat)1.0);
+        uint64_t offset = pos * stride;
+
+        uint32_t* pIndex = pSparseIndex + start;
+        T* pData = pSparseData + start;
+
+        __shared__ NNFloat randomShared[cData._warpSize];
+        if (threadIdx.x < cData._warpSize)
+            randomShared[threadIdx.x] = pRandom[start];
+
+        for (; start < end; start += cData._warpSize)
+        {
+            NNFloat value = randomShared[threadIdx.x & cData._warpMask];
+            uint64_t pos2 = offset + pIndex[threadIdx.x];
+            T data = pData[threadIdx.x];
+            if (value >= cData._denoising_p)
+                pUnit[pos2] = w * data;
+        }
+    }
+}
+
+/**
+ * @brief Loads sparse analog denoised input unit.
+ *
+ * This function loads the sparse analog denoised input unit using CUDA.
+ * It sets the memory to zero using CUDA memsetAsync for asynchronous memory initialization,
+ * and then launches the kernel to load the sparse data into the input unit.
+ *
+ * @tparam T         The type of the sparse data.
+ * @param position   The starting position in the input unit.
+ * @param batch      The batch size.
+ * @param stride     The stride of the input unit.
+ * @param pUnit      Pointer to the input unit.
+ * @param pSparseStart Pointer to the start indices of the sparse data.
+ * @param pSparseEnd Pointer to the end indices of the sparse data.
+ * @param pSparseIndex Pointer to the indices of the sparse data.
+ * @param pDataWeight Pointer to the weights of the sparse data.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pRandom    Pointer to the random data.
+ */
+template<typename T>
+void kLoadSparseAnalogDenoisedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t *pSparseIndex, NNFloat* pDataWeight, T *pSparseData, NNFloat* pRandom)
+{
+    uint32_t last = position + batch;
+    uint32_t count = last - position;
+    uint32_t blocks = (count * getGpu()._warpSize + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock;
+
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+
+    cudaError_t status = cudaMemsetAsync(pUnit, 0, (uint64_t)batch * (uint64_t)stride * sizeof(NNFloat), stream);
+    RTERROR(status, "kLoadSparseAnalogDenoisedInputUnit failed");
+
+    kLoadSparseAnalogDenoisedInputUnit_kernel<<<blocks, getGpu()._threadsPerBlock, 0, stream>>>(position, batch, stride, pUnit, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pSparseData, pRandom);
+    LAUNCHERROR("kLoadSparseAnalogDenoisedInputUnit_kernel");
+
+    cudaStreamSynchronize(stream);
+    cudaStreamDestroy(stream);
+}
+
+/**
+ * @brief Kernel function for loading indexed sparse analog denoised input units.
+ *
+ * @tparam T The data type for the sparse data.
+ * @param position The starting position of the batch.
+ * @param batch The number of elements in the batch.
+ * @param stride The stride between elements.
+ * @param pUnit Pointer to the output unit data.
+ * @param pIndex Pointer to the index data.
+ * @param pSparseStart Pointer to the start indices of sparse data.
+ * @param pSparseEnd Pointer to the end indices of sparse data.
+ * @param pSparseIndex Pointer to the indices of sparse data.
+ * @param pDataWeight Pointer to the weight data.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pRandom Pointer to the random data.
+ */
+template<typename T>
+__global__ void LAUNCH_BOUNDS(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, const uint64_t* pSparseStart, const uint64_t* pSparseEnd, const uint32_t* pSparseIndex, const NNFloat* pDataWeight, const T* pSparseData, const NNFloat* pRandom)
+{
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) / cData._warpSize;
+    if (pos < batch)
+    {                           
+        uint32_t pos1 = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[pos + position] : pos + position];
+        uint64_t start = pSparseStart[pos1] + (threadIdx.x & cData._warpMask);
+        uint64_t end = pSparseEnd[pos1];
+        NNFloat w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[pos1] : (NNFloat)1.0);
+        uint64_t offset = pos * stride;
+
+        __shared__ NNFloat sDataWeight[BLOCK_SIZE];
+        if (threadIdx.x < BLOCK_SIZE)
+            sDataWeight[threadIdx.x] = (pDataWeight != NULL) ? pDataWeight[pos1] : (NNFloat)1.0;
+        __syncthreads();
+
+        for (uint64_t i = start; i < end; i += cData._warpSize)
+        {
+            NNFloat values[WARP_SIZE];
+            T data[WARP_SIZE];
+            uint64_t pos2[WARP_SIZE];
+
+            #pragma unroll
+            for (int j = 0; j < WARP_SIZE; ++j)
+            {
+                if (i + j < end)
+                {
+                    values[j] = pRandom[i + j];
+                    pos2[j] = offset + pSparseIndex[i + j];
+                    data[j] = pSparseData[i + j];
+                }
+            }
+
+            #pragma unroll
+            for (int j = 0; j < WARP_SIZE; ++j)
+            {
+                if (i + j < end)
+                {
+                    NNFloat value = values[j];
+                    uint64_t pos2_1 = pos2[j];
+                    T data1 = data[j];
+                    NNFloat output1 = w * data1;
+
+                    if (value < cData._denoising_p)
+                        output1 = 0.0;
+
+                    pUnit[pos2_1] = output1;
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @brief Loads indexed sparse analog denoised input units into a CUDA device memory array.
+ *
+ * This function initializes the device memory array `pUnit` with indexed sparse analog denoised input units
+ * based on the provided parameters. It performs memory initialization asynchronously using `cudaMemsetAsync`.
+ * Then, it copies the necessary data from the host to the device memory using `cudaMemcpyAsync`.
+ * Finally, it launches the kernel `kLoadIndexedSparseAnalogDenoisedInputUnit_kernel` to compute the input units.
+ *
+ * @tparam T The type of the sparse data.
+ * @param position The starting position of the input units.
+ * @param batch The number of input units to process.
+ * @param stride The stride of the input units.
+ * @param pUnit Pointer to the device memory array for storing the input units.
+ * @param pIndex Pointer to the device memory array containing the indices.
+ * @param pSparseStart Pointer to the device memory array containing the sparse start indices.
+ * @param pSparseEnd Pointer to the device memory array containing the sparse end indices.
+ * @param pSparseIndex Pointer to the device memory array containing the sparse indices.
+ * @param pDataWeight Pointer to the device memory array containing the data weights.
+ * @param pSparseData Pointer to the device memory array containing the sparse data.
+ * @param pRandom Pointer to the device memory array containing random values.
+ */
+template<typename T>
+void kLoadIndexedSparseAnalogDenoisedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, NNFloat* pRandom)
+{
+    uint32_t last = position + batch;
+    uint32_t count = last - position;
+    uint32_t blocks = (count * getGpu()._warpSize + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock;
+
+    cudaMemsetAsync(pUnit, 0, batch * stride * sizeof(NNFloat));
+    cudaError_t status = cudaGetLastError();
+    RTERROR(status, "cudaMemsetAsync failed");
+
+    cudaStream_t memoryStream;
+    cudaStreamCreate(&memoryStream);
+
+    cudaMemcpyAsync(pUnit, pUnit, batch * stride * sizeof(NNFloat), cudaMemcpyDeviceToDevice, memoryStream);
+    cudaMemcpyAsync(pIndex, pIndex, batch * sizeof(uint32_t), cudaMemcpyDeviceToDevice, memoryStream);
+    cudaMemcpyAsync(pSparseStart, pSparseStart, batch * sizeof(uint64_t), cudaMemcpyDeviceToDevice, memoryStream);
+    cudaMemcpyAsync(pSparseEnd, pSparseEnd, batch * sizeof(uint64_t), cudaMemcpyDeviceToDevice, memoryStream);
+    cudaMemcpyAsync(pSparseIndex, pSparseIndex, batch * stride * sizeof(uint32_t), cudaMemcpyDeviceToDevice, memoryStream);
+    cudaMemcpyAsync(pDataWeight, pDataWeight, batch * stride * sizeof(NNFloat), cudaMemcpyDeviceToDevice, memoryStream);
+    cudaMemcpyAsync(pSparseData, pSparseData, batch * stride * sizeof(T), cudaMemcpyDeviceToDevice, memoryStream);
+    cudaMemcpyAsync(pRandom, pRandom, batch * stride * sizeof(NNFloat), cudaMemcpyDeviceToDevice, memoryStream);
+
+    kLoadIndexedSparseAnalogDenoisedInputUnit_kernel<<<blocks, getGpu()._threadsPerBlock, 0, memoryStream>>>(position, batch, stride, pUnit, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pSparseData, pRandom);
+    cudaError_t kernelLaunchStatus = cudaGetLastError();
+    RTERROR(kernelLaunchStatus, "Kernel launch error: kLoadIndexedSparseAnalogDenoisedInputUnit_kernel");
+
+    cudaStreamDestroy(memoryStream);
+    cudaDeviceSynchronize();
+}
+
+/**
+ * @brief Loads input units from input data into the specified output array.
+ *
+ * @tparam T The data type of the input data.
+ * @param position The position within the input data.
+ * @param stride The stride value.
+ * @param pUnit The output array for storing the input units.
+ * @param pInputData The input data array.
+ */
+template<typename T>
+__global__ void kLoadInputUnit_kernel(uint32_t position, uint32_t stride, NNFloat* pUnit, T* pInputData)
+{
+    uint32_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint32_t pos1 = cData._bShuffleIndices ? cData._pShuffleIndex[blockIdx.x + position] : (blockIdx.x + position);
+        uint32_t soffset = pos1 * stride + pos;
+        uint32_t doffset = blockIdx.x * stride + pos;
+        pUnit[doffset] = pInputData[soffset];
+    }
+}
+
+/**
+ * @brief CUDA kernel to load and normalize input units.
+ *
+ * This kernel loads input units from device memory and applies normalization
+ * by scaling the data and subtracting a constant value.
+ *
+ * @param position The starting position of the input units.
+ * @param stride The stride between input units.
+ * @param pUnit Pointer to the output array of normalized units.
+ * @param pData Pointer to the input data array.
+ */
+__global__ void kLoadNormalizedInputUnit_kernel(uint32_t position, uint32_t stride, NNFloat* pUnit, unsigned char* pData)
+{
+    uint32_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+
+    if (pos < stride)
+    {
+        uint32_t pos1 = cData._bShuffleIndices ? cData._pShuffleIndex[blockIdx.x + position] : blockIdx.x + position;
+        uint32_t soffset = pos1 * stride + pos;
+        uint32_t doffset = blockIdx.x * stride + pos;
+        pUnit[doffset] = static_cast<NNFloat>(pData[soffset]) * static_cast<NNFloat>(1.0 / 256.0) - static_cast<NNFloat>(0.5);
+    }
+}
+
+/**
+ * @brief CUDA kernel to load normalized input units.
+ *
+ * @param position The position of the input unit.
+ * @param stride The stride between input units.
+ * @param pUnit Pointer to the output unit array.
+ * @param pData Pointer to the input data array.
+ */
+__global__ void kLoadNormalizedInputUnit_kernel(uint32_t position, uint32_t stride, NNFloat* pUnit, char* pData)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+
+        uint32_t pos1 = cData._bShuffleIndices ?  cData._pShuffleIndex[blockIdx.x + position] : blockIdx.x + position;
+        uint64_t soffset = pos1 * stride + pos;
+        uint64_t doffset = blockIdx.x * stride + pos;
+
+        char dataValue = pData[soffset];
+        pUnit[doffset] = static_cast<NNFloat>(dataValue) * (1.0f / 128.0f);
+    }
+}
+
+/**
+ * @brief Loads input unit data from the given pData array into the pUnit array.
+ *
+ * @tparam T The data type of the pData array.
+ * @param position The position of the input unit.
+ * @param batch The batch size.
+ * @param stride The stride of the data.
+ * @param pUnit Pointer to the output unit array.
+ * @param pData Pointer to the input data array.
+ */
+template <typename T>
+void kLoadInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, T* pData)
+{
+    dim3 grid(batch, (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock);
+    kLoadInputUnit_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, stride, pUnit, pData);
+    cudaDeviceSynchronize(); // Wait for the kernel to finish execution
+    checkCudaErrors(cudaGetLastError()); // Check for any errors during kernel execution
+}
+
+/**
+ * @brief Specialization of kLoadInputUnit for unsigned char data type.
+ *
+ * @param position The position of the input unit.
+ * @param batch The batch size.
+ * @param stride The stride of the data.
+ * @param pUnit Pointer to the output unit array.
+ * @param pData Pointer to the input data array.
+ */
+template <>
+void kLoadInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, unsigned char* pData)
+{
+    dim3 grid(batch, (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock);
+    kLoadNormalizedInputUnit_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, stride, pUnit, pData);
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaGetLastError());
+}
+
+/**
+ * @brief Specialization of kLoadInputUnit for char data type.
+ *
+ * @param position The position of the input unit.
+ * @param batch The batch size.
+ * @param stride The stride of the data.
+ * @param pUnit Pointer to the output unit array.
+ * @param pData Pointer to the input data array.
+ */
+template <>
+void kLoadInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, char* pData)
+{
+    dim3 grid(batch, (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock);
+    kLoadNormalizedInputUnit_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, stride, pUnit, pData);
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaGetLastError());
+}
+
+/**
+ * @brief CUDA kernel to load indexed input units into the output unit array.
+ *
+ * @param position The starting position of the input units.
+ * @param stride The stride value.
+ * @param pUnit Pointer to the output unit array.
+ * @param pIndex Pointer to the index array.
+ * @param pData Pointer to the input data array.
+ */
+template<typename T>
+__global__ void kLoadIndexedInputUnit_kernel(uint32_t position, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, T* pData)
+{
+    size_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        size_t blockIdxPos = blockIdx.x + position;
+        uint32_t pos1 = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[blockIdxPos] : blockIdxPos];
+        size_t soffset = pos1 * stride + pos;
+        size_t doffset = blockIdx.x * stride + pos;
+        pUnit[doffset] = pData[soffset];
+    }
+}
+
+/**
+ * @brief CUDA kernel to load indexed and normalized input units into the neural network.
+ *
+ * @param position Starting position in the input data.
+ * @param stride Stride size for accessing the input units.
+ * @param pUnit Pointer to the output unit array.
+ * @param pIndex Pointer to the index array.
+ * @param pData Pointer to the input data array.
+ */
+__global__ void kLoadIndexedNormalizedInputUnit_kernel(uint32_t position, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, unsigned char* pData)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint32_t pos1 = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[blockIdx.x + position] : blockIdx.x + position];
+        uint64_t soffset = pos1 * stride + pos;
+        uint64_t doffset = blockIdx.x * stride + pos;
+        NNFloat dataValue = static_cast<NNFloat>(pData[soffset]) * static_cast<NNFloat>(1.0 / 256.0) - static_cast<NNFloat>(0.5);
+        pUnit[doffset] = dataValue;
+    }
+}
+
+/**
+ * @brief CUDA kernel to load indexed and normalized input units into the neural network.
+ *
+ * @param position Starting position in the input data.
+ * @param stride Stride size for accessing the input units.
+ * @param pUnit Pointer to the output unit array.
+ * @param pIndex Pointer to the index array.
+ * @param pData Pointer to the input data array.
+ */
+__global__ void kLoadIndexedNormalizedInputUnit_kernel(uint32_t position, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, char* pData)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint32_t pos1 = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[blockIdx.x + position] : blockIdx.x + position];
+        uint64_t soffset = pos1 * stride + pos;
+        uint64_t doffset = blockIdx.x * stride + pos;
+        NNFloat dataValue = static_cast<NNFloat>(static_cast<unsigned char>(pData[soffset])) * static_cast<NNFloat>(1.0 / 128.0);
+        pUnit[doffset] = dataValue;
+    }
+}
+
+/**
+ * @brief Loads indexed input units into the neural network.
+ *
+ * @tparam T Type of the input data.
+ * @param position Starting position in the input data.
+ * @param batch Number of batches.
+ * @param stride Stride size for accessing the input units.
+ * @param pUnit Pointer to the output unit array.
+ * @param pIndex Pointer to the index array.
+ * @param pData Pointer to the input data array.
+ */
+template<typename T>
+void kLoadIndexedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, T* pData)
+{
+    const uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    const dim3 grid(batch, (stride + threadsPerBlock - 1) / threadsPerBlock);
+    kLoadIndexedInputUnit_kernel<<<grid, threadsPerBlock>>>(position, stride, pUnit, pIndex, pData);
+    LAUNCHERROR("kLoadIndexedInputUnit_kernel");
+}
+
