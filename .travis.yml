@@ -1,0 +1,47 @@
+language: cpp
+dist: focal
+os: linux
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-focal-9
+    packages:
+      - g++-9
+      - clang-9
+      - libcppunit-dev
+      - libnetcdf-dev
+
+before_install:
+  - if [[ "$CXX" == "g++" ]]; then export CXX=g++-9 CC=gcc-9; fi
+  - if [[ "$CXX" == "clang++" ]]; then export CXX=clang++-9 CC=clang-9; fi
+
+before_script:
+  - wget https://downloads.unidata.ucar.edu/netcdf-c/4.9.2/netcdf-c-4.9.2.tar.gz
+  - tar xf netcdf-cxx4-9.2.tar.gz
+  - pushd netcdf-cxx4-9.2
+  - CXXFLAGS=$NETCDF_CXX4_CXXFLAGS ./configure --prefix=/usr/local
+  - make
+  - sudo make install
+  - popd
+
+script:
+  - cd tst/unittests
+  - mkdir build && cd build
+  - cmake ..
+  - make
+  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+  - ./unittests
+
+notifications:
+  email: false
+
+cache:
+  directories:
+    - $HOME/.cache
+
