@@ -2513,3 +2513,1008 @@ void kCalculateSparseAnalogDenoisedZ(uint32_t position, uint32_t batch, uint32_t
     cudaDeviceSynchronize();
     CUDAERROR("kCalculateSparseAnalogDenoisedZ_kernel");
 }
+/**
+ * @brief CUDA kernel to calculate indexed sparse analog denoised Z values.
+ *
+ * @tparam T The type of the sparse data.
+ * @param position The starting position of the indexed sparse data.
+ * @param stride The stride value.
+ * @param pWeight Pointer to the weight data.
+ * @param pIndex Pointer to the index data.
+ * @param pSparseStart Pointer to the start indices of the sparse data.
+ * @param pSparseEnd Pointer to the end indices of the sparse data.
+ * @param pSparseIndex Pointer to the indices of the sparse data.
+ * @param pDataWeight Pointer to the data weight.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pRandom Pointer to the random data.
+ * @param pUnit Pointer to the unit data.
+ * @param beta The beta value.
+ */
+template<typename T>
+__global__ void kCalculateIndexedSparseAnalogDenoisedZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, NNFloat* pRandom, NNFloat* pUnit, NNFloat beta)
+{
+    __shared__ uint32_t sOpos;
+    extern __shared__ uint8_t sSharedMemory[];
+    T* sValue = reinterpret_cast<T*>(sSharedMemory);
+    uint32_t* sOffset = reinterpret_cast<uint32_t*>(sSharedMemory + sizeof(T) * MAXSPARSEANALOG);
+
+    sOpos = blockDim.x;
+    position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+    uint64_t start = pSparseStart[position];
+    uint64_t end = pSparseEnd[position];
+    NNFloat w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : static_cast<NNFloat>(1.0));
+    pUnit += blockIdx.x * stride;
+
+    while (start < end)
+    {
+        uint32_t inputs = ullmin(end - start, static_cast<uint64_t>(MAXSPARSEANALOG));
+        uint64_t tend = start + inputs;
+        uint64_t tstart = start + threadIdx.x;
+        uint32_t pos = threadIdx.x;
+
+        while (tstart < tend)
+        {
+            NNFloat value = pRandom[tstart];
+            sOffset[pos] = (value < cData._denoising_p) ? cData._maxUint32_t : static_cast<uint32_t>(pSparseIndex[tstart]) * stride;
+            sValue[pos] = pSparseData[tstart] * w;
+            pos += blockDim.x;
+            tstart += blockDim.x;
+        }
+
+        __syncthreads();
+
+        uint32_t tgx = threadIdx.x & cData._warpMask;
+        uint32_t opos = threadIdx.x - tgx;
+        while (opos < stride)
+        {
+            opos += tgx;
+            if (opos < stride)
+            {
+                NNFloat unit = (beta == static_cast<NNFloat>(0.0)) ? static_cast<NNFloat>(0.0) : (beta * pUnit[opos]);
+                for (uint32_t i = 0; i < inputs; i++)
+                {
+                    uint32_t offset = sOffset[i];
+                    if (offset != cData._maxUint32_t)
+                        unit += pWeight[offset + opos] * sValue[i];
+                }
+
+                pUnit[opos] = unit;
+            }
+            opos -= tgx;
+
+            if (tgx == 0)
+            {
+                opos = atomicAdd(&sOpos, cData._warpSize);
+            }
+            opos = __shfl_sync(0xFFFFFFFF, opos, 0);
+        }
+
+        start = tend;
+        beta = static_cast<NNFloat>(1.0);
+    }
+}
+/**
+ * @brief CUDA kernel for calculating indexed sparse analog denoised Z values.
+ * 
+ * @tparam Unused Unused template parameter.
+ * @param position Position parameter.
+ * @param stride Stride parameter.
+ * @param pWeight Pointer to weights.
+ * @param pIndex Pointer to indices.
+ * @param pSparseStart Pointer to sparse start.
+ * @param pSparseEnd Pointer to sparse end.
+ * @param pSparseIndex Pointer to sparse indices.
+ * @param pDataWeight Pointer to data weights.
+ * @param pSparseData Pointer to sparse data.
+ * @param pRandom Pointer to random values.
+ * @param pUnit Pointer to units.
+ * @param beta Beta parameter.
+ */
+template <>
+__global__ void LAUNCH_BOUNDS256()
+kCalculateIndexedSparseAnalogDenoisedZ_kernel(uint32_t position, uint32_t stride, NNFloat* pWeight, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, unsigned char* pSparseData, NNFloat* pRandom, NNFloat* pUnit, NNFloat beta)
+{
+    __shared__ uint32_t sOpos;
+    __shared__ int32_t sOffset[MAXSPARSEANALOG];
+    __shared__ NNFloat sValue[MAXSPARSEANALOG];
+
+    uint32_t tid = threadIdx.x;
+    uint32_t blockIndex = blockIdx.x;
+
+    sOpos = blockDim.x;
+    position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIndex] : position + blockIndex];
+    uint64_t start = pSparseStart[position];
+    uint64_t end = pSparseEnd[position];
+    NNFloat w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : (NNFloat)1.0);
+    pUnit += blockIndex * stride;
+
+    for (uint32_t i = tid; i < MAXSPARSEANALOG; i += blockDim.x)
+    {
+        sOffset[i] = 0;
+        sValue[i] = 0.0;
+    }
+
+    while (start < end)
+    {
+        uint32_t inputs = ullmin(end - start, (uint64_t)MAXSPARSEANALOG);
+        uint64_t tend = start + inputs;
+        uint64_t tstart = start + tid;
+        uint32_t pos = tid;
+
+        while (tstart < tend)
+        {
+            NNFloat value = pRandom[tstart];
+            sOffset[pos] = (value < cData._denoising_p) ? cData._maxUint32_t : (int32_t)pSparseIndex[tstart] * stride;
+            sValue[pos] = (NNFloat)pSparseData[tstart] * (NNFloat)(1.0 / 256.0) * w;
+            pos += blockDim.x;
+            tstart += blockDim.x;
+        }
+
+        __syncthreads();
+
+        uint32_t tgx = tid & cData._warpMask;
+        uint32_t opos = tid - tgx;
+
+        while (opos < stride)
+        {
+            opos += tgx;
+            if (opos < stride)
+            {
+                NNFloat unit = (beta == (NNFloat)0.0) ? (NNFloat)0.0 : (beta * pUnit[opos]);
+
+                for (uint32_t i = 0; i < inputs; i++)
+                {
+                    uint32_t offset = sOffset[i];
+                    if (offset != cData._maxUint32_t)
+                        unit += pWeight[offset + opos] * sValue[i];
+                }
+
+                pUnit[opos] = unit;
+            }
+            opos -= tgx;
+
+            if (tgx == 0)
+            {
+                opos = atomicAdd(&sOpos, cData._warpSize);
+            }
+            opos = SHFL(opos, 0);
+        }
+
+        start = tend;
+        if (start < end)
+        {
+            __threadfence();
+            __syncthreads();
+        }
+        beta = (NNFloat)1.0;
+    }
+}
+/**
+ * @brief Kernel function to calculate indexed sparse analog denoised Z.
+ * @tparam T Type of the input data.
+ * @param position Index of the current position.
+ * @param stride Stride value.
+ * @param pWeight Pointer to the weight data.
+ * @param pIndex Pointer to the index data.
+ * @param pSparseStart Pointer to the sparse start data.
+ * @param pSparseEnd Pointer to the sparse end data.
+ * @param pSparseIndex Pointer to the sparse index data.
+ * @param pDataWeight Pointer to the data weight data.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pRandom Pointer to the random data.
+ * @param pUnit Pointer to the unit data.
+ * @param beta Beta value.
+ */
+template <>
+__global__ void LAUNCH_BOUNDS256(uint32_t position, uint32_t stride, const NNFloat* pWeight, const uint32_t* pIndex, const uint64_t* pSparseStart, const uint64_t* pSparseEnd, const uint32_t* pSparseIndex, const NNFloat* pDataWeight, const char* pSparseData, const NNFloat* pRandom, NNFloat* pUnit, const NNFloat beta)
+{
+    __shared__ uint32_t sOpos;
+    sOpos = blockDim.x;
+    position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+    const uint64_t start = pSparseStart[position];
+    const uint64_t end = pSparseEnd[position];
+    const NNFloat w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : (NNFloat)1.0);
+    pUnit += blockIdx.x * stride;
+    while (start < end)
+    {
+        const uint32_t inputs = ullmin(end - start, static_cast<uint64_t>(MAXSPARSEANALOG));
+        const uint64_t tend = start + inputs;
+        uint64_t tstart = start + threadIdx.x;
+        uint32_t pos = threadIdx.x;
+
+        while (tstart < tend)
+        {
+            const NNFloat value = pRandom[tstart];
+            const uint32_t offset = (value < cData._denoising_p) ? cData._maxUint32_t : static_cast<int32_t>(pSparseIndex[tstart]) * stride;
+            const NNFloat valueScaled = static_cast<NNFloat>(pSparseData[tstart]) * (NNFloat)(0.0078125) * w;
+            sOffset[pos] = offset;
+            sValue[pos] = valueScaled;
+            pos += blockDim.x;
+            tstart += blockDim.x;
+        }
+
+        __threadfence();
+        __syncthreads();
+
+        const uint32_t tgx = threadIdx.x & cData._warpMask;
+        uint32_t opos = threadIdx.x - tgx;
+        while (opos < stride)
+        {
+            opos += tgx;
+            if (opos < stride)
+            {
+                NNFloat unit = (beta == (NNFloat)0.0) ? (NNFloat)0.0 : (beta * pUnit[opos]);
+                #pragma unroll
+                for (uint32_t i = 0; i < inputs; i++)
+                {
+                    const uint32_t offset = sOffset[i];
+                    if (offset != cData._maxUint32_t)
+                        unit += pWeight[offset + opos] * sValue[i];
+                }
+                pUnit[opos] = unit;
+            }
+            opos -= tgx;
+
+            if (tgx == 0)
+            {
+                opos = atomicAdd(&sOpos, cData._warpSize);
+            }
+            opos = SHFL(opos, 0);
+        }
+
+        start = tend;
+        if (start < end)
+        {
+            __threadfence();
+            __syncthreads();
+        }
+        beta = (NNFloat)1.0;
+    }
+}
+
+/**
+ * \brief Calculates the indexed sparse analog denoised Z values using CUDA.
+ *
+ * \tparam T The data type of the sparse data.
+ * \param position The position parameter.
+ * \param batch The batch size.
+ * \param stride The stride parameter.
+ * \param pWeight Pointer to the weight data.
+ * \param pIndex Pointer to the index data.
+ * \param pSparseStart Pointer to the sparse start data.
+ * \param pSparseEnd Pointer to the sparse end data.
+ * \param pSparseIndex Pointer to the sparse index data.
+ * \param pDataWeight Pointer to the data weight data.
+ * \param pSparseData Pointer to the sparse data.
+ * \param pRandom Pointer to the random data.
+ * \param pUnit Pointer to the unit data.
+ * \param beta The beta parameter.
+ */
+template<typename T>
+void kCalculateIndexedSparseAnalogDenoisedZ(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pWeight, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, NNFloat* pRandom, NNFloat* pUnit, NNFloat beta)
+{
+    uint32_t threads = min(256, stride);
+    uint32_t blocks = batch;
+
+    size_t sharedMemSize = sizeof(NNFloat) * threads * 2;
+
+    kCalculateIndexedSparseAnalogDenoisedZ_kernel<<<blocks, threads, sharedMemSize>>>(position, stride, pWeight, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pSparseData, pRandom, pUnit, beta);
+
+    CUDA_CHECK(cudaGetLastError());
+}
+
+/**
+ * @brief CUDA kernel to calculate the sparse transposed matrix.
+ *
+ * @param position The starting position in the sparse matrix.
+ * @param batch The number of batches to process.
+ * @param pSparseStart Pointer to the start indices of the sparse matrix.
+ * @param pSparseEnd Pointer to the end indices of the sparse matrix.
+ * @param pSparseIndex Pointer to the indices of the sparse matrix.
+ * @param pSparseTransposedEnd Pointer to the end indices of the transposed sparse matrix.
+ * @param pSparseTransposedIndex Pointer to the indices of the transposed sparse matrix.
+ */
+__global__ void kCalculateSparseTransposedMatrix_kernel(uint32_t position, uint32_t batch, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex)
+{
+    uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (tid < batch)
+    {
+        position = cData._bShuffleIndices ? cData._pShuffleIndex[position + tid] : position + tid;
+        
+        uint64_t start = pSparseStart[position] + threadIdx.x;
+        uint64_t end = pSparseEnd[position];
+        
+        while (start < end)
+        {
+            uint32_t index = pSparseIndex[start];
+            uint32_t opos = atomicAdd(&pSparseTransposedEnd[index], 1);
+            pSparseTransposedIndex[opos] = tid;
+            start += blockDim.x;
+        }
+    }
+}
+/**
+ * @brief CUDA kernel for calculating weighted sparse transposed matrix.
+ *
+ * @param pSparseStart Array of starting positions for each position in the sparse matrix.
+ * @param pSparseEnd Array of ending positions (exclusive) for each position in the sparse matrix.
+ * @param pSparseIndex Array of indices for each non-zero element in the sparse matrix.
+ * @param pDataWeight Array of weights for each position in the sparse matrix.
+ * @param pSparseTransposedEnd Array of ending positions (exclusive) for each transposed index.
+ * @param pSparseTransposedIndex Array of indices in the transposed matrix.
+ * @param pSparseTransposedData Array of data values in the transposed matrix.
+ * @param bShuffleIndices Flag indicating whether to shuffle indices.
+ * @param pShuffleIndex Array of shuffled indices.
+ * @param warpSize Size of a warp (typically 32).
+ * @param warpMask Mask to extract lane ID within a warp.
+ */
+__global__ void kCalculateWeightedSparseTransposedMatrix_kernel(const uint64_t* __restrict__ pSparseStart,
+                                                                const uint64_t* __restrict__ pSparseEnd,
+                                                                const uint32_t* __restrict__ pSparseIndex,
+                                                                const NNFloat* __restrict__ pDataWeight,
+                                                                uint32_t* __restrict__ pSparseTransposedEnd,
+                                                                uint32_t* __restrict__ pSparseTransposedIndex,
+                                                                NNFloat* __restrict__ pSparseTransposedData,
+                                                                const bool bShuffleIndices,
+                                                                const uint32_t* __restrict__ pShuffleIndex,
+                                                                const uint32_t warpSize,
+                                                                const uint32_t warpMask)
+{
+    const uint32_t tid = threadIdx.x;
+    const uint32_t laneId = tid & warpMask;
+    const uint32_t warpId = tid / warpSize;
+    const uint32_t numWarps = blockDim.x / warpSize;
+    const uint32_t bpos = (blockIdx.x * numWarps) + warpId;
+
+    if (bpos < batch)
+    {
+        uint32_t position = bpos;
+        if (bShuffleIndices)
+            position = pShuffleIndex[position];
+
+        const uint64_t start = pSparseStart[position] + laneId;
+        const uint64_t end = pSparseEnd[position];
+        const NNFloat w = pDataWeight[position];
+        uint32_t blockSum = 0;
+
+        for (uint64_t i = start; i < end; i += warpSize)
+        {
+            uint32_t index = pSparseIndex[i];
+            blockSum += (index < MAX_SPARSE_TRANSPOSED_INDICES) ? 1 : 0;
+        }
+        __shared__ uint32_t warpSums[MAX_NUM_WARPS];
+        warpSums[warpId] = blockSum;
+        __syncthreads();
+
+        if (laneId < warpSize)
+        {
+            uint32_t mask = (1u << numWarps) - 1;
+            for (uint32_t offset = numWarps >> 1; offset > 0; offset >>= 1)
+            {
+                uint32_t val = (warpId < offset) ? warpSums[laneId + offset] : 0;
+                warpSums[laneId] += __shfl_xor_sync(mask, val, offset, warpSize);
+            }
+        }
+
+        const uint32_t warpOffset = (warpId > 0) ? warpSums[warpId - 1] : 0;
+        const uint32_t transposedIndex = warpOffset + laneId;
+
+        if (transposedIndex < MAX_SPARSE_TRANSPOSED_INDICES)
+        {
+            const uint32_t opos = atomicAdd(&pSparseTransposedEnd[transposedIndex], 1);
+            pSparseTransposedIndex[opos] = bpos;
+            pSparseTransposedData[opos] = w;
+        }
+    }
+}
+
+/**
+ * @brief Calculates the transposed matrix for sparse data.
+ *
+ * @param position              The position of the matrix.
+ * @param batch                 The batch size.
+ * @param pSparseStart          Pointer to the start of sparse data.
+ * @param pSparseEnd            Pointer to the end of sparse data.
+ * @param pSparseIndex          Pointer to the indices of sparse data.
+ * @param pDataWeight           Pointer to the weights of sparse data (optional).
+ * @param pSparseTransposedEnd  Pointer to the end of transposed sparse data.
+ * @param pSparseTransposedIndex Pointer to the indices of transposed sparse data.
+ * @param pSparseTransposedData Pointer to the transposed sparse data.
+ */
+void kCalculateSparseTransposedMatrix(uint32_t position, uint32_t batch, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex, NNFloat* pSparseTransposedData)
+{
+    const uint32_t blocks = CalculateBlocks(batch * getGpu()._warpSize);
+    const uint32_t elementsPerBatch = batch * getGpu()._warpSize;
+
+    if (pDataWeight == nullptr)
+    {
+        kCalculateSparseTransposedMatrix_kernel<<<blocks, getGpu()._threadsPerBlock>>>(position, batch, pSparseStart, pSparseEnd, pSparseIndex, pSparseTransposedEnd, pSparseTransposedIndex);
+    }
+    else
+    {
+        kCalculateWeightedSparseTransposedMatrix_kernel<<<blocks, getGpu()._threadsPerBlock>>>(position, batch, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pSparseTransposedEnd, pSparseTransposedIndex, pSparseTransposedData);
+    }
+}
+
+/**
+ * @brief CUDA kernel to calculate the indexed sparse transposed matrix.
+ *
+ * @param position The starting position in the index array.
+ * @param batch The number of batches to process.
+ * @param pIndex Pointer to the index array.
+ * @param pSparseStart Pointer to the array storing the start indices of the sparse matrix.
+ * @param pSparseEnd Pointer to the array storing the end indices of the sparse matrix.
+ * @param pSparseIndex Pointer to the sparse index array.
+ * @param pSparseTransposedEnd Pointer to the array storing the end indices of the transposed sparse matrix.
+ * @param pSparseTransposedIndex Pointer to the transposed sparse index array.
+ */
+__global__ void LAUNCH_BOUNDS_kCalculateIndexedSparseTransposedMatrix_kernel(
+    uint32_t position,
+    uint32_t batch,
+    uint32_t* pIndex,
+    uint64_t* pSparseStart,
+    uint64_t* pSparseEnd,
+    uint32_t* pSparseIndex,
+    uint32_t* pSparseTransposedEnd,
+    uint32_t* pSparseTransposedIndex)
+{
+    __shared__ uint32_t sharedIndex;
+    __shared__ uint64_t sharedStart;
+    __shared__ uint64_t sharedEnd;
+
+    uint32_t bpos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (bpos < batch)
+    {
+        sharedIndex = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];
+        sharedStart = pSparseStart[sharedIndex];
+        sharedEnd = pSparseEnd[sharedIndex];
+
+        uint64_t start = sharedStart + tgx;
+        while (start < sharedEnd)
+        {
+            uint32_t index = pSparseIndex[start];
+
+            uint32_t opos = atomicAdd(&pSparseTransposedEnd[index], 1);
+
+            pSparseTransposedIndex[opos] = bpos;
+            start += cData._warpSize;
+        }
+    }
+}
+
+/**
+ * @brief CUDA kernel to calculate indexed weighted sparse transposed matrix.
+ *
+ * @param position Input position.
+ * @param batch Number of batches.
+ * @param pIndex Pointer to the index array.
+ * @param pSparseStart Pointer to the sparse start array.
+ * @param pSparseEnd Pointer to the sparse end array.
+ * @param pSparseIndex Pointer to the sparse index array.
+ * @param pDataWeight Pointer to the data weight array.
+ * @param pSparseTransposedEnd Pointer to the sparse transposed end array.
+ * @param pSparseTransposedIndex Pointer to the sparse transposed index array.
+ * @param pSparseTransposedData Pointer to the sparse transposed data array.
+ */
+__global__ void LAUNCH_BOUNDS()
+kCalculateIndexedWeightedSparseTransposedMatrix_kernel(const uint32_t position, const uint32_t batch, const uint32_t* pIndex, const uint64_t* pSparseStart, const uint64_t* pSparseEnd, const uint32_t* pSparseIndex, const NNFloat* pDataWeight, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex, NNFloat* pSparseTransposedData)
+{
+    uint32_t bpos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (bpos < batch)
+    {
+        uint32_t pos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];
+        uint64_t start = pSparseStart[pos] + tgx;
+        uint64_t end = pSparseEnd[pos];
+        NNFloat w = pDataWeight[pos];
+
+        __shared__ uint64_t sharedSparseStart;
+        __shared__ uint64_t sharedSparseEnd;
+
+        if (tgx == 0)
+        {
+            sharedSparseStart = start;
+            sharedSparseEnd = end;
+        }
+
+        __syncthreads();
+
+        start = sharedSparseStart;
+        end = sharedSparseEnd;
+
+        while (start < end)
+        {
+            uint32_t index = pSparseIndex[start];
+            uint32_t opos = atomicAdd(&pSparseTransposedEnd[index], 1);
+            pSparseTransposedIndex[opos] = bpos;
+            pSparseTransposedData[opos] = w;
+            start += cData._warpSize;
+        }
+    }
+}
+
+/**
+ * @brief Calculates the indexed sparse transposed matrix.
+ *
+ * This function calculates the transposed matrix for the given indexed sparse matrix. It supports both weighted and unweighted versions.
+ *
+ * @param position The position parameter.
+ * @param batch The number of batches.
+ * @param pIndex Pointer to the index array.
+ * @param pSparseStart Pointer to the sparse start array.
+ * @param pSparseEnd Pointer to the sparse end array.
+ * @param pSparseIndex Pointer to the sparse index array.
+ * @param pDataWeight Pointer to the data weight array (NULL for unweighted version).
+ * @param pSparseTransposedEnd Pointer to the sparse transposed end array.
+ * @param pSparseTransposedIndex Pointer to the sparse transposed index array.
+ * @param pSparseTransposedData Pointer to the sparse transposed data array.
+ */
+void kCalculateIndexedSparseTransposedMatrix(uint32_t position, uint32_t batch, const uint32_t* __restrict__ pIndex, const uint64_t* __restrict__ pSparseStart, const uint64_t* __restrict__ pSparseEnd, const uint32_t* __restrict__ pSparseIndex, const NNFloat* __restrict__ pDataWeight, uint32_t* __restrict__ pSparseTransposedEnd, uint32_t* __restrict__ pSparseTransposedIndex, NNFloat* __restrict__ pSparseTransposedData)
+{
+    uint32_t blocks = CalculateBlocks(batch);
+    if (pDataWeight == NULL)
+    {
+        /**
+         * @brief Kernel for calculating indexed sparse transposed matrix (unweighted version).
+         *
+         * @param position The position parameter.
+         * @param batch The number of batches.
+         * @param pIndex Pointer to the index array.
+         * @param pSparseStart Pointer to the sparse start array.
+         * @param pSparseEnd Pointer to the sparse end array.
+         * @param pSparseIndex Pointer to the sparse index array.
+         * @param pSparseTransposedEnd Pointer to the sparse transposed end array.
+         * @param pSparseTransposedIndex Pointer to the sparse transposed index array.
+         */
+        kCalculateIndexedSparseTransposedMatrix_kernel<<<blocks, getGpu()._warpSize>>>(position, batch, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pSparseTransposedEnd, pSparseTransposedIndex);
+        cudaDeviceSynchronize();
+        cudaError_t error = cudaGetLastError();
+        if (error != cudaSuccess)
+        {
+            fprintf(stderr, "CUDA error in kCalculateIndexedSparseTransposedMatrix_kernel: %s\n", cudaGetErrorString(error));
+            exit(-1);
+        }
+    }
+    else
+    {
+        /**
+         * @brief Kernel for calculating indexed weighted sparse transposed matrix.
+         *
+         * @param position The position parameter.
+         * @param batch The number of batches.
+         * @param pIndex Pointer to the index array.
+         * @param pSparseStart Pointer to the sparse start array.
+         * @param pSparseEnd Pointer to the sparse end array.
+         * @param pSparseIndex Pointer to the sparse index array.
+         * @param pDataWeight Pointer to the data weight array.
+         * @param pSparseTransposedEnd Pointer to the sparse transposed end array.
+         * @param pSparseTransposedIndex Pointer to the sparse transposed index array.
+         * @param pSparseTransposedData Pointer to the sparse transposed data array.
+         */
+        kCalculateIndexedWeightedSparseTransposedMatrix_kernel<<<blocks, getGpu()._warpSize>>>(position, batch, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pSparseTransposedEnd, pSparseTransposedIndex, pSparseTransposedData);
+        cudaDeviceSynchronize();
+        cudaError_t error = cudaGetLastError();
+        if (error != cudaSuccess)
+        {
+            fprintf(stderr, "CUDA error in kCalculateIndexedWeightedSparseTransposedMatrix_kernel: %s\n", cudaGetErrorString(error));
+            exit(-1);
+        }
+    }
+}
+/**
+ * @brief CUDA kernel to calculate sparse transposed denoised matrix
+ *
+ * @param pSparseStart         Pointer to the start indices of sparse matrix rows
+ * @param pSparseEnd           Pointer to the end indices of sparse matrix rows
+ * @param pSparseIndex         Pointer to the column indices of sparse matrix
+ * @param pRandom              Pointer to the random values for denoising
+ * @param pSparseTransposedEnd Pointer to the end indices of transposed sparse matrix rows
+ * @param pSparseTransposedIndex Pointer to the column indices of transposed sparse matrix
+ */
+__global__ void kCalculateSparseTransposedDenoisedMatrix_kernel(uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pRandom, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex)
+{
+    __shared__ NNFloat sharedRandom[THREADS_PER_BLOCK];
+    __shared__ uint32_t sharedIndex[THREADS_PER_BLOCK];
+
+    const uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    const uint32_t laneId = threadIdx.x & cData._warpMask;
+    const uint32_t bpos = tid / cData._warpSize;
+
+    if (bpos < cData._batch)
+    {
+        const uint32_t position = cData._bShuffleIndices ? cData._pShuffleIndex[tid] : tid;
+        uint64_t start = pSparseStart[position] + laneId;
+        uint64_t end = pSparseEnd[position];
+
+        sharedRandom[threadIdx.x] = pRandom[tid];
+        sharedIndex[threadIdx.x] = pSparseIndex[tid];
+
+        __syncthreads();
+
+        for (; start < end; start += THREADS_PER_BLOCK)
+        {
+            NNFloat4 rnd4 = reinterpret_cast<NNFloat4*>(sharedRandom)[threadIdx.x];
+            uint32_t4 index4 = reinterpret_cast<uint32_t4*>(sharedIndex)[threadIdx.x];
+
+            if (rnd4.x >= cData._denoising_p)
+            {
+                atomicAdd(&pSparseTransposedEnd[index4.x], 1);
+                uint32_t opos = atomicAdd(&pSparseTransposedEnd[index4.y], 1);
+                pSparseTransposedIndex[opos] = bpos;
+            }
+
+            if (rnd4.y >= cData._denoising_p)
+            {
+                atomicAdd(&pSparseTransposedEnd[index4.z], 1);
+                uint32_t opos = atomicAdd(&pSparseTransposedEnd[index4.w], 1);
+                pSparseTransposedIndex[opos] = bpos;
+            }
+        }
+
+        __syncthreads();
+    }
+}
+/**
+ * @brief CUDA kernel to calculate the weighted sparse transposed denoised matrix.
+ *
+ * @param position          Starting position in the sparse matrix.
+ * @param batch             Number of batches to process.
+ * @param pSparseStart      Start indices of the sparse matrix.
+ * @param pSparseEnd        End indices of the sparse matrix.
+ * @param pSparseIndex      Indices of the sparse matrix.
+ * @param pDataWeight       Weight data for each position in the matrix.
+ * @param pRandom           Random values for each position in the matrix.
+ * @param pSparseTransposedEnd  End indices of the transposed sparse matrix.
+ * @param pSparseTransposedIndex  Indices of the transposed sparse matrix.
+ * @param pSparseTransposedData   Data of the transposed sparse matrix.
+ */
+__global__ void LAUNCH_BOUNDS()
+kCalculateWeightedSparseTransposedDenoisedMatrix_kernel(uint32_t position, uint32_t batch, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat *pRandom, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex, NNFloat* pSparseTransposedData)
+{
+    uint32_t bpos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (bpos < batch)
+    {
+        position = cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos;
+
+        uint64_t start = pSparseStart[position] + tgx;
+        uint64_t end = pSparseEnd[position];
+        NNFloat w = cData._denoising_q * pDataWeight[position];
+
+        __shared__ uint32_t sCounter[cData._warpSize];
+        sCounter[threadIdx.x] = 0;
+        __syncthreads();
+
+        __shared__ NNFloat sRandom[cData._warpSize];
+        __shared__ uint32_t sSparseIndex[cData._warpSize];
+        for (uint32_t i = threadIdx.x; i < cData._warpSize; i += blockDim.x)
+        {
+            sRandom[i] = pRandom[start + i];
+            sSparseIndex[i] = pSparseIndex[start + i];
+        }
+        __syncthreads();
+
+        while (start < end)
+        {
+            #pragma unroll 4
+            for (int i = 0; i < 4; ++i)
+            {
+                uint32_t currentIndex = start + i * cData._warpSize;
+                if (currentIndex < end)
+                {
+                    NNFloat rnd = sRandom[i];
+                    uint32_t index = sSparseIndex[i];
+
+                    if (rnd >= cData._denoising_p)
+                    {
+                        uint32_t opos = atomicAdd(&sCounter[index], 1);
+                        pSparseTransposedIndex[opos] = bpos;
+                        pSparseTransposedData[opos] = w;
+                    }
+                }
+            }
+            start += cData._warpSize * 4;
+        }
+
+        __syncthreads();
+
+        if (tgx == 0)
+        {
+            for (uint32_t i = 0; i < cData._warpSize; ++i)
+            {
+                uint32_t index = sSparseIndex[i];
+                atomicAdd(&pSparseTransposedEnd[index], sCounter[i]);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Calculate the sparse transposed denoised matrix.
+ *
+ * This function calculates the transposed denoised matrix based on the given sparse matrix data.
+ *
+ * @param position The position parameter.
+ * @param batch The batch size.
+ * @param pSparseStart Pointer to the start of the sparse matrix.
+ * @param pSparseEnd Pointer to the end of the sparse matrix.
+ * @param pSparseIndex Pointer to the index data of the sparse matrix.
+ * @param pDataWeight Pointer to the weight data.
+ * @param pRandom Pointer to the random data.
+ * @param pSparseTransposedEnd Pointer to the end of the transposed sparse matrix.
+ * @param pSparseTransposedIndex Pointer to the index data of the transposed sparse matrix.
+ * @param pSparseTransposedData Pointer to the data of the transposed sparse matrix.
+ */
+void kCalculateSparseTransposedDenoisedMatrix(uint32_t position, uint32_t batch, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat* pRandom, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex, NNFloat* pSparseTransposedData)
+{
+    uint32_t blocks = CalculateBlocks(batch * getGpu()._warpSize);
+    cudaStream_t stream = getGpu()._cudaStream;
+
+    if (pDataWeight == nullptr)
+    {
+        /**
+         * @brief Launch the kernel to calculate the sparse transposed denoised matrix.
+         *
+         * @param blocks The number of blocks to launch.
+         * @param getGpu()._threadsPerBlock The number of threads per block.
+         * @param stream The CUDA stream to use for execution.
+         */
+        kCalculateSparseTransposedDenoisedMatrix_kernel<<<blocks, getGpu()._threadsPerBlock, 0, stream>>>(position, batch, pSparseStart, pSparseEnd, pSparseIndex, pRandom, pSparseTransposedEnd, pSparseTransposedIndex);
+        checkCudaErrors(cudaGetLastError());
+    }
+    else
+    {
+        /**
+         * @brief Launch the kernel to calculate the weighted sparse transposed denoised matrix.
+         *
+         * @param blocks The number of blocks to launch.
+         * @param getGpu()._threadsPerBlock The number of threads per block.
+         * @param stream The CUDA stream to use for execution.
+         */
+        kCalculateWeightedSparseTransposedDenoisedMatrix_kernel<<<blocks, getGpu()._threadsPerBlock, 0, stream>>>(position, batch, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pRandom, pSparseTransposedEnd, pSparseTransposedIndex, pSparseTransposedData);
+        checkCudaErrors(cudaGetLastError());
+    }
+}
+
+/**
+ * @brief CUDA kernel to calculate the indexed sparse transposed denoised matrix.
+ *
+ * @param position Starting position in the index array.
+ * @param batch Number of batches to process.
+ * @param pIndex Pointer to the index array.
+ * @param pSparseStart Pointer to the start positions of the sparse matrix.
+ * @param pSparseEnd Pointer to the end positions of the sparse matrix.
+ * @param pSparseIndex Pointer to the sparse matrix indices.
+ * @param pRandom Pointer to the random values array.
+ * @param pSparseTransposedEnd Pointer to the end positions of the transposed sparse matrix.
+ * @param pSparseTransposedIndex Pointer to the transposed sparse matrix indices.
+ */
+__global__ void kCalculateIndexedSparseTransposedDenoisedMatrix_kernel(uint32_t position, uint32_t batch, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat *pRandom, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex)
+{
+    uint32_t bpos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (bpos < batch)
+    {
+        position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];
+
+        uint64_t start = pSparseStart[position] + tgx;
+        uint64_t end = pSparseEnd[position];
+
+        __shared__ uint32_t sharedSparseIndex[THREADS_PER_BLOCK];
+        if (tgx < THREADS_PER_BLOCK)
+            sharedSparseIndex[tgx] = pSparseIndex[start + tgx];
+
+        __syncthreads();
+
+        uint32_t denoisedCount = 0;
+
+        while (start < end)
+        {
+            NNFloat rnd = pRandom[start];
+            uint32_t index = sharedSparseIndex[tgx];
+
+            if (rnd >= cData._denoising_p)
+            {
+                uint32_t opos = atomicAdd(&pSparseTransposedEnd[index], 1);
+                pSparseTransposedIndex[opos] = bpos;
+                denoisedCount++;
+            }
+
+            start += cData._warpSize;
+
+            if (tgx < THREADS_PER_BLOCK)
+                sharedSparseIndex[tgx] = pSparseIndex[start + tgx];
+
+            __syncthreads();
+        }
+
+        atomicAdd(&pSparseTransposedEnd[position], denoisedCount);
+    }
+}
+/**
+ * @brief GPU kernel for calculating the indexed weighted sparse transposed denoised matrix.
+ *
+ * @param position              The position parameter.
+ * @param batch                 The batch parameter.
+ * @param pIndex                Pointer to the index array.
+ * @param pSparseStart          Pointer to the sparse start array.
+ * @param pSparseEnd            Pointer to the sparse end array.
+ * @param pSparseIndex          Pointer to the sparse index array.
+ * @param pDataWeight           Pointer to the data weight array.
+ * @param pRandom               Pointer to the random array.
+ * @param pSparseTransposedEnd  Pointer to the sparse transposed end array.
+ * @param pSparseTransposedIndex  Pointer to the sparse transposed index array.
+ * @param pSparseTransposedData  Pointer to the sparse transposed data array.
+ */
+__global__ void
+LAUNCH_BOUNDS()
+kCalculateIndexedWeightedSparseTransposedDenoisedMatrix_kernel(
+  uint32_t position, uint32_t batch, 
+  uint32_t* __restrict__ pIndex, 
+  uint64_t* __restrict__ pSparseStart, 
+  uint64_t* __restrict__ pSparseEnd, 
+  uint32_t* __restrict__ pSparseIndex, 
+  NNFloat* __restrict__ pDataWeight, 
+  NNFloat* __restrict__ pRandom, 
+  uint32_t* __restrict__ pSparseTransposedEnd, 
+  uint32_t* __restrict__ pSparseTransposedIndex, 
+  NNFloat* __restrict__ pSparseTransposedData)
+{
+    uint32_t bpos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+    
+    __shared__ NNFloat shared_w[BLOCK_SIZE];
+    __shared__ NNFloat shared_rnd[BLOCK_SIZE];
+    __shared__ uint32_t shared_index[BLOCK_SIZE];
+
+    if (bpos < batch)
+    {
+        position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];    
+        uint64_t start = pSparseStart[position] + tgx;
+        uint64_t end = pSparseEnd[position];
+        shared_w[threadIdx.x] = cData._denoising_q * pDataWeight[position];
+        while (start < end)
+        {
+            shared_rnd[threadIdx.x] = pRandom[start];
+            shared_index[threadIdx.x] = pSparseIndex[start];
+            __syncthreads();
+            if (shared_rnd[threadIdx.x] >= cData._denoising_p)
+            {
+                uint32_t opos = atomicAdd(&pSparseTransposedEnd[shared_index[threadIdx.x]], 1);
+                pSparseTransposedIndex[opos] = bpos;
+                pSparseTransposedData[opos] = shared_w[threadIdx.x];
+            }
+            start += cData._warpSize;                   
+        }
+    }
+}
+/**
+ * @brief Calculates the indexed sparse transposed denoised matrix.
+ *
+ * @param position               The position parameter.
+ * @param batch                  The batch parameter.
+ * @param pIndex                 Pointer to the index data.
+ * @param pSparseStart           Pointer to the sparse start data.
+ * @param pSparseEnd             Pointer to the sparse end data.
+ * @param pSparseIndex           Pointer to the sparse index data.
+ * @param pDataWeight            Pointer to the data weight.
+ * @param pRandom                Pointer to the random data.
+ * @param pSparseTransposedEnd   Pointer to the sparse transposed end data.
+ * @param pSparseTransposedIndex Pointer to the sparse transposed index data.
+ * @param pSparseTransposedData  Pointer to the sparse transposed data.
+ */
+void kCalculateIndexedSparseTransposedDenoisedMatrix(uint32_t position, uint32_t batch, uint32_t* pIndex, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, NNFloat* pRandom, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex, NNFloat* pSparseTransposedData)
+{
+    const uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    const uint32_t warpSize = getGpu()._warpSize;
+    uint32_t blocks = CalculateBlocks(batch * warpSize);
+    
+    if (pDataWeight == nullptr)
+    {
+        kCalculateIndexedSparseTransposedDenoisedMatrix_kernel<<<blocks, threadsPerBlock>>>(position, batch, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pRandom, pSparseTransposedEnd, pSparseTransposedIndex);
+        LAUNCHERROR("kCalculateIndexedSparseTransposedDenoisedMatrix_kernel");
+    }
+    else
+    {
+        kCalculateIndexedWeightedSparseTransposedDenoisedMatrix_kernel<<<blocks, threadsPerBlock>>>(position, batch, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pRandom, pSparseTransposedEnd, pSparseTransposedIndex, pSparseTransposedData);
+        LAUNCHERROR("kCalculateIndexedWeightedSparseTransposedDenoisedMatrix_kernel");
+    }
+}
+/**
+ * @brief CUDA kernel for calculating the transposed analog matrix for sparse data.
+ *
+ * @param position          The starting position in the sparse data arrays.
+ * @param batch             The number of batches to process.
+ * @param pSparseStart      Pointer to the start indices of sparse data.
+ * @param pSparseEnd        Pointer to the end indices of sparse data.
+ * @param pSparseIndex      Pointer to the indices of sparse data.
+ * @param pDataWeight       Pointer to the weight data (optional).
+ * @param pSparseData       Pointer to the sparse data values.
+ * @param pSparseTransposedEnd   Pointer to the end indices of transposed sparse data.
+ * @param pSparseTransposedIndex Pointer to the indices of transposed sparse data.
+ * @param pSparseTransposedData  Pointer to the transposed sparse data values.
+ */
+__global__ void kCalculateSparseTransposedAnalogMatrix_kernel(uint32_t position, uint32_t batch, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex, NNFloat* pSparseTransposedData)
+{
+    const uint32_t bpos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    const uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (bpos < batch)
+    {
+        position = cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos;
+        const uint64_t start = pSparseStart[position] + tgx;
+        const uint64_t end = pSparseEnd[position];
+        const NNFloat w = (pDataWeight != NULL) ? pDataWeight[position] : (NNFloat)1.0;
+
+        __shared__ uint32_t sCount[cData._warpSize];
+        __shared__ uint32_t sIndex[cData._warpSize];
+        __shared__ NNFloat sData[cData._warpSize];
+
+        uint64_t i = start;
+        while (i < end)
+        {
+            sIndex[threadIdx.x] = pSparseIndex[i];
+            sData[threadIdx.x] = w * pSparseData[i];
+
+            uint32_t count = 1;
+            for (uint32_t stride = cData._warpSize / 2; stride > 0; stride >>= 1)
+            {
+                __syncthreads();
+                if (tgx < stride)
+                {
+                    const uint32_t otherIdx = threadIdx.x + stride;
+                    if (i + stride < end && sIndex[threadIdx.x] == sIndex[otherIdx])
+                    {
+                        sData[threadIdx.x] += sData[otherIdx];
+                        count += 1;
+                    }
+                }
+            }
+
+            __syncthreads();
+            if (tgx == 0)
+            {
+                const uint32_t opos = atomicAdd(&pSparseTransposedEnd[sIndex[0]], count);
+                pSparseTransposedIndex[opos] = bpos;
+                pSparseTransposedData[opos] = sData[0];
+            }
+
+            i += cData._warpSize;
+        }
+    }
+}
+
+/**
+ * @brief Calculate sparse transposed analog matrix.
+ *
+ * This function calculates the sparse transposed analog matrix using CUDA.
+ *
+ * @tparam T Type of the sparse data.
+ * @param position The position.
+ * @param batch The batch size.
+ * @param pSparseStart Pointer to the start of the sparse matrix.
+ * @param pSparseEnd Pointer to the end of the sparse matrix.
+ * @param pSparseIndex Pointer to the sparse indices.
+ * @param pDataWeight Pointer to the weight data.
+ * @param pSparseData Pointer to the sparse data.
+ * @param pSparseTransposedEnd Pointer to the end of the transposed sparse matrix.
+ * @param pSparseTransposedIndex Pointer to the transposed sparse indices.
+ * @param pSparseTransposedData Pointer to the transposed sparse data.
+ */
+template<typename T>
+void kCalculateSparseTransposedAnalogMatrix(uint32_t position, uint32_t batch, uint64_t* pSparseStart, uint64_t* pSparseEnd, uint32_t* pSparseIndex, NNFloat* pDataWeight, T* pSparseData, uint32_t* pSparseTransposedEnd, uint32_t* pSparseTransposedIndex, NNFloat* pSparseTransposedData)
+{
+    constexpr uint32_t warpSize = getGpu()._warpSize;
+    constexpr uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    dim3 blocks(batch, 1, 1);
+    dim3 threads(threadsPerBlock, 1, 1);
+
+    kCalculateSparseTransposedAnalogMatrix_kernel<<<blocks, threads>>>(position, batch, pSparseStart, pSparseEnd, pSparseIndex, pDataWeight, pSparseData, pSparseTransposedEnd, pSparseTransposedIndex, pSparseTransposedData);
+}
