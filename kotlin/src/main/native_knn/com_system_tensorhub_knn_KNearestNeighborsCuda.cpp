@@ -5,10 +5,10 @@
 #include <string>
 #include <sstream>
 
-#include "coresrc/knn/KnnData.h"
-#include "core/src/knn/DataReader.h"
-#include "core/src/knn/KnnExactGpu.h"
-#include "com_system_eduwise_knn_KNearestNeighborsCuda.h"
+#include "src/knn/KnnData.h"
+#include "src/knn/DataReader.h"
+#include "src/knn/KnnExactGpu.h"
+#include "com_system_tensorhub_knn_KNearestNeighborsCuda.h"
 
 /**
  * @brief Constant string representing the fully-qualified class name of the KnnResult class.
