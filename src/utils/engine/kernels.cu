@@ -117,3 +117,60 @@ void kClearUnit(NNFloat* pUnit, NNFloat* pBias, uint32_t stride, uint32_t batch)
         printf("CUDA kernel launch error: %s\n", cudaGetErrorString(err));
     }
 }
+
+/**
+ * @file
+ * @brief CUDA kernel to clear a dual source unit by summing bias values in parallel.
+ */
+
+/**
+ * @brief CUDA kernel to clear a dual source unit by summing bias values in parallel.
+ *
+ * This kernel function sets the values of a dual source unit by summing the corresponding bias values from two different bias arrays.
+ *
+ * @param pUnit Pointer to the unit array.
+ * @param pBias1 Pointer to the first bias array.
+ * @param pBias2 Pointer to the second bias array.
+ * @param stride Stride of the unit array.
+ * @param size Size of the unit array.
+ */
+__global__ void kClearDualSourceUnit_kernel(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, uint32_t stride, uint32_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t bpos = pos % stride;
+
+    if (pos < size)
+    {
+        pUnit[pos] = pBias1[bpos] + pBias2[bpos];
+    }
+}
+
+/**
+ * @brief Clears a dual source unit by summing bias values in parallel.
+ *
+ * This function clears a dual source unit by summing the bias values from two different bias arrays in parallel using CUDA.
+ *
+ * @param pUnit Pointer to the unit array.
+ * @param pBias1 Pointer to the first bias array.
+ * @param pBias2 Pointer to the second bias array.
+ * @param stride Stride of the unit array.
+ * @param batch Batch size.
+ */
+void kClearDualSourceUnit(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, uint32_t stride, uint32_t batch)
+{
+    uint64_t size = static_cast<uint64_t>(stride) * static_cast<uint64_t>(batch);
+
+    uint32_t threadsPerBlock = 256;
+
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+
+    kClearDualSourceUnit_kernel<<<blocks, threadsPerBlock>>>(pUnit, pBias1, pBias2, stride, size);
+
+    cudaDeviceSynchronize();
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess)
+    {
+        printf("CUDA kernel launch error: %s\n", cudaGetErrorString(err));
+    }
+}
