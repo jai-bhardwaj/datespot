@@ -1093,3 +1093,221 @@ void kLoadIndexedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, N
     LAUNCHERROR("kLoadIndexedInputUnit_kernel");
 }
 
+/**
+ * @brief Loads indexed input units from unsigned char data into NNFloat array.
+ *
+ * @param position The position of the input unit.
+ * @param batch The number of input units to load.
+ * @param stride The stride between consecutive input units.
+ * @param pUnit Pointer to the NNFloat array to store the loaded input units.
+ * @param pIndex Pointer to the index array.
+ * @param pData Pointer to the unsigned char data.
+ */
+template<> void kLoadIndexedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, unsigned char* pData)
+{
+    uint32_t numBlocks = (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock;
+    dim3 grid(batch, numBlocks);
+
+    kLoadIndexedNormalizedInputUnit_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, stride, pUnit, pIndex, pData);
+
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        printf("CUDA error: %s\n", cudaGetErrorString(error));
+    }
+
+    LAUNCHERROR("kLoadIndexedNormalizedInputUnit_kernel");
+}
+
+/**
+ * @brief Loads indexed input units from char data into NNFloat array.
+ *
+ * @param position The position of the input unit.
+ * @param batch The number of input units to load.
+ * @param stride The stride between consecutive input units.
+ * @param pUnit Pointer to the NNFloat array to store the loaded input units.
+ * @param pIndex Pointer to the index array.
+ * @param pData Pointer to the char data.
+ */
+template<> void kLoadIndexedInputUnit(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, uint32_t* pIndex, char* pData)
+{
+    uint32_t numBlocks = (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock;
+    dim3 grid(batch, numBlocks);
+
+    kLoadIndexedNormalizedInputUnit_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, stride, pUnit, pIndex, pData);
+
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        printf("CUDA error: %s\n", cudaGetErrorString(error));
+    }
+
+    LAUNCHERROR("kLoadIndexedNormalizedInputUnit_kernel");
+}
+
+/**
+ * @brief CUDA kernel to add bias values to a unit array.
+ *
+ * @param pUnit Pointer to the unit array.
+ * @param pBias Pointer to the bias array.
+ * @param stride Stride value.
+ * @param size Total number of elements in the unit array.
+ */
+__global__ void kAddBias_kernel(NNFloat* pUnit, NNFloat* pBias, uint32_t stride, uint32_t size)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        uint32_t bpos = pos % stride;
+        pUnit[pos] += pBias[bpos];
+    }
+}
+
+/**
+ * @brief Function to launch the kAddBias_kernel CUDA kernel.
+ *
+ * @param pUnit Pointer to the unit array.
+ * @param pBias Pointer to the bias array.
+ * @param stride Stride value.
+ * @param batch Batch size.
+ */
+void kAddBias(NNFloat* pUnit, NNFloat* pBias, uint32_t stride, uint32_t batch)
+{
+    uint32_t size = stride * batch;
+    uint32_t threadsPerBlock = 256;  // Choose an appropriate value based on the GPU architecture
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kAddBias_kernel<<<blocks, threadsPerBlock>>>(pUnit, pBias, stride, size);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+    {
+        fprintf(stderr, "CUDA error in kAddBias: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+
+/**
+ * @brief CUDA kernel to add dual biases to the unit array.
+ *
+ * @param pUnit    Pointer to the unit array.
+ * @param pBias1   Pointer to the first bias array.
+ * @param pBias2   Pointer to the second bias array.
+ * @param stride   Stride value for indexing the bias arrays.
+ * @param size     Total size of the unit array.
+ */
+__global__ void kAddDualBias_kernel(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, uint32_t stride, uint32_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t bpos = pos % stride;
+    if (pos < size)
+    {
+        pUnit[pos] += pBias1[bpos] + pBias2[bpos];
+    }
+}
+
+/**
+ * @brief Adds dual biases to the unit array using CUDA.
+ *
+ * @param pUnit    Pointer to the unit array.
+ * @param pBias1   Pointer to the first bias array.
+ * @param pBias2   Pointer to the second bias array.
+ * @param stride   Stride value for indexing the bias arrays.
+ * @param batch    Number of batches in the unit array.
+ */
+void kAddDualBias(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, uint32_t stride, uint32_t batch)
+{
+    uint64_t size = static_cast<uint64_t>(stride) * static_cast<uint64_t>(batch);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kAddDualBias_kernel<<<blocks, threadsPerBlock>>>(pUnit, pBias1, pBias2, stride, size);
+    LAUNCHERROR("kAddDualBias_kernel");
+}
+
+/**
+ * @brief CUDA kernel to add triple biases to the unit array.
+ *
+ * @param pUnit    Pointer to the unit array.
+ * @param pBias1   Pointer to the first bias array.
+ * @param pBias2   Pointer to the second bias array.
+ * @param pBias3   Pointer to the third bias array.
+ * @param stride   Stride value for indexing the bias arrays.
+ * @param size     Total size of the unit array.
+ */
+__global__ void kAddTripleBias_kernel(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, uint32_t stride, uint32_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t bpos = pos % stride;
+    if (pos < size)
+    {
+        pUnit[pos] += pBias1[bpos] + pBias2[bpos] + pBias3[pos];
+    }
+}
+
+/**
+ * @brief Adds triple biases to the unit array using CUDA.
+ *
+ * @param pUnit    Pointer to the unit array.
+ * @param pBias1   Pointer to the first bias array.
+ * @param pBias2   Pointer to the second bias array.
+ * @param pBias3   Pointer to the third bias array.
+ * @param stride   Stride value for indexing the bias arrays.
+ * @param batch    Number of batches in the unit array.
+ */
+void kAddTripleBias(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, uint32_t stride, uint32_t batch)
+{
+    uint64_t size = static_cast<uint64_t>(stride) * static_cast<uint64_t>(batch);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kAddTripleBias_kernel<<<blocks, threadsPerBlock>>>(pUnit, pBias1, pBias2, pBias3, stride, size);
+    LAUNCHERROR("kAddTripleBias_kernel");
+}
+
+/**
+ * @brief CUDA kernel to add quad biases to the unit array.
+ *
+ * @param pUnit    Pointer to the unit array.
+ * @param pBias1   Pointer to the first bias array.
+ * @param pBias2   Pointer to the second bias array.
+ * @param pBias3   Pointer to the third bias array.
+ * @param pBias4   Pointer to the fourth bias array.
+ * @param stride   Stride value for indexing the bias arrays.
+ * @param size     Total size of the unit array.
+ */
+__global__ void kAddQuadBias_kernel(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, NNFloat* pBias4, uint32_t stride, uint32_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t bpos = pos % stride;
+    if (pos < size)
+    {
+        pUnit[pos] += pBias1[bpos] + pBias2[bpos] + pBias3[pos] + pBias4[pos];
+    }
+}
+
+/**
+ * @brief Adds quad biases to the unit array using CUDA.
+ *
+ * @param pUnit    Pointer to the unit array.
+ * @param pBias1   Pointer to the first bias array.
+ * @param pBias2   Pointer to the second bias array.
+ * @param pBias3   Pointer to the third bias array.
+ * @param pBias4   Pointer to the fourth bias array.
+ * @param stride   Stride value for indexing the bias arrays.
+ * @param batch    Number of batches in the unit array.
+ */
+void kAddQuadBias(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, NNFloat* pBias4, uint32_t stride, uint32_t batch)
+{
+    uint64_t size = static_cast<uint64_t>(stride) * static_cast<uint64_t>(batch);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kAddQuadBias_kernel<<<blocks, threadsPerBlock>>>(pUnit, pBias1, pBias2, pBias3, pBias4, stride, size);
+    LAUNCHERROR("kAddQuadBias_kernel");
+}
+
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 600)
+constexpr uint32_t MAXSPARSE = SM_6X_MAXSPARSE;
+constexpr uint32_t MAXSPARSEANALOG = SM_6X_MAXSPARSEANALOG;
+#elif defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 500)
+constexpr uint32_t MAXSPARSE = SM_5X_MAXSPARSE;
+constexpr uint32_t MAXSPARSEANALOG = SM_5X_MAXSPARSEANALOG;
+#else
+constexpr uint32_t MAXSPARSE = SM_3X_MAXSPARSE;
+constexpr uint32_t MAXSPARSEANALOG = SM_3X_MAXSPARSEANALOG;
+#endif
