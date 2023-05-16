@@ -119,11 +119,6 @@ void kClearUnit(NNFloat* pUnit, NNFloat* pBias, uint32_t stride, uint32_t batch)
 }
 
 /**
- * @file
- * @brief CUDA kernel to clear a dual source unit by summing bias values in parallel.
- */
-
-/**
  * @brief CUDA kernel to clear a dual source unit by summing bias values in parallel.
  *
  * This kernel function sets the values of a dual source unit by summing the corresponding bias values from two different bias arrays.
@@ -173,4 +168,84 @@ void kClearDualSourceUnit(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, uint
     {
         printf("CUDA kernel launch error: %s\n", cudaGetErrorString(err));
     }
+}
+
+/**
+ * @brief CUDA kernel to compute the triple source unit values.
+ *
+ * @param pUnit    Pointer to the output unit array
+ * @param pBias1   Pointer to the first bias array
+ * @param pBias2   Pointer to the second bias array
+ * @param pBias3   Pointer to the third bias array
+ * @param stride   Stride of the bias arrays
+ * @param size     Size of the output unit array
+ */
+__global__ void kClearTripleSourceUnit_kernel(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, uint32_t stride, uint32_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        uint32_t bpos = pos % stride;
+        pUnit[pos] = pBias1[bpos] + pBias2[bpos] + pBias3[pos];
+    }
+}
+
+/**
+ * @brief Compute the triple source unit values using CUDA.
+ *
+ * @param pUnit    Pointer to the output unit array
+ * @param pBias1   Pointer to the first bias array
+ * @param pBias2   Pointer to the second bias array
+ * @param pBias3   Pointer to the third bias array
+ * @param stride   Stride of the bias arrays
+ * @param batch    Batch size
+ */
+void kClearTripleSourceUnit(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, uint32_t stride, uint32_t batch)
+{
+    uint64_t size = static_cast<uint64_t>(stride) * static_cast<uint64_t>(batch);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kClearTripleSourceUnit_kernel<<<blocks, threadsPerBlock>>>(pUnit, pBias1, pBias2, pBias3, stride, size);
+    LAUNCHERROR("kClearTripleSource_kernel");
+}
+
+/**
+ * @brief CUDA kernel to compute the quad source unit values.
+ *
+ * @param pUnit    Pointer to the output unit array
+ * @param pBias1   Pointer to the first bias array
+ * @param pBias2   Pointer to the second bias array
+ * @param pBias3   Pointer to the third bias array
+ * @param pBias4   Pointer to the fourth bias array
+ * @param stride   Stride of the bias arrays
+ * @param size     Size of the output unit array
+ */
+__global__ void kClearQuadSourceUnit_kernel(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, NNFloat* pBias4, uint32_t stride, uint32_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        uint32_t bpos = pos % stride;
+        pUnit[pos] = pBias1[bpos] + pBias2[bpos] + pBias3[pos] + pBias4[pos];
+    }
+}
+
+/**
+ * @brief Compute the quad source unit values using CUDA.
+ *
+ * @param pUnit    Pointer to the output unit array
+ * @param pBias1   Pointer to the first bias array
+ * @param pBias2   Pointer to the second bias array
+ * @param pBias3   Pointer to the third bias array
+ * @param pBias4   Pointer to the fourth bias array
+ * @param stride   Stride of the bias arrays
+ * @param batch    Batch size
+ */
+void kClearQuadSourceUnit(NNFloat* pUnit, NNFloat* pBias1, NNFloat* pBias2, NNFloat* pBias3, NNFloat* pBias4, uint32_t stride, uint32_t batch)
+{
+    uint64_t size = static_cast<uint64_t>(stride) * static_cast<uint64_t>(batch);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kClearQuadSourceUnit_kernel<<<blocks, threadsPerBlock>>>(pUnit, pBias1, pBias2, pBias3, pBias4, stride, size);
+    LAUNCHERROR("kClearQuadSource_kernel");
 }
