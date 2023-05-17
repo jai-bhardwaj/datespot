@@ -25,7 +25,7 @@ import com.system.tensorhub.data.SparseDataSet
  */
 @Ignore
 class NetworkTest {
-    private val DIR_SUFFIX = "src/test/java/com/system/eduwise/test-data/"
+    private val DIR_SUFFIX = "src/test/java/com/system/tensorhub/test-data/"
 
     private val networkFile = DIR_SUFFIX + ""
 
