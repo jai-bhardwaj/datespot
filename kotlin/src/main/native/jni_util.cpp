@@ -16,7 +16,7 @@ const std::string_view CONSTRUCTOR_METHOD_NAME = "<init>";
 /**
  * @brief Namespace for JNI related functions and constants.
  */
-namespace eduwise {
+namespace tensorhub {
 namespace jni {
 
 /**
