@@ -2398,7 +2398,13 @@ bool Weight::GetDimensions(vector<uint64_t>& dimensions)
  */
 void Weight::Dump(string fname, NNFloat* pBuffer)
 {
-    vector<NNFloat> vWeight;
+    /**
+     * Copy data from a buffer to the weight vector in a single-process scenario.
+     *
+     * @param pBuffer Pointer to the buffer containing the data to be copied.
+     * @param bufferSize Size of the buffer.
+     */
+    std::vector<NNFloat> vWeight;
 
     if (getGpu()._numprocs == 1)
     {
@@ -2407,65 +2413,183 @@ void Weight::Dump(string fname, NNFloat* pBuffer)
     }
     else
     {
+        /**
+         * Copy data from a buffer to the weight vector.
+         *
+         * @param pBuffer Pointer to the buffer containing the data to be copied.
+         * @param bufferSize Size of the buffer.
+         */
         if (getGpu()._id == 0)
-            vWeight.resize(_outputLayer._stride * _inputLayer._stride);        
-        uint32_t outgoingSize       = _outputLayer._stride * 3;               
-        uint32_t incomingSize       = _inputLayer._stride * 2;     
+            vWeight.resize(_outputLayer._stride * _inputLayer._stride);
+
+        uint32_t outgoingSize = _outputLayer._stride * 3;
+        uint32_t incomingSize = _inputLayer._stride * 2;
+
         cudaMemcpy(_vWeight.data(), pBuffer, _localSize * sizeof(NNFloat), cudaMemcpyDefault);
 
         if (getGpu()._id == 0)
         {
-            NNFloat* pWeight            = vWeight.data();                    
+            NNFloat* pWeight = vWeight.data();
+
             if (outgoingSize > incomingSize)
             {
                 cudaMemcpy2D(pWeight, _outputLayer._stride * sizeof(NNFloat), _vWeight.data(), _outputLayer._localStride * sizeof(NNFloat), _outputLayer._localStride * sizeof(NNFloat), _inputLayer._stride, cudaMemcpyDefault);
-                pWeight                += _outputLayer._localStride;
+                pWeight += _outputLayer._localStride;
+
                 for (uint32_t i = 1; i < getGpu()._numprocs; i++)
-                {                        
+                {
                     uint64_t size;
-                    MPI_Status status;                
+                    MPI_Status status;
+
+                    // Receive the size of the weight data from another process
                     MPI_Recv(&size, 1, MPI_UINT64_T, i, 0, MPI_COMM_WORLD, &status);
+
+                    // Receive the weight data from another process
                     vector<NNFloat> vTemp(size);
                     MPI_Recv(vTemp.data(), size, MPI_FLOAT, i, 0, MPI_COMM_WORLD, &status);
-                    uint64_t lstride    = size / _inputLayer._stride;
+
+                    uint64_t lstride = size / _inputLayer._stride;
                     NNFloat* pSrcWeight = vTemp.data();
                     NNFloat* pDstWeight = pWeight;
+
+                    // Copy the weight data to the output layer
                     for (uint32_t j = 0; j < _inputLayer._stride; j++)
                     {
                         memcpy(pDstWeight, pSrcWeight, lstride * sizeof(NNFloat));
-                        pSrcWeight     += lstride;
-                        pDstWeight     += _outputLayer._stride;
-                    }                          
-                    pWeight            += lstride;
+                        pSrcWeight += lstride;
+                        pDstWeight += _outputLayer._stride;
+                    }
+
+                    pWeight += lstride;
                 }
             }
             else
             {
+                /**
+                 * Copy the weight data from the worker processes to the master process using CUDA memory copy.
+                 *
+                 * @param pWeight Pointer to the destination memory.
+                 * @param _vWeight.data() Pointer to the source weight data.
+                 * @param _outputLayer._stride * _inputLayer._localStride * sizeof(NNFloat) The size of the data to copy.
+                 * @param cudaMemcpyDefault The type of memory copy operation.
+                 */
                 cudaMemcpy(pWeight, _vWeight.data(), _outputLayer._stride * _inputLayer._localStride * sizeof(NNFloat), cudaMemcpyDefault);
-                pWeight                += _outputLayer._stride * _inputLayer._localStride;
+
+                /**
+                 * Increment the destination pointer to the next memory location.
+                 *
+                 * @param pWeight Pointer to the destination memory.
+                 * @param _outputLayer._stride * _inputLayer._localStride The increment value.
+                 */
+                pWeight += _outputLayer._stride * _inputLayer._localStride;
+
+                /**
+                 * Receive weight data from worker processes and copy it to the master process.
+                 */
                 for (uint32_t i = 1; i < getGpu()._numprocs; i++)
                 {
                     uint64_t size;
-                    MPI_Status status;                
+                    MPI_Status status;
+
+                    /**
+                     * Receive the size of the weight data from the worker process.
+                     *
+                     * @param &size Reference to the variable that will store the size of the weight data.
+                     * @param 1 The number of elements to receive.
+                     * @param MPI_UINT64_T The data type of the size.
+                     * @param i The rank of the source process (worker process).
+                     * @param 0 The message tag.
+                     * @param MPI_COMM_WORLD The communicator.
+                     * @param &status Reference to the MPI_Status object that will contain the status of the receive operation.
+                     */
                     MPI_Recv(&size, 1, MPI_UINT64_T, i, 0, MPI_COMM_WORLD, &status);
+
+                    /**
+                     * Receive the weight data from the worker process and copy it to the master process.
+                     *
+                     * @param pWeight Pointer to the destination memory.
+                     * @param size The size of the weight data to receive.
+                     * @param MPI_FLOAT The data type of the weight data.
+                     * @param i The rank of the source process (worker process).
+                     * @param 0 The message tag.
+                     * @param MPI_COMM_WORLD The communicator.
+                     * @param &status Reference to the MPI_Status object that will contain the status of the receive operation.
+                     */
                     MPI_Recv(pWeight, size, MPI_FLOAT, i, 0, MPI_COMM_WORLD, &status);
-                    pWeight            += size;
-                }                        
+
+                    /**
+                     * Increment the destination pointer to the next memory location.
+                     *
+                     * @param pWeight Pointer to the destination memory.
+                     * @param size The increment value.
+                     */
+                    pWeight += size;
+                }
             }
         }              
         else
         {
-            uint64_t size               = _vWeight.size();
+            /**
+             * Get the size of the weight data.
+             *
+             * @param size The size of the weight data.
+             */
+            uint64_t size = _vWeight.size();
+
+            /**
+             * Send the size of the weight data to the master process.
+             *
+             * @param &size Reference to the size of the weight data.
+             * @param 1 The number of elements to send.
+             * @param MPI_UINT64_T The data type of the size.
+             * @param 0 The rank of the destination process (master process).
+             * @param 0 The message tag.
+             * @param MPI_COMM_WORLD The communicator.
+             */
             MPI_Send(&size, 1, MPI_UINT64_T, 0, 0, MPI_COMM_WORLD);
-            MPI_Send(_vWeight.data(), size, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);                  
+
+            /**
+             * Send the weight data to the master process.
+             *
+             * @param _vWeight.data() Pointer to the weight data.
+             * @param size The size of the weight data.
+             * @param MPI_FLOAT The data type of the weight data.
+             * @param 0 The rank of the destination process (master process).
+             * @param 0 The message tag.
+             * @param MPI_COMM_WORLD The communicator.
+             */
+            MPI_Send(_vWeight.data(), size, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
         }
 
     }
 
+    /**
+     * Check if the current GPU ID is 0.
+     */
     if (getGpu()._id == 0)
     {
-        FILE* fp                        = fopen(fname.c_str(), "w");
-        NNFloat* pData                  = vWeight.data();
+        /**
+         * Open the file in write mode.
+         *
+         * @param fname The filename to open.
+         * @param "w" The mode to open the file in (write mode).
+         * @return A pointer to the opened file.
+         */
+        FILE* fp = fopen(fname.c_str(), "w");
+
+        /**
+         * Get a pointer to the weight data.
+         *
+         * @param pData Pointer to the weight data.
+         */
+        NNFloat* pData = vWeight.data();
+
+        /**
+         * Write the weight data to the file.
+         *
+         * @param fp Pointer to the file to write to.
+         * @param "%12.9f " The format specifier for writing a float value.
+         */
         for (int i = 0; i < _inputLayer._stride; i++)
         {
             for (int j = 0; j < _outputLayer._stride; j++)
@@ -2475,6 +2599,12 @@ void Weight::Dump(string fname, NNFloat* pBuffer)
             }
             fprintf(fp, "\n");
         }
+
+        /**
+         * Close the file.
+         *
+         * @param fp Pointer to the file to close.
+         */
         fclose(fp);
     }
 }
