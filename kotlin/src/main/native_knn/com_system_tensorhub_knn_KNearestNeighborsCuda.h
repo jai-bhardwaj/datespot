@@ -1,7 +1,7 @@
 #include <jni.h>
 
-#ifndef _Included_com_system_eduwise_knn_KNearestNeighborsCuda
-#define _Included_com_system_eduwise_knn_KNearestNeighborsCuda
+#ifndef _Included_com_system_tensorhub_knn_KNearestNeighborsCuda
+#define _Included_com_system_tensorhub_knn_KNearestNeighborsCuda
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -9,20 +9,20 @@ extern "C" {
 /**
  * @brief Constant representing the value of a null pointer.
  */
-#undef com_system_eduwise_knn_KNearestNeighborsCuda_NULLPTR
-#define com_system_eduwise_knn_KNearestNeighborsCuda_NULLPTR 0LL
+#undef com_system_tensorhub_knn_KNearestNeighborsCuda_NULLPTR
+#define com_system_tensorhub_knn_KNearestNeighborsCuda_NULLPTR 0LL
 
 /**
  * @brief Constant representing the default delimiter for key-value pairs in the input data.
  */
-#undef com_system_eduwise_knn_KNearestNeighborsCuda_DEFAULT_KEYVAL_DELIM
-#define com_system_eduwise_knn_KNearestNeighborsCuda_DEFAULT_KEYVAL_DELIM 9L
+#undef com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_KEYVAL_DELIM
+#define com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_KEYVAL_DELIM 9L
 
 /**
  * @brief Constant representing the default delimiter for vector elements in the input data.
  */
-#undef com_system_eduwise_knn_KNearestNeighborsCuda_DEFAULT_VEC_DELIM
-#define com_system_eduwise_knn_KNearestNeighborsCuda_DEFAULT_VEC_DELIM 32L
+#undef com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_VEC_DELIM
+#define com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_VEC_DELIM 32L
 
 /**
  * @brief JNI function to initialize the KNearestNeighborsCuda instance.
@@ -35,7 +35,7 @@ extern "C" {
  * @param num_threads Number of threads to be used in the computation.
  * @return Handle to the KNearestNeighborsCuda instance.
  */
-JNIEXPORT jlong JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_initialize
+JNIEXPORT jlong JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_initialize
   (JNIEnv *env, jclass clazz, jint rows, jint cols, jint k, jint num_threads);
 
 /**
@@ -49,7 +49,7 @@ JNIEXPORT jlong JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_initia
  * @param vec_delim Delimiter for vector elements in the input data.
  * @param handle Handle to the KNearestNeighborsCuda instance.
  */
-JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_load
+JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_load
   (JNIEnv *env, jclass clazz, jobjectArray data, jintArray labels, jchar keyval_delim, jchar vec_delim, jlong handle);
 
 /**
@@ -59,7 +59,7 @@ JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_load
  * @param clazz Reference to the calling class.
  * @param handle Handle to the KNearestNeighborsCuda instance.
  */
-JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_shutdown
+JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_shutdown
   (JNIEnv *env, jclass clazz, jlong handle);
 
 /**
@@ -75,7 +75,7 @@ JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_shutdow
  * @param labels Array to store the labels of the nearest neighbors.
  * @param handle Handle to the KNearestNeighborsCuda instance.
  */
-JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J
+JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J
   (JNIEnv *env, jclass clazz, jint k, jfloatArray query_vec, jint query_len, jint num_results, jfloatArray distances, jobjectArray labels, jlong handle);
 
 /**
@@ -90,7 +90,7 @@ JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_findKnn
  * @param handle Handle to the KNearestNeighborsCuda instance.
  * @return KnnResult object holding the results of the nearest neighbor search.
  */
-JNIEXPORT jobject JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_findKnn__I_3FIIJ
+JNIEXPORT jobject JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FIIJ
   (JNIEnv *env, jclass clazz, jint k, jfloatArray query_vec, jint query_len, jint num_results, jlong handle);
 
 #ifdef __cplusplus
