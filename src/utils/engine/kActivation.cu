@@ -1,6 +1,8 @@
 #include "GpuTypes.h"
 #include "Types.h"
 #include <limits>
+#include <algorithm>
+#include <math.h>
 
 static __constant__ GpuData cData;
 
@@ -40,8 +42,6 @@ void GetKActivationGpuData()
     cudaError_t status = cudaMemcpyFromSymbol(getGpu()._data, cData, sizeof(GpuData));
     cudaCheckError();
 }
-
-#include <math.h>
 
 /**
  * @brief CUDA kernel for calculating the sigmoid activation function.
@@ -105,8 +105,6 @@ void kCalculateTanhActivation(NNFloat* pData, size_t size)
     kCalculateTanhActivation_kernel<<<blocks, threadsPerBlock>>>(pData, size);
     cudaCheckError();
 }
-
-#include <algorithm>
 
 /**
  * @brief CUDA kernel for calculating the rectified linear unit (ReLU) activation function.
