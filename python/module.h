@@ -18,10 +18,10 @@ using std::map;
 using std::string;
 
 static std::unordered_map<std::string_view, Mode> stringToIntModeMap = {
-    {"Prediction",  Mode::Prediction},  ///< Mapping from "Prediction" to Mode::Prediction.
-    {"Training",    Mode::Training},    ///< Mapping from "Training" to Mode::Training.
-    {"Validation",  Mode::Validation},  ///< Mapping from "Validation" to Mode::Validation.
-    {"Unspecified", Mode::Unspecified} ///< Mapping from "Unspecified" to Mode::Unspecified.
+    {"Prediction",  Mode::Prediction}, // Mapping from "Prediction" to Mode::Prediction.
+    {"Training",    Mode::Training},   // Mapping from "Training" to Mode::Training.
+    {"Validation",  Mode::Validation}, // Mapping from "Validation" to Mode::Validation.
+    {"Unspecified", Mode::Unspecified} // Mapping from "Unspecified" to Mode::Unspecified.
 };
 
 /**
@@ -30,10 +30,10 @@ static std::unordered_map<std::string_view, Mode> stringToIntModeMap = {
 using StringToIntModeMap = std::unordered_map<std::string_view, Mode>;
 
 static std::unordered_map<Mode, std::string_view> intToStringModeMap = {
-    {Mode::Prediction,  "Prediction"},  ///< Mapping from Mode::Prediction to "Prediction".
-    {Mode::Training,    "Training"},    ///< Mapping from Mode::Training to "Training".
-    {Mode::Validation,  "Validation"},  ///< Mapping from Mode::Validation to "Validation".
-    {Mode::Unspecified, "Unspecified"} ///< Mapping from Mode::Unspecified to "Unspecified".
+    {Mode::Prediction,  "Prediction"}, // Mapping from Mode::Prediction to "Prediction".
+    {Mode::Training,    "Training"},   // Mapping from Mode::Training to "Training".
+    {Mode::Validation,  "Validation"}, // Mapping from Mode::Validation to "Validation".
+    {Mode::Unspecified, "Unspecified"} // Mapping from Mode::Unspecified to "Unspecified".
 };
 
 /**
@@ -42,13 +42,13 @@ static std::unordered_map<Mode, std::string_view> intToStringModeMap = {
 using IntToStringModeMap = std::unordered_map<Mode, std::string_view>;
 
 static std::unordered_map<std::string_view, TrainingMode> stringToIntTrainingModeMap = {
-    {"SGD",      TrainingMode::SGD},      ///< Mapping from "SGD" to TrainingMode::SGD.
-    {"Momentum", TrainingMode::Momentum}, ///< Mapping from "Momentum" to TrainingMode::Momentum.
-    {"AdaGrad",  TrainingMode::AdaGrad},  ///< Mapping from "AdaGrad" to TrainingMode::AdaGrad.
-    {"Nesterov", TrainingMode::Nesterov}, ///< Mapping from "Nesterov" to TrainingMode::Nesterov.
-    {"RMSProp",  TrainingMode::RMSProp},  ///< Mapping from "RMSProp" to TrainingMode::RMSProp.
-    {"AdaDelta", TrainingMode::AdaDelta}, ///< Mapping from "AdaDelta" to TrainingMode::AdaDelta.
-    {"Adam",     TrainingMode::Adam}      ///< Mapping from "Adam" to TrainingMode::Adam.
+    {"SGD",      TrainingMode::SGD},      // Mapping from "SGD" to TrainingMode::SGD.
+    {"Momentum", TrainingMode::Momentum}, // Mapping from "Momentum" to TrainingMode::Momentum.
+    {"AdaGrad",  TrainingMode::AdaGrad},  // Mapping from "AdaGrad" to TrainingMode::AdaGrad.
+    {"Nesterov", TrainingMode::Nesterov}, // Mapping from "Nesterov" to TrainingMode::Nesterov.
+    {"RMSProp",  TrainingMode::RMSProp},  // Mapping from "RMSProp" to TrainingMode::RMSProp.
+    {"AdaDelta", TrainingMode::AdaDelta}, // Mapping from "AdaDelta" to TrainingMode::AdaDelta.
+    {"Adam",     TrainingMode::Adam}      // Mapping from "Adam" to TrainingMode::Adam.
 };
 
 /**
@@ -57,13 +57,13 @@ static std::unordered_map<std::string_view, TrainingMode> stringToIntTrainingMod
 using StringToIntTrainingModeMap = std::unordered_map<std::string_view, TrainingMode>;
 
 static std::unordered_map<TrainingMode, std::string_view> intToStringTrainingModeMap = {
-    {TrainingMode::SGD,      "SGD"},      ///< Mapping from TrainingMode::SGD to "SGD".
-    {TrainingMode::Momentum, "Momentum"}, ///< Mapping from TrainingMode::Momentum to "Momentum".
-    {TrainingMode::AdaGrad,  "AdaGrad"},  ///< Mapping from TrainingMode::AdaGrad to "AdaGrad".
-    {TrainingMode::Nesterov, "Nesterov"}, ///< Mapping from TrainingMode::Nesterov to "Nesterov".
-    {TrainingMode::RMSProp,  "RMSProp"},  ///< Mapping from TrainingMode::RMSProp to "RMSProp".
-    {TrainingMode::AdaDelta, "AdaDelta"}, ///< Mapping from TrainingMode::AdaDelta to "AdaDelta".
-    {TrainingMode::Adam,     "Adam"}      ///< Mapping from TrainingMode::Adam to "Adam".
+    {TrainingMode::SGD,      "SGD"},      // Mapping from TrainingMode::SGD to "SGD".
+    {TrainingMode::Momentum, "Momentum"}, // Mapping from TrainingMode::Momentum to "Momentum".
+    {TrainingMode::AdaGrad,  "AdaGrad"},  // Mapping from TrainingMode::AdaGrad to "AdaGrad".
+    {TrainingMode::Nesterov, "Nesterov"}, // Mapping from TrainingMode::Nesterov to "Nesterov".
+    {TrainingMode::RMSProp,  "RMSProp"},  // Mapping from TrainingMode::RMSProp to "RMSProp".
+    {TrainingMode::AdaDelta, "AdaDelta"}, // Mapping from TrainingMode::AdaDelta to "AdaDelta".
+    {TrainingMode::Adam,     "Adam"}      // Mapping from TrainingMode::Adam to "Adam".
 };
 
 /**
