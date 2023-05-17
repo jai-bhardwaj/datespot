@@ -32,7 +32,7 @@ class KNearestNeighborsCuda implements Closeable {
     /**
      * Name of the native library.
      */
-    private final String LIBNAME = "eduwise_knn_java";
+    private final String LIBNAME = "tensorhub_knn_java";
     /**
      * Default key-value delimiter character.
      */
