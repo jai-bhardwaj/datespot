@@ -5940,3 +5940,638 @@ __shared__ volatile NNFloat sValue[160 * 4];
         }
     }
 }
+/**
+ * @brief Calculates the output using CUDA.
+ *
+ * This function calculates the output key-value pairs using CUDA by launching the corresponding kernel.
+ *
+ * @param pOutputKey Pointer to the output key array.
+ * @param pOutputValue Pointer to the output value array.
+ * @param pKey Pointer to the input key array.
+ * @param pValue Pointer to the input value array.
+ * @param batch Number of elements in the batch.
+ * @param width Width of the data.
+ * @param k The value of k.
+ */
+void kCalculateOutput(NNFloat* pOutputKey, NNFloat* pOutputValue, NNFloat* pKey, NNFloat* pValue, uint32_t batch, uint32_t width, uint32_t k)
+{
+    uint32_t blocks = (batch + 3) / 4;
+    if (batch % 4 != 0)
+        blocks++;
+
+    kCalculateOutput_kernel<<<blocks, 256>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
+
+    cudaError_t cudaError = cudaGetLastError();
+    if (cudaError != cudaSuccess) {
+        printf("CUDA kernel launch error: %s\n", cudaGetErrorString(cudaError));
+        exit(EXIT_FAILURE);
+    }
+}
+/**
+ * @brief Kernel function to calculate output values and sort them using bitonic sort.
+ *
+ * @param pOutputKey Pointer to the output key array.
+ * @param pOutputValue Pointer to the output value array.
+ * @param pKeyBuffer Pointer to the key buffer array.
+ * @param pValueBuffer Pointer to the value buffer array.
+ * @param batch Number of batches.
+ * @param width Width of the arrays.
+ * @param k Value of k.
+ */
+__global__ void
+LAUNCH_BOUNDS()
+kCalculateOutput_kernel(NNFloat* pOutputKey, uint32_t* pOutputValue, NNFloat* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+    __shared__ volatile NNFloat sKey[160 * 4];
+    __shared__ volatile uint32_t sValue[160 * 4];
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;        
+    
+    if (pos < batch)
+    {
+        pOutputKey += pos * width;
+        pOutputValue += pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        volatile NNFloat* psKey = &sKey[160 * offset];
+        volatile uint32_t* psValue = &sValue[160 * offset];
+
+        NNFloat k0 = -MAX_VALUE;
+        NNFloat k1 = -MAX_VALUE;
+        NNFloat k2 = -MAX_VALUE;
+        NNFloat k3 = -MAX_VALUE;
+        NNFloat k4 = -MAX_VALUE;
+        NNFloat k5 = -MAX_VALUE;
+        NNFloat k6 = -MAX_VALUE;
+        NNFloat k7 = -MAX_VALUE;
+        uint32_t v0 = 0;
+        uint32_t v1 = 0;
+        uint32_t v2 = 0;
+        uint32_t v3 = 0;
+        uint32_t v4 = 0;
+        uint32_t v5 = 0;
+        uint32_t v6 = 0;
+        uint32_t v7 = 0;
+
+        uint32_t wpos = tgx;
+        if (wpos < width)
+        {
+            k0 = pOutputKey[wpos];
+            v0 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k1 = pOutputKey[wpos];
+            v1 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k2 = pOutputKey[wpos];
+            v2 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k3 = pOutputKey[wpos];
+            v3 = pOutputValue[wpos];
+        }
+     
+        NNFloat minValue = -MAX_VALUE;
+        uint32_t rpos = 128;
+        uint32_t bufferSize = 0;
+        NNFloat key1, key2;
+        uint32_t value1, value2;
+        uint32_t otgx;
+        bool flag;
+        while (rpos < width)
+        {
+            unsigned wpos = rpos + tgx;
+            NNFloat key = -MAX_VALUE;
+            NNFloat value = 0.0f;
+            if (wpos < width)
+            {
+                key = pOutputKey[wpos];
+                value = pOutputValue[wpos];              
+            }
+            
+            uint32_t count = BALLOT(key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask);
+                offset += bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 128)
+            {
+                k4 = psKey[tgx];
+                v4 = psValue[tgx];
+                k5 = psKey[tgx + cData._warpSize];
+                v5 = psValue[tgx + cData._warpSize];
+                k6 = psKey[tgx + 2 * cData._warpSize];
+                v6 = psValue[tgx + 2 * cData._warpSize];
+                k7 = psKey[tgx + 3 * cData._warpSize];
+                v7 = psValue[tgx + 3 * cData._warpSize];
+                bool flag;
+                BITONICSORT256_256();
+
+                bufferSize -= 128;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 128];
+                    psValue[tgx] = psValue[tgx + 128];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if ((bufferSize > 0) || (width <= 128))
+        {
+            k4 = -MAX_VALUE;
+            k5 = -MAX_VALUE;
+            k6 = -MAX_VALUE;
+            k7 = -MAX_VALUE;
+            v4 = 0;
+            v5 = 0;
+            v6 = 0;
+            v7 = 0;
+
+            if (tgx < bufferSize)
+            {
+                k4 = psKey[tgx];
+                v4 = psValue[tgx];
+            }
+            if (tgx + cData._warpSize < bufferSize)
+            {
+                k5 = psKey[tgx + cData._warpSize];
+                v5 = psValue[tgx + cData._warpSize];
+            }
+            if (tgx + 2 * cData._warpSize < bufferSize)
+            {
+                k6 = psKey[tgx + 2 * cData._warpSize];
+                v6 = psValue[tgx + 2 * cData._warpSize];
+            }
+            if (tgx + 3 * cData._warpSize < bufferSize)
+            {
+                k7 = psKey[tgx + 3 * cData._warpSize];
+                v7 = psValue[tgx + 3 * cData._warpSize];
+            }
+
+            BITONICSORT256_256();
+        }
+
+        NNFloat* pKey = pKeyBuffer + pos * k;
+        uint32_t* pValue = pValueBuffer + pos * k;                
+        wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = k0;
+            pValue[wpos] = v0;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k1;
+            pValue[wpos] = v1;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k2;
+            pValue[wpos] = v2;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k3;
+            pValue[wpos] = v3;
+        }
+    }
+}
+
+/**
+ * @brief Calculates the output values and corresponding keys using a specified kernel.
+ *
+ * This function calculates the output values and corresponding keys by invoking the `kCalculateOutput_kernel` kernel
+ * on the GPU. It uses CUDA to launch the kernel and synchronizes the device after the kernel execution.
+ *
+ * @param pOutputKey Pointer to the array that will store the output keys.
+ * @param pOutputValue Pointer to the array that will store the output values.
+ * @param pKey Pointer to the input keys.
+ * @param pValue Pointer to the input values.
+ * @param batch The number of elements in the batch.
+ * @param width The width of the input arrays.
+ * @param k The value of k used in the calculation.
+ */
+void kCalculateOutput(NNFloat* pOutputKey, uint32_t* pOutputValue, NNFloat* pKey, uint32_t* pValue, uint32_t batch, uint32_t width, uint32_t k)
+{
+    uint32_t threads = 128;
+    uint32_t blocks = (batch + threads - 1) / threads;
+    
+    kCalculateOutput_kernel<<<blocks, threads>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
+    cudaDeviceSynchronize();
+    LAUNCHERROR("kCalculateOutput_kernel");
+}
+/**
+ * @brief Normalize weights based on a given norm.
+ *
+ * @param norm The norm to compare against.
+ * @param outputStride The stride value for the output.
+ * @param inputStride The stride value for the input.
+ * @param pWeight Pointer to the weights.
+ */
+__global__ void kNormalizeWeights_kernel(NNFloat norm, uint32_t outputStride, uint32_t inputStride, NNFloat* pWeight)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < outputStride)
+    {
+        NNFloat r2 = 0.0f;
+        NNFloat* pEnd = pWeight + outputStride * inputStride; 
+        pWeight += pos;
+        NNFloat* p = pWeight;
+        
+        while (p < pEnd)
+        {
+            NNFloat x = *p;
+            r2 += x * x;
+            p += outputStride;
+        } 
+        
+        if (r2 > norm * norm)
+        {
+            norm *= rsqrtf(r2);
+            p = pWeight;
+            while (p < pEnd)
+            {
+                *p *= norm;
+                p += outputStride;
+            }             
+        }
+    }
+}
+/**
+ * @brief Normalize weights based on a given norm.
+ *
+ * @param norm The norm to compare against.
+ * @param outputStride The stride value for the output.
+ * @param inputStride The stride value for the input.
+ * @param pWeight Pointer to the weights.
+ */
+void kNormalizeWeights(NNFloat norm, uint32_t outputStride, uint32_t inputStride, NNFloat* pWeight)
+{
+    uint32_t threadsPerBlock = 128;
+    uint32_t blocks = (outputStride + threadsPerBlock - 1) / threadsPerBlock;
+    kNormalizeWeights_kernel<<<blocks, threadsPerBlock>>>(norm, outputStride, inputStride, pWeight);
+    cudaDeviceSynchronize();
+    cudaError_t cudaStatus = cudaGetLastError();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "kNormalizeWeights_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+    }
+}
+/**
+ * @brief Calculate weight magnitudes for each output position.
+ *
+ * @param outputStride The stride value for the output.
+ * @param inputStride The stride value for the input.
+ * @param pWeight Pointer to the weights.
+ * @param pMagnitude Pointer to store the computed magnitudes.
+ */
+__global__ void kCalculateWeightMagnitudes_kernel(uint32_t outputStride, uint32_t inputStride, NNFloat* pWeight, NNFloat* pMagnitude)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < outputStride)
+    {
+        NNFloat r2 = 0.0f;
+        NNFloat* pEnd = pWeight + outputStride * inputStride;
+        pWeight += pos;
+        NNFloat* p = pWeight;
+
+        while (p < pEnd)
+        {
+            NNFloat x = *p;
+            r2 += x * x;
+            p += outputStride;
+        }
+
+        pMagnitude[pos] = r2;
+    }
+}
+/**
+ * @brief Calculate weight magnitudes for each output position.
+ *
+ * @param outputStride The stride value for the output.
+ * @param inputStride The stride value for the input.
+ * @param pWeight Pointer to the weights.
+ * @param pMagnitude Pointer to store the computed magnitudes.
+ */
+void kCalculateWeightMagnitudes(uint32_t outputStride, uint32_t inputStride, NNFloat* pWeight, NNFloat* pMagnitude)
+{
+    uint32_t threadsPerBlock = 128;
+    uint32_t blocks = (outputStride + threadsPerBlock - 1) / threadsPerBlock;
+    kCalculateWeightMagnitudes_kernel<<<blocks, threadsPerBlock>>>(outputStride, inputStride, pWeight, pMagnitude);
+    cudaDeviceSynchronize();
+    cudaError_t cudaStatus = cudaGetLastError();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "kCalculateWeightMagnitudes_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+    }
+}
+/**
+ * @brief Normalize weights based on weight magnitudes and a given norm.
+ *
+ * @param norm The norm to compare against.
+ * @param outputStride The stride value for the output.
+ * @param inputStride The stride value for the input.
+ * @param pWeight Pointer to the weights.
+ * @param pMagnitude Pointer to the weight magnitudes.
+ */
+__global__ void kNormalizeWeightMagnitudes_kernel(NNFloat norm, uint32_t outputStride, uint32_t inputStride, NNFloat* pWeight, NNFloat* pMagnitude)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < outputStride)
+    {
+        NNFloat r2 = pMagnitude[pos];
+        NNFloat* pEnd = pWeight + outputStride * inputStride;
+        pWeight += pos;
+        NNFloat* p = pWeight;
+
+        if (r2 > norm * norm)
+        {
+            norm *= rsqrtf(r2);
+            p = pWeight;
+            while (p < pEnd)
+            {
+                *p *= norm;
+                p += outputStride;
+            }
+        }
+    }
+}
+/**
+ * @brief Normalize weights based on weight magnitudes and a given norm.
+ *
+ * @param norm The norm to compare against.
+ * @param outputStride The stride value for the output.
+ * @param inputStride The stride value for the input.
+ * @param pWeight Pointer to the weights.
+ * @param pMagnitude Pointer to the weight magnitudes.
+ */
+void kNormalizeWeightMagnitudes(NNFloat norm, uint32_t outputStride, uint32_t inputStride, NNFloat* pWeight, NNFloat* pMagnitude)
+{
+    uint32_t threadsPerBlock = 128;
+    uint32_t blocks = (outputStride + threadsPerBlock - 1) / threadsPerBlock;
+    kNormalizeWeightMagnitudes_kernel<<<blocks, threadsPerBlock>>>(norm, outputStride, inputStride, pWeight, pMagnitude);
+    cudaDeviceSynchronize();
+    cudaError_t cudaStatus = cudaGetLastError();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "kNormalizeWeightMagnitudes_kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+    }
+}
+/**
+ * @brief CUDA kernel to apply scaled biased dropout to an array of units.
+ *
+ * @param pUnit    Pointer to the array of units.
+ * @param pRandom  Pointer to the array of random values.
+ * @param p        Probability of dropout.
+ * @param target   Target value for units that are not dropped.
+ * @param a        Scaling factor for units that are not dropped.
+ * @param b        Bias term for units that are not dropped.
+ * @param size     Size of the arrays.
+ */
+__global__ void kCalculateScaledBiasedDropout_kernel(NNFloat* pUnit, NNFloat* pRandom, NNFloat p, NNFloat target, NNFloat a, NNFloat b, size_t size)
+{
+    size_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        NNFloat r = pRandom[pos];
+        pUnit[pos] = (r < p) ? target : a * pUnit[pos] + b;
+    }
+}
+/**
+ * @brief Applies scaled biased dropout to an array of units using CUDA.
+ *
+ * @param pUnit    Pointer to the array of units.
+ * @param pRandom  Pointer to the array of random values.
+ * @param batch    Number of batches.
+ * @param stride   Stride between batches.
+ * @param p        Probability of dropout.
+ * @param target   Target value for units that are not dropped.
+ * @param a        Scaling factor for units that are not dropped.
+ * @param b        Bias term for units that are not dropped.
+ */
+void kCalculateScaledBiasedDropout(NNFloat* pUnit, NNFloat* pRandom, uint32_t batch, uint32_t stride, NNFloat p, NNFloat target, NNFloat a, NNFloat b)
+{
+    curandGenerateUniform(getGpu()._RNG, pRandom, batch * stride);
+
+    dim3 blockSize(getGpu()._threadsPerBlock);
+    dim3 gridSize(CalculateBlocks(batch * stride));
+
+    kCalculateScaledBiasedDropout_kernel<<<gridSize, blockSize>>>(pUnit, pRandom, p, target, a, b, batch * stride);
+
+    LAUNCHERROR("kCalculateScaledBiasedDropout_kernel");
+}
+/**
+ * @brief CUDA kernel to apply dropout to an array of units.
+ *
+ * @param pUnit    Pointer to the array of units.
+ * @param pRandom  Pointer to the array of random values.
+ * @param p        Probability of dropout.
+ * @param scale    Scaling factor for units that are not dropped.
+ * @param target   Target value for units that are not dropped.
+ * @param size     Size of the arrays.
+ */
+__global__ void kCalculateDropout_kernel(NNFloat* pUnit, NNFloat* pRandom, NNFloat p, NNFloat scale, NNFloat target, size_t size)
+{
+    size_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        NNFloat r = pRandom[pos];
+        pUnit[pos] = (r < p) ? target : scale * pUnit[pos];
+    }
+}
+
+/**
+ * @brief Applies dropout to an array of units using CUDA.
+ *
+ * @param pUnit    Pointer to the array of units.
+ * @param pRandom  Pointer to the array of random values.
+ * @param batch    Number of batches.
+ * @param stride   Stride between batches.
+ * @param p        Probability of dropout.
+ * @param target   Target value for units that are not dropped.
+ */
+void kCalculateDropout(NNFloat* pUnit, NNFloat* pRandom, uint32_t batch, uint32_t stride, NNFloat p, NNFloat target)
+{
+    curandGenerateUniform(getGpu()._RNG, pRandom, batch * stride);
+
+    dim3 blockSize(getGpu()._threadsPerBlock);
+    dim3 gridSize(CalculateBlocks(batch * stride));
+
+    NNFloat scale = (target == 0.0) ? 1.0 / (1.0 - p) : 1.0;
+
+    kCalculateDropout_kernel<<<gridSize, blockSize>>>(pUnit, pRandom, p, scale, target, batch * stride);
+
+    LAUNCHERROR("kCalculateDropout_kernel");
+}
+/**
+ * @brief CUDA kernel to compute the element-wise maximum between two arrays.
+ *
+ * @param pSrc   Pointer to the source array.
+ * @param size   Size of the arrays.
+ * @param pDst   Pointer to the destination array.
+ */
+__global__ void kCalculateMaxout_kernel(NNFloat* pSrc, size_t size, NNFloat* pDst)
+{
+    size_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        NNFloat s = pSrc[pos];
+        NNFloat d = pDst[pos];
+        if (s > d)
+            pDst[pos] = s;
+    }
+}
+/**
+ * @brief Applies the maxout operation to an array using CUDA.
+ *
+ * @param pSrc  Pointer to the source array.
+ * @param size  Size of the arrays.
+ * @param pDst  Pointer to the destination array.
+ */
+void kCalculateMaxout(NNFloat* pSrc, size_t size, NNFloat* pDst)
+{
+    dim3 blockSize(getGpu()._threadsPerBlock);
+    dim3 gridSize(CalculateBlocks(size));
+
+    kCalculateMaxout_kernel<<<gridSize, blockSize>>>(pSrc, size, pDst);
+
+    LAUNCHERROR("kCalculateMaxout_kernel");
+}
+/**
+ * @brief CUDA kernel to compute the cosine similarity between two vectors.
+ *
+ * @param pVector1    Pointer to the first vector.
+ * @param pVector2    Pointer to the second vector.
+ * @param stride      Stride between elements in the vectors.
+ * @param pDPOut      Pointer to the output cosine similarity.
+ * @param pAOut       Pointer to the output magnitude of the first vector.
+ * @param pBOut       Pointer to the output magnitude of the second vector.
+ * @param outStride   Stride between elements in the output arrays.
+ */
+__global__ void 
+LAUNCH_BOUNDS()
+kCalculateCosine_kernel(NNFloat* pVector1, NNFloat* pVector2, uint32_t stride, NNFloat* pDPOut, NNFloat* pAOut, NNFloat* pBOut, uint32_t outStride)
+{
+__shared__ NNFloat sDP[64];
+__shared__ NNFloat sA[64];
+__shared__ NNFloat sB[64];
+
+
+    pVector1 += blockIdx.x * stride + threadIdx.x;
+    pVector2 += blockIdx.x * stride + threadIdx.x;
+    pDPOut += blockIdx.x * outStride;
+    pAOut += blockIdx.x * outStride;
+    pBOut += blockIdx.x * outStride;    
+    uint32_t pos = threadIdx.x;
+    NNFloat dp = (NNFloat)0;
+    NNFloat al = (NNFloat)0;
+    NNFloat bl = (NNFloat)0;
+    
+    while (pos < stride)
+    {
+        NNFloat a = *pVector1;
+        NNFloat b = *pVector2;
+        dp += a * b;
+        al += a * a;
+        bl += b * b;
+        pVector1 += blockDim.x;
+        pVector2 += blockDim.x;
+        pos += blockDim.x;
+    }
+    
+    
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+    dp += SHFL(dp, tgx ^ 1);
+    al += SHFL(al, tgx ^ 1);
+    bl += SHFL(bl, tgx ^ 1);
+    dp += SHFL(dp, tgx ^ 2);
+    al += SHFL(al, tgx ^ 2);
+    bl += SHFL(bl, tgx ^ 2);
+    dp += SHFL(dp, tgx ^ 4);
+    al += SHFL(al, tgx ^ 4);
+    bl += SHFL(bl, tgx ^ 4);
+    dp += SHFL(dp, tgx ^ 8);
+    al += SHFL(al, tgx ^ 8);
+    bl += SHFL(bl, tgx ^ 8);    
+    dp += SHFL(dp, tgx ^ 16); 
+    al += SHFL(al, tgx ^ 16);
+    bl += SHFL(bl, tgx ^ 16);
+    if (tgx == 0)           
+    {
+        uint32_t index = threadIdx.x >> cData._warpBits;
+        sDP[index] = dp;
+        sA[index] = al;
+        sB[index] = bl;
+    }
+    __syncthreads();
+    
+    if (threadIdx.x < cData._warpSize)
+    {
+        uint32_t limit = (blockDim.x + cData._warpSize -1) >> cData._warpBits;
+        al = (threadIdx.x < limit) ? sA[threadIdx.x]     : (NNFloat)0;      
+        bl = (threadIdx.x < limit) ? sB[threadIdx.x]     : (NNFloat)0; 
+        dp = (threadIdx.x < limit) ? sDP[threadIdx.x]    : (NNFloat)0;
+        dp += SHFL(dp, tgx ^ 1);
+        al += SHFL(al, tgx ^ 1);
+        bl += SHFL(bl, tgx ^ 1);
+        dp += SHFL(dp, tgx ^ 2);
+        al += SHFL(al, tgx ^ 2);
+        bl += SHFL(bl, tgx ^ 2);
+        dp += SHFL(dp, tgx ^ 4);
+        al += SHFL(al, tgx ^ 4);
+        bl += SHFL(bl, tgx ^ 4);
+        dp += SHFL(dp, tgx ^ 8);
+        al += SHFL(al, tgx ^ 8);
+        bl += SHFL(bl, tgx ^ 8);    
+        dp += SHFL(dp, tgx ^ 16); 
+        al += SHFL(al, tgx ^ 16);
+        bl += SHFL(bl, tgx ^ 16);        
+                         
+        
+        if (threadIdx.x == 0)
+        {
+            al = sqrt(al) + (NNFloat)1.0e-08;
+            bl = sqrt(bl) + (NNFloat)1.0e-08;
+            dp /= al * bl;
+            *pAOut = al;
+            *pBOut = bl;
+            *pDPOut = dp;
+        }
+    }
+}
+
+/**
+ * @brief Calculates the cosine similarity between two vectors using GPU acceleration.
+ *
+ * @param pVector1In Pointer to the input vector 1.
+ * @param pVector2In Pointer to the input vector 2.
+ * @param batch The number of batches.
+ * @param stride The stride between elements in the input vectors.
+ * @param pDPOut Pointer to the output dot product array.
+ * @param pAOut Pointer to the output vector A.
+ * @param pBOut Pointer to the output vector B.
+ * @param outStride The stride between elements in the output vectors.
+ */
+void kCalculateCosine(NNFloat* pVector1In, NNFloat* pVector2In, uint32_t batch, uint32_t stride,
+                      NNFloat* pDPOut, NNFloat* pAOut, NNFloat* pBOut, uint32_t outStride)
+{
+    unsigned long threads = max(32, min(stride, getGpu()._threadsPerBlock));
+
+    kCalculateCosine_kernel<<<batch, threads>>>(pVector1In, pVector2In, stride, pDPOut, pAOut, pBOut, outStride);
+
+    LAUNCHERROR("kCalculateCosine_kernel");    
+}
