@@ -4342,3 +4342,899 @@ void kSGDUpdateBiases(NNFloat alpha, uint32_t batch, uint32_t width, NNFloat* pD
     LAUNCH_BOUNDS_kSGDUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, batch, width, pDelta, pBias);
     LAUNCHERROR("kSGDUpdateBiases_kernel");
 }
+
+/**
+ * @brief CUDA kernel to update weights using momentum optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+__global__ void LAUNCH_BOUNDS_kMomentumUpdateWeights_kernel(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < size) {
+        NNFloat g = pWeightGradient[pos];
+        NNFloat w = pWeight[pos];
+        NNFloat v = pWeightVelocity[pos];
+        
+        v = mu * v + alpha * (g - lambda * w - lambda1 * sgn(w));
+        pWeightVelocity[pos] = v;
+        pWeight[pos] = w + v;
+    }
+}
+/**
+ * @brief Update weights using Momentum optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+void kMomentumUpdateWeights(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    uint32_t blocks = CalculateBlocks(size);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kMomentumUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, mu, size, pWeightVelocity, pWeightGradient, pWeight);
+    LAUNCHERROR("kMomentumUpdateWeights_kernel");
+}
+
+/**
+ * @brief CUDA kernel to update biases using Momentum optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param mu Momentum factor.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+__global__ void LAUNCH_BOUNDS_kMomentumUpdateBiases_kernel(NNFloat alpha, NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < width) {
+        NNFloat sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++) {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= static_cast<NNFloat>(batch);
+
+        NNFloat v = pBiasVelocity[pos];
+        v = mu * v - alpha * sum;
+        pBiasVelocity[pos] = v;
+        pBias[pos] += v;
+    }
+}
+/**
+ * @brief Update biases using Momentum optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param mu Momentum factor.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+void kMomentumUpdateBiases(NNFloat alpha, NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint32_t blocks = CalculateBlocks(width);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kMomentumUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, mu, batch, width, pDelta, pBiasVelocity, pBias);
+    LAUNCHERROR("kMomentumUpdateBiases_kernel");
+}
+/**
+ * @brief CUDA kernel to update weights using AdaGrad optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+__global__ void LAUNCH_BOUNDS_kAdaGradUpdateWeights_kernel(NNFloat alpha, NNFloat lambda, NNFloat lambda1, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < size) {
+        NNFloat g = pWeightGradient[pos];
+        NNFloat w = pWeight[pos];
+        NNFloat v = pWeightVelocity[pos];
+
+        g -= lambda * w + lambda1 * sgn(w);
+        v += g * g;
+        pWeightVelocity[pos] = v;
+        pWeight[pos] = w + alpha * g * rsqrtf(fmaxf(0.000000001f, v));
+    }
+}
+/**
+ * @brief Update weights using AdaGrad optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+void kAdaGradUpdateWeights(NNFloat alpha, NNFloat lambda, NNFloat lambda1, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    unsigned long blocks = CalculateBlocks(size);
+    unsigned long threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kAdaGradUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, size, pWeightVelocity, pWeightGradient, pWeight);
+    LAUNCHERROR("kAdaGradUpdateWeights_kernel");
+}
+/**
+ * @brief CUDA kernel to update biases using AdaGrad optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+__global__ void LAUNCH_BOUNDS_kAdaGradUpdateBiases_kernel(NNFloat alpha, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < width) {
+        NNFloat sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++) {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= static_cast<NNFloat>(batch);
+
+        NNFloat v = pBiasVelocity[pos];
+        v += sum * sum;
+        pBiasVelocity[pos] = v;
+        pBias[pos] -= alpha * sum * rsqrtf(fmaxf(0.000000001f, v));
+    }
+}
+/**
+ * @brief Update biases using AdaGrad optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+void kAdaGradUpdateBiases(NNFloat alpha, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint32_t blocks = CalculateBlocks(width);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kAdaGradUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, batch, width, pDelta, pBiasVelocity, pBias);
+    LAUNCHERROR("kAdaGradUpdateBiases_kernel");
+}
+/**
+ * @brief CUDA kernel to update weights using AdaDelta optimizer.
+ *
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param mu Decay rate for weight and gradient updates.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeightGradientVelocity Array of weight gradient velocities.
+ * @param pWeight Array of weights.
+ */
+__global__ void LAUNCH_BOUNDS_kAdaDeltaUpdateWeights_kernel(NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeightGradientVelocity, NNFloat* pWeight) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < size) {
+        NNFloat g = pWeightGradient[pos];
+        NNFloat w = pWeight[pos];
+        NNFloat v = pWeightVelocity[pos];
+        NNFloat vg = pWeightGradientVelocity[pos];
+
+        g -= lambda * w + lambda1 * sgn(w);
+        vg = mu * vg + ((NNFloat)1.0 - mu) * g * g;
+        NNFloat dw = sqrtf(fmaxf((NNFloat)0.000000001, v) / fmaxf((NNFloat)0.000000001, vg)) * g;
+        v = mu * v + ((NNFloat)1.0 - mu) * dw * dw;
+        pWeightVelocity[pos] = v;
+        pWeightGradientVelocity[pos] = vg;
+        pWeight[pos] = w + dw;
+    }
+}
+/**
+ * @brief Update weights using AdaDelta optimizer.
+ *
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param mu Decay rate for weight and gradient updates.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeightGradientVelocity Array of weight gradient velocities.
+ * @param pWeight Array of weights.
+ */
+void kAdaDeltaUpdateWeights(NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeightGradientVelocity, NNFloat* pWeight) {
+    unsigned long blocks = CalculateBlocks(size);
+    unsigned long threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kAdaDeltaUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(lambda, lambda1, mu, size, pWeightVelocity, pWeightGradient, pWeightGradientVelocity, pWeight);
+    LAUNCHERROR("kAdaDeltaUpdateWeights_kernel");
+}
+/**
+ * @brief CUDA kernel to update biases using AdaDelta optimizer.
+ *
+ * @param mu Decay rate for bias and gradient updates.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBiasGradientVelocity Array of bias gradient velocities.
+ * @param pBias Array of biases.
+ */
+__global__ void LAUNCH_BOUNDS_kAdaDeltaUpdateBiases_kernel(NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBiasGradientVelocity, NNFloat* pBias) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < width) {
+        NNFloat sum = (NNFloat)0.0;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++) {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= (NNFloat)batch;
+
+        NNFloat v = pBiasVelocity[pos];
+        NNFloat vg = pBiasGradientVelocity[pos];
+        vg = mu * vg + ((NNFloat)1.0 - mu) * sum * sum;
+        NNFloat dw = sqrtf(fmaxf((NNFloat)0.000000001, v) / fmaxf((NNFloat)0.000000001, vg)) * sum;
+        v = mu * v + ((NNFloat)1.0 - mu) * dw * dw;
+        pBiasVelocity[pos] = v;
+        pBiasGradientVelocity[pos] = vg;
+        pBias[pos] -= dw;
+    }
+}
+/**
+ * @brief Update biases using AdaDelta optimizer.
+ *
+ * @param mu Decay rate for bias and gradient updates.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBiasGradientVelocity Array of bias gradient velocities.
+ * @param pBias Array of biases.
+ */
+void kAdaDeltaUpdateBiases(NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBiasGradientVelocity, NNFloat* pBias) {
+    uint32_t blocks = CalculateBlocks(width);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kAdaDeltaUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(mu, batch, width, pDelta, pBiasVelocity, pBiasGradientVelocity, pBias);
+    LAUNCHERROR("kAdaDeltaUpdateBiases_kernel");
+}
+
+/**
+ * @brief CUDA kernel to update weights using Adam optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param beta1 Exponential decay rate for the first moment estimates.
+ * @param beta2 Exponential decay rate for the second moment estimates.
+ * @param t Time step.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeightGradientVelocity Array of weight gradient velocities.
+ * @param pWeight Array of weights.
+ */
+__global__ void LAUNCH_BOUNDS_kAdamUpdateWeights_kernel(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat beta1, NNFloat beta2, NNFloat t, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeightGradientVelocity, NNFloat* pWeight) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < size) {
+        NNFloat dw = pWeightGradient[pos];
+        NNFloat w = pWeight[pos];
+        NNFloat vdw = pWeightVelocity[pos];
+        NNFloat sdw = pWeightGradientVelocity[pos];
+        dw -= lambda * w + lambda1 * sgn(w);
+        vdw = beta1 * vdw + ((NNFloat)1.0 - beta1) * dw;
+        sdw = beta2 * sdw + ((NNFloat)1.0 - beta2) * dw * dw;
+        t += (NNFloat)1.0;
+        pWeightVelocity[pos] = vdw;
+        pWeightGradientVelocity[pos] = sdw;
+        vdw /= ((NNFloat)1.0 - powf(beta1, t));
+        sdw /= ((NNFloat)1.0 - powf(beta2, t));
+        dw = alpha * vdw / (sqrtf(sdw) + (NNFloat)1.0e-8);
+        pWeight[pos] = w + dw;
+    }
+}
+/**
+ * @brief Update weights using Adam optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param beta1 Exponential decay rate for the first moment estimates.
+ * @param beta2 Exponential decay rate for the second moment estimates.
+ * @param t Time step.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeightGradientVelocity Array of weight gradient velocities.
+ * @param pWeight Array of weights.
+ */
+void kAdamUpdateWeights(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat beta1, NNFloat beta2, NNFloat t, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeightGradientVelocity, NNFloat* pWeight) {
+    unsigned long blocks = CalculateBlocks(size);
+    unsigned long threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kAdamUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, beta1, beta2, t, size, pWeightVelocity, pWeightGradient, pWeightGradientVelocity, pWeight);
+    LAUNCHERROR("kAdamUpdateWeights_kernel");
+}
+/**
+ * @brief CUDA kernel to update biases using Adam optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param beta1 Exponential decay rate for the first moment estimates.
+ * @param beta2 Exponential decay rate for the second moment estimates.
+ * @param t Time step.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBiasGradientVelocity Array of bias gradient velocities.
+ * @param pBias Array of biases.
+ */
+__global__ void LAUNCH_BOUNDS_kAdamUpdateBiases_kernel(NNFloat alpha, NNFloat beta1, NNFloat beta2, NNFloat t, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBiasGradientVelocity, NNFloat* pBias) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < width) {
+        NNFloat sum = (NNFloat)0.0;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++) {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= (NNFloat)batch;
+
+        NNFloat vdw = pBiasVelocity[pos];
+        NNFloat sdw = pBiasGradientVelocity[pos];
+        vdw = beta1 * vdw + ((NNFloat)1.0 - beta1) * sum;
+        sdw = beta2 * sdw + ((NNFloat)1.0 - beta2) * sum * sum;
+        t += (NNFloat)1.0;
+        pBiasVelocity[pos] = vdw;
+        pBiasGradientVelocity[pos] = sdw;
+        vdw /= ((NNFloat)1.0 - powf(beta1, t));
+        sdw /= ((NNFloat)1.0 - powf(beta2, t));
+        NNFloat dw = alpha * vdw / (sqrtf(sdw) + (NNFloat)1.0e-8);
+        pBias[pos] -= dw;
+    }
+}
+/**
+ * @brief Update biases using Adam optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param beta1 Exponential decay rate for the first moment estimates.
+ * @param beta2 Exponential decay rate for the second moment estimates.
+ * @param t Time step.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBiasGradientVelocity Array of bias gradient velocities.
+ * @param pBias Array of biases.
+ */
+void kAdamUpdateBiases(NNFloat alpha, NNFloat beta1, NNFloat beta2, NNFloat t, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBiasGradientVelocity, NNFloat* pBias) {
+    uint32_t blocks = CalculateBlocks(width);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kAdamUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, beta1, beta2, t, batch, width, pDelta, pBiasVelocity, pBiasGradientVelocity, pBias);
+    LAUNCHERROR("kAdamUpdateBiases_kernel");
+}
+/**
+ * @brief CUDA kernel to update weights using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+__global__ void LAUNCH_BOUNDS_kNesterovUpdateWeights_kernel(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (pos < size) {
+        NNFloat g = pWeightGradient[pos];
+        NNFloat w = pWeight[pos];
+        NNFloat vOld = pWeightVelocity[pos];
+        NNFloat vNew = mu * vOld + alpha * (g - lambda * w - lambda1 * sgn(w));
+        pWeightVelocity[pos] = vNew;
+        w = w + vNew + mu * (vNew - vOld);
+        pWeight[pos] = w;
+    }
+}
+/**
+ * @brief Update weights using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization parameter.
+ * @param lambda1 L1 regularization parameter.
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+void kNesterovUpdateWeights(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    uint32_t blocks = CalculateBlocks(size);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kNesterovUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, mu, size, pWeightVelocity, pWeightGradient, pWeight);
+    LAUNCHERROR("kNesterovUpdateWeights_kernel");
+}
+/**
+ * @brief CUDA kernel to update biases using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param mu Momentum factor.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+__global__ void LAUNCH_BOUNDS_kNesterovUpdateBiases_kernel(NNFloat alpha, NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width) {
+        NNFloat sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++) {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= (NNFloat)batch;
+
+        NNFloat vOld = pBiasVelocity[pos];
+        NNFloat vNew = mu * vOld - alpha * sum;
+        pBiasVelocity[pos] = vNew;
+        pBias[pos] += vNew + mu * (vNew - vOld);
+    }
+}
+/**
+ * @brief Update biases using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param mu Momentum factor.
+ * @param batch Number of samples in a batch.
+ * @param width Width of the bias vector.
+ * @param pDelta Array of delta values.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+void kNesterovUpdateBiases(NNFloat alpha, NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint32_t blocks = CalculateBlocks(width);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kNesterovUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, mu, batch, width, pDelta, pBiasVelocity, pBias);
+    LAUNCHERROR("kNesterovUpdateBiases_kernel");
+}
+/**
+ * @brief CUDA kernel to shift weights using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeight Array of weights.
+ */
+__global__ void LAUNCH_BOUNDS_kNesterovShiftWeights_kernel(NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeight) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size) {
+        NNFloat w = pWeight[pos];
+        NNFloat v = pWeightVelocity[pos];
+        pWeight[pos] = w + mu * v;
+    }
+}
+/**
+ * @brief Shift weights using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeight Array of weights.
+ */
+void kNesterovShiftWeights(NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeight) {
+    uint32_t blocks = CalculateBlocks(size);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kNesterovShiftWeights_kernel<<<blocks, threadsPerBlock>>>(mu, size, pWeightVelocity, pWeight);
+    LAUNCHERROR("kNesterovShiftWeights_kernel");
+}
+/**
+ * @brief CUDA kernel to shift biases using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param mu Momentum factor.
+ * @param width Width of the bias vector.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+__global__ void LAUNCH_BOUNDS_kNesterovShiftBiases_kernel(NNFloat mu, uint32_t width, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width) {
+        NNFloat b = pBias[pos];
+        NNFloat v = pBiasVelocity[pos];
+        pBias[pos] = b + mu * v;
+    }
+}
+/**
+ * @brief Shift biases using Nesterov accelerated gradient (NAG) optimizer.
+ *
+ * @param mu Momentum factor.
+ * @param width Width of the bias vector.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+void kNesterovShiftBiases(NNFloat mu, uint32_t width, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint32_t blocks = CalculateBlocks(width);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kNesterovShiftBiases_kernel<<<blocks, threadsPerBlock>>>(mu, width, pBiasVelocity, pBias);
+    LAUNCHERROR("kNesterovShiftBiases_kernel");
+}
+/**
+ * @brief CUDA kernel to update weights using RMSProp optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization factor.
+ * @param lambda1 L1 regularization factor.
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+__global__ void LAUNCH_BOUNDS_kRMSPropUpdateWeights_kernel(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size) {
+        NNFloat g = pWeightGradient[pos];
+        NNFloat w = pWeight[pos];
+        NNFloat v = pWeightVelocity[pos];
+        g -= lambda * w + lambda1 * sgn(w);
+        v = mu * v + (1.0f - mu) * g * g;
+        pWeightVelocity[pos] = v;
+        pWeight[pos] = w + alpha * g / sqrtf(max(0.000000001f, v));
+    }
+}
+/**
+ * @brief Update weights using RMSProp optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param lambda L2 regularization factor.
+ * @param lambda1 L1 regularization factor.
+ * @param mu Momentum factor.
+ * @param size Size of the weight vectors.
+ * @param pWeightVelocity Array of weight velocities.
+ * @param pWeightGradient Array of weight gradients.
+ * @param pWeight Array of weights.
+ */
+void kRMSPropUpdateWeights(NNFloat alpha, NNFloat lambda, NNFloat lambda1, NNFloat mu, uint64_t size, NNFloat* pWeightVelocity, NNFloat* pWeightGradient, NNFloat* pWeight) {
+    uint32_t blocks = CalculateBlocks(size);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kRMSPropUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, mu, size, pWeightVelocity, pWeightGradient, pWeight);
+    LAUNCHERROR("kRMSPropUpdateWeights_kernel");
+}
+/**
+ * @brief CUDA kernel to update biases using RMSProp optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param mu Momentum factor.
+ * @param batch Batch size.
+ * @param width Width of the bias vectors.
+ * @param pDelta Array of bias deltas.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+__global__ void LAUNCH_BOUNDS_kRMSPropUpdateBiases_kernel(NNFloat alpha, NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width) {
+        NNFloat sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++) {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= static_cast<NNFloat>(batch);
+
+        NNFloat v = pBiasVelocity[pos];
+        v = mu * v + (1.0f - mu) * sum * sum;
+        pBiasVelocity[pos] = v;
+        pBias[pos] -= alpha * sum / sqrtf(max(0.000000001f, v));
+    }
+}
+/**
+ * @brief Update biases using RMSProp optimizer.
+ *
+ * @param alpha Learning rate.
+ * @param mu Momentum factor.
+ * @param batch Batch size.
+ * @param width Width of the bias vectors.
+ * @param pDelta Array of bias deltas.
+ * @param pBiasVelocity Array of bias velocities.
+ * @param pBias Array of biases.
+ */
+void kRMSPropUpdateBiases(NNFloat alpha, NNFloat mu, uint32_t batch, uint32_t width, NNFloat* pDelta, NNFloat* pBiasVelocity, NNFloat* pBias) {
+    uint32_t blocks = CalculateBlocks(width);
+    uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+
+    LAUNCH_BOUNDS_kRMSPropUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, mu, batch, width, pDelta, pBiasVelocity, pBias);
+    LAUNCHERROR("kRMSPropUpdateBiases_kernel");
+}
+#include "bitonic.h"
+/**
+ * @brief CUDA kernel to calculate the output values and sort them using the bitonic sort algorithm.
+ *
+ * @param pOutputBuffer Pointer to the output buffer.
+ * @param pKeyBuffer Pointer to the key buffer.
+ * @param pValueBuffer Pointer to the value buffer.
+ * @param batch Number of batches.
+ * @param width Width of the data.
+ * @param k Number of values to sort.
+ */
+__global__ void kCalculateOutput_32_kernel(NNFloat* pOutputBuffer, NNFloat* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+    __shared__ NNFloat sKey[64 * 4];
+    __shared__ uint32_t sValue[64 * 4];
+
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (pos < batch)
+    {
+        NNFloat* pOutput = pOutputBuffer + pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        NNFloat* psKey = &sKey[64 * offset];
+        uint32_t* psValue = &sValue[64 * offset];
+
+        NNFloat k0 = -MAX_VALUE;
+        NNFloat k1 = -MAX_VALUE;
+        uint32_t v0 = 0;
+        uint32_t v1 = 0;
+
+        uint32_t wpos = tgx;
+        if (wpos < width)
+        {
+            k0 = pOutput[wpos];
+            v0 = wpos;
+        }
+        wpos += cData._warpSize;
+
+        NNFloat minValue = -MAX_VALUE;
+        uint32_t rpos = 32;
+        uint32_t bufferSize = 0;
+
+        while (rpos < width)
+        {
+            wpos = rpos + tgx;
+            NNFloat key = -MAX_VALUE;
+            uint32_t value = wpos;
+            if (wpos < width)
+            {
+                key = pOutput[wpos];
+            }
+
+            uint32_t count = __ballot_sync(FULL_MASK, key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask) + bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 32)
+            {
+                if (tgx < bufferSize)
+                {
+                    k1 = psKey[tgx];
+                    v1 = psValue[tgx];
+                }
+                BITONICSORT64_64();
+
+                minValue = __shfl_sync(FULL_MASK, k0, cData._warpSize - 1);
+
+                bufferSize -= 32;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 32];
+                    psValue[tgx] = psValue[tgx + 32];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if ((bufferSize > 0) || (width <= 32))
+        {
+            k1 = -MAX_VALUE;
+            v1 = 0;
+
+            if (tgx < bufferSize)
+            {
+                k1 = psKey[tgx];
+                v1 = psValue[tgx];
+            }
+            BITONICSORT64_64();
+        }
+
+        NNFloat* pKey = pKeyBuffer + pos * k;
+        uint32_t* pValue = pValueBuffer + pos * k;
+        wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = k0;
+            pValue[wpos] = v0;
+        }
+        wpos += cData._warpSize;
+        syncthreads();
+    }
+}
+/**
+ * @brief CUDA kernel to calculate the output values and sort them using the bitonic sort algorithm for 64-sized batches.
+ *
+ * @param pOutputBuffer Pointer to the output buffer.
+ * @param pKeyBuffer Pointer to the key buffer.
+ * @param pValueBuffer Pointer to the value buffer.
+ * @param batch Number of batches.
+ * @param width Width of the data.
+ * @param k Number of values to sort.
+ */
+__global__ void
+LAUNCH_BOUNDS()
+kCalculateOutput_64_kernel(NNFloat* pOutputBuffer, NNFloat* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+__shared__ volatile NNFloat sKey[96 * 4];
+__shared__ volatile uint32_t sValue[96 * 4];
+
+
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+            
+    if (pos < batch)
+    {
+        NNFloat *pOutput = pOutputBuffer + pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        volatile NNFloat* psKey = &sKey[96 * offset];
+        volatile uint32_t* psValue  = &sValue[96 * offset];
+
+        NNFloat k0 = -MAX_VALUE;
+        NNFloat k1 = -MAX_VALUE;
+        NNFloat k2 = -MAX_VALUE;
+        NNFloat k3 = -MAX_VALUE;
+        uint32_t v0 = 0;
+        uint32_t v1 = 0;
+        uint32_t v2 = 0;
+        uint32_t v3 = 0;
+
+        uint32_t wpos = tgx;
+        if (wpos < width)
+        {
+            k0 = pOutput[wpos];
+            v0 = wpos;
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k1 = pOutput[wpos];
+            v1 = wpos;
+        }
+        wpos += cData._warpSize;
+
+     
+        NNFloat minValue = -MAX_VALUE;
+        uint32_t rpos = 64;
+        uint32_t bufferSize = 0;
+        NNFloat key1, key2;
+        uint32_t value1, value2;
+        uint32_t otgx;
+        bool flag;
+        while (rpos < width)
+        {
+            unsigned wpos = rpos + tgx;
+            NNFloat key = -MAX_VALUE;
+            uint32_t value = wpos;
+            if (wpos < width)
+            {
+                key = pOutput[wpos];                
+            }
+            
+            uint32_t count = BALLOT(key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask);
+                offset += bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 64)
+            {
+                k2 = psKey[tgx];
+                v2 = psValue[tgx];
+                k3 = psKey[tgx + cData._warpSize];
+                v3 = psValue[tgx + cData._warpSize];
+                bool flag;
+                BITONICSORT128_128();
+
+                minValue = SHFL(k1, cData._warpSize - 1);
+
+                bufferSize -= 64;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 64];
+                    psValue[tgx] = psValue[tgx + 64];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if ((bufferSize > 0) || (width <= 64))
+        {
+            k2 = -MAX_VALUE;
+            k3 = -MAX_VALUE;
+            v2 = 0;
+            v3 = 0;
+
+            if (tgx < bufferSize)
+            {
+                k2 = psKey[tgx];
+                v2 = psValue[tgx];
+            }
+            if (tgx + cData._warpSize < bufferSize)
+            {
+                k3 = psKey[tgx + cData._warpSize];
+                v3 = psValue[tgx + cData._warpSize];
+            }
+
+            BITONICSORT128_128();
+        }
+
+        NNFloat* pKey = pKeyBuffer + pos * k;
+        uint32_t* pValue = pValueBuffer + pos * k;                
+        wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = k0;
+            pValue[wpos] = v0;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k1;
+            pValue[wpos] = v1;
+        }
+        wpos += cData._warpSize;
+    }
+}
