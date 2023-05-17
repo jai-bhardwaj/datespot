@@ -1,0 +1,33 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  build-model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      
+#      - name: Cache CUDA Docker Image
+#        uses: actions/cache@v2
+#        with:
+#          path: /var/lib/docker
+#          key: ${{ runner.os }}-cuda-docker-${{ hashFiles('cuda-docker-image-cache-key.txt') }}
+#          restore-keys: |
+#            ${{ runner.os }}-cuda-docker-
+#
+#      - name: Pull Docker Image
+#       run: docker pull nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+#
+#      - name: Build CUDA Target
+#        run: docker build . --target build
