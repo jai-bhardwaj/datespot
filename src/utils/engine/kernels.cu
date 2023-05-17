@@ -1,6 +1,15 @@
 #include "GpuTypes.h"
 #include "Types.h"
 #include <limits>
+#include "cub/util_allocator.cuh"
+#include "cub/device/device_radix_sort.cuh"
+#include "cub/device/device_reduce.cuh"
+#include "cub/device/device_scan.cuh"
+#include "cub/device/device_histogram.cuh"
+#include "cub/device/device_select.cuh"
+#include "cub/device/device_run_length_encode.cuh"
+#include "cub/device/device_segmented_radix_sort.cuh"
+#include "cub/device/device_segmented_reduce.cuh"
 
 /**
  * @brief Constant data stored on the GPU.
@@ -6575,3 +6584,614 @@ void kCalculateCosine(NNFloat* pVector1In, NNFloat* pVector2In, uint32_t batch, 
 
     LAUNCHERROR("kCalculateCosine_kernel");    
 }
+/**
+ * @brief CUDA kernel to calculate the dot product of two vectors.
+ *
+ * @param pVector1In    Pointer to the first input vector.
+ * @param pVector2In    Pointer to the second input vector.
+ * @param strideIn      Stride between elements in the input vectors.
+ * @param pDPOut        Pointer to the output dot product.
+ * @param strideOut     Stride for storing the output dot product.
+ */
+__global__ void kCalculateDotProduct_kernel(const NNFloat* __restrict__ pVector1In, const NNFloat* __restrict__ pVector2In, const uint32_t strideIn, NNFloat* __restrict__ pDPOut, const uint32_t strideOut)
+{
+    __shared__ NNFloat sDP[32];
+
+    const uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const NNFloat* pVector1 = pVector1In + idx;
+    const NNFloat* pVector2 = pVector2In + idx;
+
+    NNFloat dp = 0.0f;
+
+    for (uint32_t pos = threadIdx.x; pos < strideIn; pos += blockDim.x)
+    {
+        const NNFloat a = pVector1[pos];
+        const NNFloat b = pVector2[pos];
+        dp += a * b;
+    }
+
+    for (uint32_t offset = blockDim.x / 2; offset > 0; offset >>= 1)
+    {
+        dp += __shfl_down_sync(0xFFFFFFFF, dp, offset);
+    }
+
+    const uint32_t warpIdx = threadIdx.x / warpSize;
+    if (threadIdx.x % warpSize == 0)
+    {
+        sDP[warpIdx] = dp;
+    }
+    __syncthreads();
+
+    if (threadIdx.x < warpSize)
+    {
+        dp = (threadIdx.x < blockDim.x / warpSize) ? sDP[threadIdx.x] : 0.0f;
+
+        for (uint32_t offset = warpSize / 2; offset > 0; offset >>= 1)
+        {
+            dp += __shfl_down_sync(0xFFFFFFFF, dp, offset);
+        }
+
+        if (threadIdx.x == 0)
+        {
+            pDPOut[blockIdx.x * strideOut] = dp;
+        }
+    }
+}
+/**
+ * @brief Calculates the dot product of two vectors using CUDA.
+ *
+ * @param pVector1In   Pointer to the first input vector.
+ * @param pVector2In   Pointer to the second input vector.
+ * @param batch        Number of elements in the batch.
+ * @param strideIn     Stride between elements in the input vectors.
+ * @param pDPOut       Pointer to the output dot product.
+ * @param strideOut    Stride for storing the output dot product.
+ */
+void kCalculateDotProduct(NNFloat* pVector1In, NNFloat* pVector2In, uint32_t batch, uint32_t strideIn, NNFloat* pDPOut, uint32_t strideOut)
+{
+    // Determine the number of threads per block
+    unsigned long threads = max(32, min(strideIn, getGpu()._threadsPerBlock));
+
+    // Launch the CUDA kernel to calculate the dot product
+    kCalculateDotProduct_kernel<<<batch, threads>>>(pVector1In, pVector2In, strideIn, pDPOut, strideOut);
+
+    // Check for any kernel launch errors
+    LAUNCHERROR("kCalculateDotProduct_kernel");
+}
+
+/**
+ * @brief Initializes the sorting process and returns the temporary storage size required.
+ *
+ * This function initializes the sorting process for the given number of items.
+ * It computes the item stride, creates double buffers for keys and values,
+ * and determines the temporary storage size required for the sorting operation.
+ *
+ * @tparam KeyType The type of the keys.
+ * @tparam ValueType The type of the values.
+ * @param items The number of items to be sorted.
+ * @param pbKey Pointer to the GPU buffer holding the keys.
+ * @param pbValue Pointer to the GPU buffer holding the values.
+ * @return The temporary storage size required for the sorting operation.
+ */
+template<typename KeyType, typename ValueType>
+size_t kInitSort(uint32_t items, GpuBuffer<KeyType>* pbKey, GpuBuffer<ValueType>* pbValue)
+{
+    uint32_t itemStride = ((items + 511) >> 9) << 9;
+
+    cub::DoubleBuffer<KeyType> d_keys(pbKey->_pDevData, pbKey->_pDevData + itemStride);
+    cub::DoubleBuffer<ValueType> d_values(pbValue->_pDevData, pbValue->_pDevData + itemStride);
+    size_t tempBytes = 0;
+    cub::DeviceRadixSort::SortPairs(nullptr, tempBytes, d_keys, d_values, items);
+
+    return tempBytes;
+}
+/**
+ * @brief Sorts the key-value pairs using radix sort.
+ *
+ * This function sorts the given key-value pairs using radix sort. It takes two sets of input and output arrays
+ * for keys and values, along with temporary storage and its size. The sorting operation is performed using
+ * double buffers for efficient memory access and minimal data movement.
+ *
+ * @tparam KeyType The type of the keys.
+ * @tparam ValueType The type of the values.
+ * @param items The number of items to be sorted.
+ * @param pKey0 Pointer to the first set of input keys.
+ * @param pKey1 Pointer to the second set of input keys.
+ * @param pValue0 Pointer to the first set of input values.
+ * @param pValue1 Pointer to the second set of input values.
+ * @param pTemp Pointer to the temporary storage.
+ * @param tempBytes The size of the temporary storage in bytes.
+ * @return True if the sorting operation was successful.
+ */
+template<typename KeyType, typename ValueType>
+bool kSort(uint32_t items, KeyType* pKey0, KeyType* pKey1, ValueType* pValue0, ValueType* pValue1, char* pTemp, size_t tempBytes)
+{
+    cub::DoubleBuffer<KeyType> d_keys(pKey0, pKey1);
+    cub::DoubleBuffer<ValueType> d_values(pValue0, pValue1);
+    cub::DeviceRadixSort::SortPairs(pTemp, tempBytes, d_keys, d_values, items);
+    
+    return true;
+}
+
+/**
+ * @brief CUDA kernel to add scaled buffers element-wise.
+ *
+ * This CUDA kernel adds scaled buffers element-wise. Each thread processes a single element,
+ * and the operation is performed in parallel across multiple blocks and threads.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param pSrc Pointer to the source buffer.
+ * @param scale The scaling factor applied to the source buffer.
+ * @param size The number of elements to process.
+ */
+__global__ void kAddScaleBuffers_kernel(NNFloat* pDst, const NNFloat* pSrc, NNFloat scale, uint64_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+        pDst[pos] += pSrc[pos] * scale;
+}
+
+/**
+ * @brief Adds scaled buffers element-wise using CUDA.
+ *
+ * This function adds scaled buffers element-wise using CUDA. It launches the CUDA kernel with the appropriate
+ * number of blocks and threads, and handles any CUDA launch errors that may occur.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param pSrc Pointer to the source buffer.
+ * @param scale The scaling factor applied to the source buffer.
+ * @param size The number of elements to process.
+ */
+void kAddScaleBuffers(NNFloat* pDst, const NNFloat* pSrc, NNFloat scale, uint64_t size)
+{
+    uint32_t blocks = CalculateBlocks(size);
+    const uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    kAddScaleBuffers_kernel<<<blocks, threadsPerBlock>>>(pDst, pSrc, scale, size);
+    LAUNCHERROR("kAddScaleBuffers_kernel");
+}
+/**
+ * @brief CUDA kernel to add buffers element-wise.
+ *
+ * This CUDA kernel adds buffers element-wise. Each thread processes a single element,
+ * and the operation is performed in parallel across multiple blocks and threads.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param pSrc Pointer to the source buffer.
+ * @param size The number of elements to process.
+ */
+__global__ void kAddBuffers_kernel(NNFloat* pDst, const NNFloat* pSrc, uint64_t size)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+        pDst[pos] += pSrc[pos];
+}
+
+/**
+ * @brief Adds buffers element-wise using CUDA.
+ *
+ * This function adds buffers element-wise using CUDA. It launches the CUDA kernel with the appropriate
+ * number of blocks and threads, and handles any CUDA launch errors that may occur.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param pSrc Pointer to the source buffer.
+ * @param size The number of elements to process.
+ * @param stream The CUDA stream to use for the kernel launch.
+ */
+void kAddBuffers(NNFloat* pDst, const NNFloat* pSrc, uint64_t size, cudaStream_t stream)
+{
+    if (size == 0)
+        return;
+
+    uint32_t blocks = CalculateBlocks(size);
+    const uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    kAddBuffers_kernel<<<blocks, threadsPerBlock, 0, stream>>>(pDst, pSrc, size);
+    LAUNCHERROR("kAddBuffers_kernel");
+}
+/**
+ * @brief CUDA kernel to add 2D buffers element-wise.
+ *
+ * This CUDA kernel adds 2D buffers element-wise. Each thread processes a single element,
+ * and the operation is performed in parallel across multiple blocks and threads.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param dpitch Pitch of the destination buffer (in elements).
+ * @param pSrc Pointer to the source buffer.
+ * @param spitch Pitch of the source buffer (in elements).
+ * @param width The width of the buffers (number of elements in a row).
+ */
+__global__ void kAddBuffers2D_kernel(NNFloat* pDst, uint32_t dpitch, const NNFloat* pSrc, uint32_t spitch, uint32_t width)
+{
+    uint64_t yOffset = blockIdx.y * blockDim.x + threadIdx.x;
+    if (yOffset < width)
+    {
+        uint64_t dpos = blockIdx.x * dpitch + yOffset;
+        uint64_t spos = blockIdx.x * spitch + yOffset;
+        pDst[dpos] += pSrc[spos];
+    }
+}
+
+/**
+ * @brief Adds 2D buffers element-wise using CUDA.
+ *
+ * This function adds 2D buffers element-wise using CUDA. It launches the CUDA kernel with the appropriate
+ * number of blocks and threads, and handles any CUDA launch errors that may occur.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param dpitch Pitch of the destination buffer (in elements).
+ * @param pSrc Pointer to the source buffer.
+ * @param spitch Pitch of the source buffer (in elements).
+ * @param width The width of the buffers (number of elements in a row).
+ * @param height The height of the buffers (number of rows).
+ * @param stream The CUDA stream to use for the kernel launch.
+ */
+void kAddBuffers2D(NNFloat* pDst, uint32_t dpitch, const NNFloat* pSrc, uint32_t spitch, uint32_t width, uint32_t height, cudaStream_t stream)
+{
+    if (height == 0 || width == 0)
+        return;
+
+    dim3 grid((width + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock, height);
+    const uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    kAddBuffers2D_kernel<<<grid, threadsPerBlock, 0, stream>>>(pDst, dpitch, pSrc, spitch, width);
+    LAUNCHERROR("kAddBuffers2D_kernel");
+}
+/**
+ * @brief CUDA kernel to copy 2D buffers element-wise.
+ *
+ * This CUDA kernel copies 2D buffers element-wise. Each thread processes a single element,
+ * and the operation is performed in parallel across multiple blocks and threads.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param dpitch Pitch of the destination buffer (in elements).
+ * @param pSrc Pointer to the source buffer.
+ * @param spitch Pitch of the source buffer (in elements).
+ * @param width The width of the buffers (number of elements in a row).
+ */
+__global__ void kCopy2D_kernel(NNFloat* pDst, uint32_t dpitch, const NNFloat* pSrc, uint32_t spitch, uint32_t width)
+{
+    uint64_t yOffset = blockIdx.y * blockDim.x + threadIdx.x;
+    if (yOffset < width)
+    {
+        uint64_t dpos = blockIdx.x * dpitch + yOffset;
+        uint64_t spos = blockIdx.x * spitch + yOffset;
+        pDst[dpos] = pSrc[spos];
+    }
+}
+
+/**
+ * @brief Copies 2D buffers element-wise using CUDA.
+ *
+ * This function copies 2D buffers element-wise using CUDA. It launches the CUDA kernel with the appropriate
+ * number of blocks and threads, and handles any CUDA launch errors that may occur.
+ *
+ * @param pDst Pointer to the destination buffer.
+ * @param dpitch Pitch of the destination buffer (in elements).
+ * @param pSrc Pointer to the source buffer.
+ * @param spitch Pitch of the source buffer (in elements).
+ * @param width The width of the buffers (number of elements in a row).
+ * @param height The height of the buffers (number of rows).
+ * @param stream The CUDA stream to use for the kernel launch.
+ */
+void kCopy2D(NNFloat* pDst, uint32_t dpitch, const NNFloat* pSrc, uint32_t spitch, uint32_t width, uint32_t height, cudaStream_t stream)
+{
+    if (height == 0 || width == 0)
+        return;
+    
+    dim3 grid((width + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock, height);
+    const uint32_t threadsPerBlock = getGpu()._threadsPerBlock;
+    kCopy2D_kernel<<<grid, threadsPerBlock, 0, stream>>>(pDst, dpitch, pSrc, spitch, width);
+    LAUNCHERROR("kCopy2D_kernel");
+}
+/**
+ * @brief Initializes the sorting process for key-value pairs of type NNFloat and NNFloat.
+ *
+ * This function initializes the sorting process for key-value pairs of type NNFloat and NNFloat.
+ * It computes the item stride, creates double buffers for keys and values,
+ * and determines the temporary storage size required for the sorting operation.
+ *
+ * @param items The number of items to be sorted.
+ * @param pbKey Pointer to the GPU buffer holding the keys.
+ * @param pbValue Pointer to the GPU buffer holding the values.
+ * @return The temporary storage size required for the sorting operation.
+ */
+template size_t kInitSort<NNFloat, NNFloat>(uint32_t items, GpuBuffer<NNFloat>* pbKey, GpuBuffer<NNFloat>* pbValue);
+
+/**
+ * @brief Initializes the sorting process for key-value pairs of type uint32_t and NNFloat.
+ *
+ * This function initializes the sorting process for key-value pairs of type uint32_t and NNFloat.
+ * It computes the item stride, creates double buffers for keys and values,
+ * and determines the temporary storage size required for the sorting operation.
+ *
+ * @param items The number of items to be sorted.
+ * @param pbKey Pointer to the GPU buffer holding the keys.
+ * @param pbValue Pointer to the GPU buffer holding the values.
+ * @return The temporary storage size required for the sorting operation.
+ */
+template size_t kInitSort<uint32_t, NNFloat>(uint32_t items, GpuBuffer<uint32_t>* pbKey, GpuBuffer<NNFloat>* pbValue);
+
+/**
+ * @brief Initializes the sorting process for key-value pairs of type NNFloat and uint32_t.
+ *
+ * This function initializes the sorting process for key-value pairs of type NNFloat and uint32_t.
+ * It computes the item stride, creates double buffers for keys and values,
+ * and determines the temporary storage size required for the sorting operation.
+ *
+ * @param items The number of items to be sorted.
+ * @param pbKey Pointer to the GPU buffer holding the keys.
+ * @param pbValue Pointer to the GPU buffer holding the values.
+ * @return The temporary storage size required for the sorting operation.
+ */
+template size_t kInitSort<NNFloat, uint32_t>(uint32_t items, GpuBuffer<NNFloat>* pbKey, GpuBuffer<uint32_t>* pbValue);
+
+/**
+ * @brief Initializes the sorting process for key-value pairs of type uint32_t and uint32_t.
+ *
+ * This function initializes the sorting process for key-value pairs of type uint32_t and uint32_t.
+ * It computes the item stride, creates double buffers for keys and values,
+ * and determines the temporary storage size required for the sorting operation.
+ *
+ * @param items The number of items to be sorted.
+ * @param pbKey Pointer to the GPU buffer holding the keys.
+ * @param pbValue Pointer to the GPU buffer holding the values.
+ * @return The temporary storage size required for the sorting operation.
+ */
+template size_t kInitSort<uint32_t, uint32_t>(uint32_t items, GpuBuffer<uint32_t>* pbKey, GpuBuffer<uint32_t>* pbValue);
+/**
+ * @brief Sorts key-value pairs of type NNFloat and NNFloat.
+ *
+ * This function sorts key-value pairs of type NNFloat and NNFloat.
+ * It takes two sets of input and output arrays for keys and values,
+ * along with temporary storage and its size. The sorting operation is
+ * performed using radix sort.
+ *
+ * @param items The number of items to be sorted.
+ * @param pKey0 Pointer to the first set of input keys.
+ * @param pKey1 Pointer to the second set of input keys.
+ * @param pValue0 Pointer to the first set of input values.
+ * @param pValue1 Pointer to the second set of input values.
+ * @param pTemp Pointer to the temporary storage.
+ * @param tempBytes The size of the temporary storage in bytes.
+ * @return True if the sorting operation was successful.
+ */
+template bool kSort<NNFloat, NNFloat>(uint32_t items, NNFloat* pKey0, NNFloat* pKey1, NNFloat* pValue0, NNFloat* pValue1, char* pTemp, size_t tempBytes);
+
+/**
+ * @brief Sorts key-value pairs of type NNFloat and uint32_t.
+ *
+ * This function sorts key-value pairs of type NNFloat and uint32_t.
+ * It takes two sets of input and output arrays for keys and values,
+ * along with temporary storage and its size. The sorting operation is
+ * performed using radix sort.
+ *
+ * @param items The number of items to be sorted.
+ * @param pKey0 Pointer to the first set of input keys.
+ * @param pKey1 Pointer to the second set of input keys.
+ * @param pValue0 Pointer to the first set of input values.
+ * @param pValue1 Pointer to the second set of input values.
+ * @param pTemp Pointer to the temporary storage.
+ * @param tempBytes The size of the temporary storage in bytes.
+ * @return True if the sorting operation was successful.
+ */
+template bool kSort<NNFloat, uint32_t>(uint32_t items, NNFloat* pKey0, NNFloat* pKey1, uint32_t* pValue0, uint32_t* pValue1, char* pTemp, size_t tempBytes);
+
+/**
+ * @brief Sorts key-value pairs of type uint32_t and NNFloat.
+ *
+ * This function sorts key-value pairs of type uint32_t and NNFloat.
+ * It takes two sets of input and output arrays for keys and values,
+ * along with temporary storage and its size. The sorting operation is
+ * performed using radix sort.
+ *
+ * @param items The number of items to be sorted.
+ * @param pKey0 Pointer to the first set of input keys.
+ * @param pKey1 Pointer to the second set of input keys.
+ * @param pValue0 Pointer to the first set of input values.
+ * @param pValue1 Pointer to the second set of input values.
+ * @param pTemp Pointer to the temporary storage.
+ * @param tempBytes The size of the temporary storage in bytes.
+ * @return True if the sorting operation was successful.
+ */
+template bool kSort<uint32_t, NNFloat>(uint32_t items, uint32_t* pKey0, uint32_t* pKey1, NNFloat* pValue0, NNFloat* pValue1, char* pTemp, size_t tempBytes);
+/**
+ * @brief Sorts key-value pairs of type uint32_t and uint32_t.
+ *
+ * This function sorts key-value pairs of type uint32_t and uint32_t.
+ * It takes two sets of input and output arrays for keys and values,
+ * along with temporary storage and its size. The sorting operation is
+ * performed using radix sort.
+ *
+ * @param items The number of items to be sorted.
+ * @param pKey0 Pointer to the first set of input keys.
+ * @param pKey1 Pointer to the second set of input keys.
+ * @param pValue0 Pointer to the first set of input values.
+ * @param pValue1 Pointer to the second set of input values.
+ * @param pTemp Pointer to the temporary storage.
+ * @param tempBytes The size of the temporary storage in bytes.
+ * @return True if the sorting operation was successful.
+ */
+template bool kSort<uint32_t, uint32_t>(uint32_t items, uint32_t* pKey0, uint32_t* pKey1, uint32_t* pValue0, uint32_t* pValue1, char* pTemp, size_t tempBytes);
+
+
+/**
+ * @def EXPLICITLY_INSTANTIATE_KERNELS(T)
+ * @brief Macro for explicitly instantiating kernels for a specific data type.
+ *
+ * This macro is used to explicitly instantiate kernels for a specific data type.
+ *
+ * @param T The data type for which to instantiate the kernels.
+ */
+
+/**
+ * @brief Loads the sparse analog denoised input unit.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kLoadSparseAnalogDenoisedInputUnit(uint32_t, uint32_t, uint32_t, NNFloat*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*);
+
+/**
+ * @brief Loads the indexed sparse analog denoised input unit.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kLoadIndexedSparseAnalogDenoisedInputUnit(uint32_t, uint32_t, uint32_t, NNFloat*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*);
+
+/**
+ * @brief Loads the sparse analog input unit.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kLoadSparseAnalogInputUnit(uint32_t, uint32_t, uint32_t, NNFloat*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*);
+
+/**
+ * @brief Loads the indexed sparse analog input unit.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kLoadIndexedSparseAnalogInputUnit(uint32_t, uint32_t, uint32_t, NNFloat*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*);
+
+/**
+ * @brief Calculates the sparse analog Z.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kCalculateSparseAnalogZ(uint32_t, uint32_t, uint32_t, NNFloat*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*, NNFloat);
+
+/**
+ * @brief Calculates the indexed sparse analog Z.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kCalculateIndexedSparseAnalogZ(uint32_t, uint32_t, uint32_t, NNFloat*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*, NNFloat);
+
+/**
+ * @brief Calculates the sparse analog denoised Z.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kCalculateSparseAnalogDenoisedZ(uint32_t, uint32_t, uint32_t, NNFloat*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*, NNFloat*, NNFloat);
+
+/**
+ * @brief Calculates the indexed sparse analog denoised Z.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kCalculateIndexedSparseAnalogDenoisedZ(uint32_t, uint32_t, uint32_t, NNFloat*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*, NNFloat*, NNFloat);
+
+/**
+ * @brief Calculates the sparse transposed analog matrix.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kCalculateSparseTransposedAnalogMatrix(uint32_t, uint32_t, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, uint32_t*, uint32_t*, NNFloat*);
+
+/**
+ * @brief Calculates the indexed sparse transposed analog matrix.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kCalculateIndexedSparseTransposedAnalogMatrix(uint32_t, uint32_t, uint32_t*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, uint32_t*, uint32_t*, NNFloat*);
+
+/**
+ * @brief Calculates the sparse transposed analog denoised matrix.
+ *
+ * @tparam T The data type for the function.
+ * @param[in] param13 Description of the parameter.
+ */
+template <typename T>
+void kCalculateSparseTransposedAnalogDenoisedMatrix(uint32_t, uint32_t, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*, uint32_t*, uint32_t*, NNFloat*);
+
+/**
+ * @brief Calculates the indexed sparse transposed analog denoised matrix.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kCalculateIndexedSparseTransposedAnalogDenoisedMatrix(uint32_t, uint32_t, uint32_t*, uint64_t*, uint64_t*, uint32_t*, NNFloat*, T*, NNFloat*, uint32_t*, uint32_t*, NNFloat*);
+
+/**
+ * @brief Loads the input unit.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kLoadInputUnit(uint32_t, uint32_t, uint32_t, NNFloat*, T*);
+
+/**
+ * @brief Loads the indexed input unit.
+ *
+ * @tparam T The data type for the function.
+ */
+template <typename T>
+void kLoadIndexedInputUnit(uint32_t, uint32_t, uint32_t, NNFloat*, uint32_t*, T*);
+
+
+
+
+
+                                                                                 \
+
+/**
+ * @brief Explicitly instantiates the kernels for NNFloat.
+ *
+ * @tparam NNFloat The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(NNFloat)
+
+/**
+ * @brief Explicitly instantiates the kernels for double.
+ *
+ * @tparam double The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(double)
+
+/**
+ * @brief Explicitly instantiates the kernels for unsigned char.
+ *
+ * @tparam unsigned char The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(unsigned char)
+
+/**
+ * @brief Explicitly instantiates the kernels for char.
+ *
+ * @tparam char The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(char)
+
+/**
+ * @brief Explicitly instantiates the kernels for uint32_t.
+ *
+ * @tparam uint32_t The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(uint32_t)
+
+/**
+ * @brief Explicitly instantiates the kernels for uint64_t.
+ *
+ * @tparam uint64_t The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(uint64_t)
+
+/**
+ * @brief Explicitly instantiates the kernels for int32_t.
+ *
+ * @tparam int32_t The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(int32_t)
+
+/**
+ * @brief Explicitly instantiates the kernels for int64_t.
+ *
+ * @tparam int64_t The data type for instantiating the kernels.
+ */
+EXPLICITLY_INSTANTIATE_KERNELS(int64_t)
