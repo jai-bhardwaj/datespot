@@ -6,7 +6,7 @@
 #include <string_view>
 #include <tuple>
 
-namespace eduwise {
+namespace tensorhub {
 namespace jni {
 
 /**
