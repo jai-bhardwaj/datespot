@@ -13,7 +13,7 @@
 /**
  * @brief Constant string representing the fully-qualified class name of the KnnResult class.
  */
-constexpr char KNN_RESULT[] = "com/system/eduwise/knn/KnnResult";
+constexpr char KNN_RESULT[] = "com/system/tensorhub/knn/KnnResult";
 
 /**
  * @brief Constant string representing the fully-qualified class name of the String class.
@@ -231,7 +231,7 @@ astdl::knn::KnnData* checkKnnDataPointer(JNIEnv *env, jlong ptr)
  *
  * @throws IllegalArgumentException if the data type is unknown.
  */
-JNIEXPORT jlong JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_initialize(JNIEnv *env, jclass clazz,
+JNIEXPORT jlong JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_initialize(JNIEnv *env, jclass clazz,
   jint maxK, jint batchSize, jint numGpus, jint jDataType)
 {
   astdl::knn::DataType dataType;
@@ -266,7 +266,7 @@ JNIEXPORT jlong JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_initia
  *
  * @throws IllegalArgumentException if lengths of filenames and devices arrays are different.
  */
-JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_load
+JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_load
 (JNIEnv *env, jclass clazz, jobjectArray jFnames, jintArray jDevices, jchar keyValDelim, jchar vecElemDelim, jlong ptr)
 {
   astdl::knn::KnnData *knnData = checkKnnDataPointer(env, ptr);
@@ -315,7 +315,7 @@ JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_load
  * @param clazz Class calling this function
  * @param ptr   Pointer to the data structure storing KNN data
  */
-JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_shutdown(JNIEnv *env, jclass clazz, jlong ptr)
+JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_shutdown(JNIEnv *env, jclass clazz, jlong ptr)
 {
   astdl::knn::KnnData *knnData = checkKnnDataPointer(env, ptr);
   delete knnData;
@@ -338,7 +338,7 @@ JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_shutdow
  *         if length of input vectors divided by feature size is not equal to batch size,
  *         or if active batch size is greater than batch size.
  */
-JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J
+JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J
 (JNIEnv *env, jclass clazz, jint k, jfloatArray jInputVectors, jint size, jint width, jfloatArray jScores, jobjectArray jKeys, jlong ptr)
 {
   astdl::knn::KnnData *knnData = checkKnnDataPointer(env, ptr);
@@ -405,7 +405,7 @@ JNIEXPORT void JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_findKnn
  * @param ptr A pointer to the KNN data.
  * @return A KNNResult object, containing the keys and scores of the nearest neighbors.
  */
-JNIEXPORT jobject JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_findKnn__I_3FIIJ(JNIEnv *env, jclass clazz,
+JNIEXPORT jobject JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FIIJ(JNIEnv *env, jclass clazz,
   jint k, jfloatArray jInputVectors, jint size, jint width, jlong ptr)
 {
   astdl::knn::KnnData *knnData = checkKnnDataPointer(env, ptr);
@@ -414,7 +414,7 @@ JNIEXPORT jobject JNICALL Java_com_system_eduwise_knn_KNearestNeighborsCuda_find
   jfloatArray jScores = env->NewFloatArray(k * size);
   jobjectArray jKeys = env->NewObjectArray(k * size, JCLASS_STRING, nullptr);
 
-  Java_com_system_eduwise_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J(env, clazz, k,
+  Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J(env, clazz, k,
     jInputVectors, size, width, jScores, jKeys, ptr);
 
   jobject knnResult = env->NewObject(JCLASS_KNN_RESULT, JMETHODID_KNN_RESULT_CONSTRUCTOR, jKeys, jScores, k);
