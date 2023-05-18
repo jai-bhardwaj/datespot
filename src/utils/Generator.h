@@ -18,14 +18,14 @@ class RecsGenerator
     std::unique_ptr<GpuBuffer<NNFloat>> pbKey;
     std::unique_ptr<GpuBuffer<unsigned int>> pbUIValue;
     std::unique_ptr<GpuBuffer<NNFloat>> pFilteredOutput;
-    std::vector<GpuBuffer<NNFloat>*> *vNodeFilters;
+    std::vector<GpuBuffer<NNFloat>*> vNodeFilters;
     std::string recsGenLayerLabel;
     std::string scorePrecision;
 
 public:
-    static const std::string DEFAULT_LAYER_RECS_GEN_LABEL; /**< Default label for the recommendation generation layer. */
-    static const unsigned int Output_SCALAR; /**< Scalar value for output. */
-    static const std::string DEFAULT_SCORE_PRECISION; /**< Default score precision. */
+    static inline const std::string DEFAULT_LAYER_RECS_GEN_LABEL = "DefaultLayer"; /**< Default label for the recommendation generation layer. */
+    static inline const unsigned int Output_SCALAR = 1; /**< Scalar value for output. */
+    static inline const std::string DEFAULT_SCORE_PRECISION = "DefaultPrecision"; /**< Default score precision. */
 
     /**
      * @brief Constructs a RecsGenerator object.
@@ -57,4 +57,3 @@ public:
 };
 
 #endif
-
