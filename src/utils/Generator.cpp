@@ -25,17 +25,17 @@ public:
     /**
      * @brief Default layer label for recommendations generation.
      */
-    static const string DEFAULT_LAYER_RECS_GEN_LABEL;
+    static constexpr string_view DEFAULT_LAYER_RECS_GEN_LABEL = "Output";
 
     /**
      * @brief Default score precision for recommendations generation.
      */
-    static const string DEFAULT_SCORE_PRECISION;
+    static constexpr string_view DEFAULT_SCORE_PRECISION = "4.3f";
 
     /**
      * @brief Scalar value for output.
      */
-    static const unsigned int Output_SCALAR;
+    static constexpr unsigned int Output_SCALAR = 5;
 
     /**
      * @brief Constructs a RecsGenerator object.
@@ -65,11 +65,6 @@ private:
     string scorePrecision;                            ///< Score precision for recommendations.
 
 };
-
-// Define the static constants
-const string RecsGenerator::DEFAULT_LAYER_RECS_GEN_LABEL = "Output";
-const string RecsGenerator::DEFAULT_SCORE_PRECISION = "4.3f";
-const unsigned int RecsGenerator::Output_SCALAR = 5;
 
 // Implementation of RecsGenerator methods...
 
