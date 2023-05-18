@@ -5,169 +5,75 @@
 #include <map>
 #include <string_view>
 #include <tuple>
+#include <utility>
+#include <string>
 
-namespace tensorhub {
-namespace jni {
+namespace tensorhub::jni {
 
-/**
- * @brief Exception type string for `java.lang.RuntimeException`.
- */
-extern const std::string_view RuntimeException;
+constexpr inline std::string_view RuntimeException = "RuntimeException";
+constexpr inline std::string_view NullPointerException = "NullPointerException";
+constexpr inline std::string_view IllegalStateException = "IllegalStateException";
+constexpr inline std::string_view IllegalArgumentException = "IllegalArgumentException";
+constexpr inline std::string_view ClassNotFoundException = "ClassNotFoundException";
+constexpr inline std::string_view NoSuchMethodException = "NoSuchMethodException";
+constexpr inline std::string_view FileNotFoundException = "FileNotFoundException";
+constexpr inline std::string_view UnsupportedOperationException = "UnsupportedOperationException";
+constexpr inline std::string_view ArrayList = "ArrayList";
+constexpr inline std::string_view String = "String";
+constexpr inline std::string_view NO_ARGS_CONSTRUCTOR = "NO_ARGS_CONSTRUCTOR";
 
-/**
- * @brief Exception type string for `java.lang.NullPointerException`.
- */
-extern const std::string_view NullPointerException;
-
-/**
- * @brief Exception type string for `java.lang.IllegalStateException`.
- */
-extern const std::string_view IllegalStateException;
-
-/**
- * @brief Exception type string for `java.lang.IllegalArgumentException`.
- */
-extern const std::string_view IllegalArgumentException;
-
-/**
- * @brief Exception type string for `java.lang.ClassNotFoundException`.
- */
-extern const std::string_view ClassNotFoundException;
-
-/**
- * @brief Exception type string for `java.lang.NoSuchMethodException`.
- */
-extern const std::string_view NoSuchMethodException;
-
-/**
- * @brief Exception type string for `java.io.FileNotFoundException`.
- */
-extern const std::string_view FileNotFoundException;
-
-/**
- * @brief Exception type string for `java.lang.UnsupportedOperationException`.
- */
-extern const std::string_view UnsupportedOperationException;
-
-/**
- * @brief Class name string for `java.util.ArrayList`.
- */
-extern const std::string_view ArrayList;
-
-/**
- * @brief Class name string for `java.lang.String`.
- */
-extern const std::string_view String;
-
-/**
- * @brief Descriptor for no-args constructor.
- */
-extern const std::string_view NO_ARGS_CONSTRUCTOR;
-
-/**
- * @brief Structure to store and manage global references to Java classes.
- */
-struct References;
-
-/**
- * @brief Deletes all global references stored in the given reference structure.
- *
- * @param env Pointer to the JNI environment.
- * @param refs Reference structure to be deleted.
- */
-void deleteReferences(JNIEnv *env, References &refs);
-
-/**
- * @brief Structure to store and manage global references to Java classes.
- */
 struct References {
  private:
   std::map<std::string, jclass> classGlobalRefs;
+
  public:
   friend void deleteReferences(JNIEnv *env, References &refs);
 
-  /**
-   * @brief Retrieves the global reference to the specified class.
-   *
-   * @param className Name of the class.
-   * @return Global reference to the specified class.
-   */
-  jclass getClassGlobalRef(const std::string_view &className) const;
+  jclass getClassGlobalRef(const std::string_view &className) const {
+    auto it = classGlobalRefs.find(std::string(className));
+    return it != classGlobalRefs.end() ? it->second : nullptr;
+  }
 
-  /**
-   * @brief Checks if a global reference to the specified class is stored in the reference structure.
-   *
-   * @param className Name of the class.
-   * @return True if a global reference to the specified class is stored, false otherwise.
-   */
-  bool containsClassGlobalRef(const std::string_view &className) const;
+  bool containsClassGlobalRef(const std::string_view &className) const {
+    return classGlobalRefs.find(std::string(className)) != classGlobalRefs.end();
+  }
 
-  /**
-   * @brief Stores a global reference to the specified class in the reference structure.
-   *
-   * @param className Name of the class.
-   * @param classRef Global reference to the class.
-   */
-  void putClassGlobalRef(const std::string_view &className, jclass classRef);
+  void putClassGlobalRef(const std::string_view &className, jclass classRef) {
+    classGlobalRefs[std::string(className)] = classRef;
+  }
 };
 
-/**
- * @brief Throws a Java exception with a formatted message.
- *
- * @param env Pointer to the JNI environment.
- * @param exceptionType Type of the exception to be thrown.
- * @param fmt Format string for the exception message.
- * @param ... Additional arguments for the format string.
- */
+void deleteReferences(JNIEnv *env, References &refs);
+
 void throwJavaException(JNIEnv* env, const std::string_view &exceptionType, const char *fmt, ...);
 
-/**
- * @brief Finds the specified class and returns a global reference to it.
- *
- * @param env Pointer to the JNI environment.
- * @param refs Reference structure to store the references.
- * @param className Name of the class to be found.
- * @return Global reference to the found class.
- */
 jclass findClassGlobalRef(JNIEnv *env, References &refs, const std::string_view &className);
 
-/**
- * @brief Finds the specified method and returns its method ID.
- *
- * @param env Pointer to the JNI environment.
- * @param refs Reference structure to store the references.
- * @param className Name of the class where the method is defined.
- * @param methodName Name of the method to be found.
- * @param methodDescriptor Descriptor of the method to be found.
- * @return Method ID of the found method.
- */
-jmethodID findMethodId(JNIEnv *env, References &refs, const std::string_view &className, const std::string_view &methodName,
-                       const std::string_view &methodDescriptor);
+jmethodID findMethodId(JNIEnv *env, References &refs, const std::string_view &className,
+                       const std::string_view &methodName, const std::string_view &methodDescriptor);
 
-/**
- * @brief Finds the constructor of the specified class and returns its method ID.
- *
- * @param env Pointer to the JNI environment.
- * @param refs Reference structure to store the references.
- * @param className Name of the class where the constructor is defined.
- * @param methodDescriptor Descriptor of the constructor to be found.
- * @return Method ID of the found constructor.
- */
 jmethodID findConstructorId(JNIEnv *env, References &refs, const std::string_view &className,
                             const std::string_view &methodDescriptor);
 
-/**
- * @brief Creates a new object of the specified class using the specified constructor.
- *
- * @param env Pointer to the JNI environment.
- * @param refs Reference structure holding the class and constructor references.
- * @param className Name of the class to be instantiated.
- * @param jConstructor Method ID of the constructor to be used.
- * @param ... Arguments for the constructor.
- * @return New instance of the specified class.
- */
-jobject newObject(JNIEnv *env, const References &refs, const std::string_view &className, jmethodID jConstructor, ...);
+template<typename... Args>
+jobject newObject(JNIEnv *env, const References &refs, const std::string_view &className,
+                  jmethodID jConstructor, Args&&... args) {
+  jclass cls = refs.getClassGlobalRef(className);
+  if (!cls) {
+    throwJavaException(env, ClassNotFoundException, "Class not found: %.*s", static_cast<int>(className.size()), className.data());
+    return nullptr;
+  }
 
+  jobject newObj = env->NewObject(cls, jConstructor, std::forward<Args>(args)...);
+  if (!newObj) {
+    throwJavaException(env, RuntimeException, "Failed to create new object of class: %.*s", static_cast<int>(className.size()), className.data());
+  }
+
+  return newObj;
 }
-}
-#endif
+
+}  // namespace jni
+}  // namespace tensorhub
+
+#endif  // JNI_UTIL_H_
+
