@@ -1,34 +1,39 @@
-#include "GpuTypes.h"  // Include file for GPU types
-#include "Types.h"  // Include file for general types
-#include <chrono>  // Include file for time-related functions
-#include <iostream>  // Include file for standard input/output
-#include <fstream>  // Include file for file input/output
-#include <vector>  // Include file for vector container
-#include <tuple>  // Include file for tuple container
-#include <string_view>  // Include file for string_view type
-#include <memory>  // Include file for smart pointers
-#include <filesystem>  // Include file for filesystem operations
+#include "GpuTypes.h"
+#include "Types.h"
+#include <chrono>
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <tuple>
+#include <string>
+#include <memory>
+#include <filesystem>
 
-namespace fs = std::filesystem;  // Alias for std::filesystem namespace
-
+namespace fs = std::filesystem;
+/**
+ * @brief The main function of the program.
+ *
+ * @param argc The number of command-line arguments.
+ * @param argv An array of command-line arguments.
+ * @return The exit status of the program.
+ */
 int main(int argc, char** argv)
 {
-    getGpu().Startup(argc, argv);  // Initialize GPU
+    getGpu().Startup(argc, argv);
 
-    CDL cdl;  // Create CDL object
+    CDL cdl;
 
-    if (argc == 2)  // Check if command-line argument is provided
+    if (argc == 2)
     {
-        int err = cdl.Load_JSON(argv[1]);  // Load JSON file
+        int err = cdl.Load_JSON(argv[1]);
         if (err != 0)
         {
-            std::cerr << "*** Error, " << argv[0] << " could not parse CDC file " << argv[1] << '\n';  // Print error message
+            std::cerr << "*** Error, " << argv[0] << " could not parse CDC file " << argv[1] << '\n';
             return -1;
         }
     }
-    else  // If no command-line argument is provided
+    else
     {
-        // Set default values for CDL object
         cdl._mode = Prediction;
         cdl._optimizer = TrainingMode::Nesterov;
         cdl._networkFileName = "network.nc";
@@ -42,262 +47,256 @@ int main(int argc, char** argv)
         cdl._dataFileName = "../../data/data_test.nc";
     }
 
-    getGpu().SetRandomSeed(cdl._randomSeed);  // Set random seed for GPU
+    getGpu().SetRandomSeed(cdl._randomSeed);
 
-    float lambda1 = 0.0f;  // Initialize lambda1 variable
-    float mu1 = 0.0f;  // Initialize mu1 variable
+    float lambda1 = 0.0f;
+    float mu1 = 0.0f;
 
-    std::unique_ptr<Network> pNetwork;  // Create unique pointer to Network object
+    auto pNetwork = std::make_unique<Network>();
 
-    std::vector<std::unique_ptr<DataSetBase>> vDataSet;  // Create vector of unique pointers to DataSetBase objects
+    std::vector<std::unique_ptr<DataSetBase>> vDataSet;
 
-    vDataSet = LoadNetCDF(cdl._dataFileName);  // Load NetCDF data into the vector
+    vDataSet = LoadNetCDF(cdl._dataFileName);
 
 #if 0
-    std::vector<std::tuple<uint64_t, uint64_t>> vMemory = vDataSet[0]->getMemoryUsage();
-
-    uint64_t cpuMemory, gpuMemory;
-    std::tie(cpuMemory, gpuMemory) = vMemory[0];
-
+    auto [cpuMemory, gpuMemory] = vDataSet[0]->getMemoryUsage();
     std::cout << "CPUMem: " << cpuMemory << " GPUMem: " << gpuMemory << '\n';
-
     exit(-1);
 #endif
 
-    if (cdl._mode == Prediction)  // Check if mode is Prediction
-        pNetwork = LoadNeuralNetworkNetCDF(cdl._networkFileName, cdl._batch);  // Load neural network from NetCDF file
-    else  // If mode is not Prediction
-        pNetwork = LoadNeuralNetworkJSON(cdl._networkFileName, cdl._batch, vDataSet);  // Load neural network from JSON file with given dataset
+    if (cdl._mode == Prediction)
+        pNetwork = LoadNeuralNetworkNetCDF(cdl._networkFileName, cdl._batch);
+    else
+        pNetwork = LoadNeuralNetworkJSON(cdl._networkFileName, cdl._batch, vDataSet);
 
-    int totalGPUMemory;  // Initialize variable for total GPU memory
-    int totalCPUMemory;  // Initialize variable for total CPU memory
-    getGpu().GetMemoryUsage(&totalGPUMemory, &totalCPUMemory);  // Get memory usage from GPU
+    int totalGPUMemory;
+    int totalCPUMemory;
+    getGpu().GetMemoryUsage(&totalGPUMemory, &totalCPUMemory);
 
-    std::cout << "GPU Memory Usage: " << totalGPUMemory << " KB\n";  // Print GPU memory usage
-    std::cout << "CPU Memory Usage: " << totalCPUMemory << " KB\n";  // Print CPU memory usage
+    std::cout << "GPU Memory Usage: " << totalGPUMemory << " KB\n";
+    std::cout << "CPU Memory Usage: " << totalCPUMemory << " KB\n";
 
-    pNetwork->LoadDataSets(vDataSet);  // Load datasets into the network
+    pNetwork->LoadDataSets(vDataSet);
 
-    pNetwork->SetCheckpoint(cdl._checkpointFileName, cdl._checkpointInterval);  // Set checkpoint parameters
+    pNetwork->SetCheckpoint(cdl._checkpointFileName, cdl._checkpointInterval);
 
-    if (cdl._mode == Mode::Validation)  // If mode is Validation
+    if (cdl._mode == Mode::Validation)
     {
-        pNetwork->SetTrainingMode(Nesterov);  // Set training mode to Nesterov
-        pNetwork->Validate();  // Perform validation
+        pNetwork->SetTrainingMode(Nesterov);
+        pNetwork->Validate();
     }
-    else if (cdl._mode == Training)  // If mode is Training
+    else if (cdl._mode == Training)
     {
-        pNetwork->SetTrainingMode(cdl._optimizer);  // Set training mode to specified optimizer
+        pNetwork->SetTrainingMode(cdl._optimizer);
 
-        float alpha = cdl._alpha;  // Initialize alpha variable
-        int epochs = 0;  // Initialize epochs variable
+        float alpha = cdl._alpha;
+        int epochs = 0;
 
-        while (epochs < cdl._epochs)  // Train for specified number of epochs
+        while (epochs < cdl._epochs)
         {
-            pNetwork->Train(cdl._alphaInterval, alpha, cdl._lambda, lambda1, cdl._mu, mu1);  // Train the network
-            alpha *= cdl._alphaMultiplier;  // Update alpha
-            epochs += cdl._alphaInterval;  // Increment epochs
+            pNetwork->Train(cdl._alphaInterval, alpha, cdl._lambda, lambda1, cdl._mu, mu1);
+            alpha *= cdl._alphaMultiplier;
+            epochs += cdl._alphaInterval;
         }
 
-        pNetwork->SaveNetCDF(cdl._resultsFileName);  // Save results to NetCDF file
+        pNetwork->SaveNetCDF(cdl._resultsFileName);
     }
-    else  // If mode is not Validation or Training
+    else
     {
-        bool bFilterPast = false;  // Initialize bFilterPast variable
+        bool bFilterPast = false;
 
-        const Layer* pLayer = pNetwork->GetLayer("Output");  // Get output layer
-        uint32_t Nx, Ny, Nz, Nw;  // Initialize variables for dimensions
-        std::tie(Nx, Ny, Nz, Nw) = pLayer->GetLocalDimensions();  // Get dimensions of output layer
+        const Layer* pLayer = pNetwork->GetLayer("Output");
+        uint32_t Nx, Ny, Nz, Nw;
+        std::tie(Nx, Ny, Nz, Nw) = pLayer->GetLocalDimensions();
 
-        const uint32_t STRIDE = Nx * Ny * Nz * Nw;  // Calculate stride
+        const uint32_t STRIDE = Nx * Ny * Nz * Nw;
 
-        unsigned int K = 10;  // Set K value
+        unsigned int K = 10;
 
-        size_t inputIndex = 0;  // Initialize inputIndex variable
-        while ((inputIndex < vDataSet.size()) && (vDataSet[inputIndex]->_name != "input"))  // Find index of input dataset
+        size_t inputIndex = 0;
+        while ((inputIndex < vDataSet.size()) && (vDataSet[inputIndex]->_name != "input"))
             inputIndex++;
         if (inputIndex == vDataSet.size())
         {
-            std::cerr << "Unable to find input dataset, exiting.\n";  // Print error message and exit
+            std::cerr << "Unable to find input dataset, exiting.\n";
             exit(-1);
         }
 
-        size_t outputIndex = 0;  // Initialize outputIndex variable
-        while ((outputIndex < vDataSet.size()) && (vDataSet[outputIndex]->_name != "output"))  // Find index of output dataset
+        size_t outputIndex = 0;
+        while ((outputIndex < vDataSet.size()) && (vDataSet[outputIndex]->_name != "output"))
             outputIndex++;
         if (outputIndex == vDataSet.size())
         {
-            std::cerr << "Unable to find output dataset, exiting.\n";  // Print error message and exit
+            std::cerr << "Unable to find output dataset, exiting.\n";
             exit(-1);
         }
 
-        int batch = cdl._batch;  // Set batch size
+        int batch = cdl._batch;
 
-        std::vector<NNFloat> vPrecision(K);  // Create vector for precision values
-        std::vector<NNFloat> vRecall(K);  // Create vector for recall values
-        std::vector<NNFloat> vNDCG(K);  // Create vector for NDCG values
+        std::vector<NNFloat> vPrecision(K);
+        std::vector<NNFloat> vRecall(K);
+        std::vector<NNFloat> vNDCG(K);
 
-        std::vector<uint32_t> vDataPoints(batch);  // Create vector for data points
+        std::vector<uint32_t> vDataPoints(batch);
 
-        std::unique_ptr<GpuBuffer<NNFloat>> pbTarget = std::make_unique<GpuBuffer<NNFloat>>(batch * STRIDE, true);  // Create unique pointer for target buffer
-        std::unique_ptr<GpuBuffer<NNFloat>> pbOutput = std::make_unique<GpuBuffer<NNFloat>>(batch * STRIDE, true);  // Create unique pointer for output buffer
+        auto pbTarget = std::make_unique<GpuBuffer<NNFloat>>(batch * STRIDE, true);
+        auto pbOutput = std::make_unique<GpuBuffer<NNFloat>>(batch * STRIDE, true);
 
-        DataSet<NNFloat>* pInputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[inputIndex].get());  // Get input dataset
-        DataSet<NNFloat>* pOutputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[outputIndex].get());  // Get output dataset
-        std::unique_ptr<GpuBuffer<NNFloat>> pbKey = std::make_unique<GpuBuffer<NNFloat>>(batch * K, true);  // Create unique pointer for key buffer
-        std::unique_ptr<GpuBuffer<unsigned int>> pbUIValue = std::make_unique<GpuBuffer<unsigned int>>(batch * K, true);  // Create unique pointer for UIValue buffer
-        std::unique_ptr<GpuBuffer<NNFloat>> pbFValue = std::make_unique<GpuBuffer<NNFloat>>(batch * K, true);  // Create unique pointer for FValue buffer
+        auto pInputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[inputIndex].get());
+        auto pOutputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[outputIndex].get());
+        auto pbKey = std::make_unique<GpuBuffer<NNFloat>>(batch * K, true);
+        auto pbUIValue = std::make_unique<GpuBuffer<unsigned int>>(batch * K, true);
+        auto pbFValue = std::make_unique<GpuBuffer<NNFloat>>(batch * K, true);
 
-        NNFloat* pOutputValue = pbOutput->_pSysData;  // Get pointer to output value data
+        NNFloat* pOutputValue = pbOutput->_pSysData;
 
-        bool bMultiGPU = (getGpu()._numprocs > 1);  // Check if multiple GPUs are being used
+        bool bMultiGPU = (getGpu()._numprocs > 1);
 
-        std::unique_ptr<GpuBuffer<NNFloat>> pbMultiKey = nullptr;  // Create unique pointer for multi-key buffer
-        std::unique_ptr<GpuBuffer<NNFloat>> pbMultiFValue = nullptr;  // Create unique pointer for multi-FValue buffer
-        NNFloat* pMultiKey = nullptr;  // Initialize pointer to multi-key data
-        NNFloat* pMultiFValue = nullptr;  // Initialize pointer to multi-FValue data
+        std::unique_ptr<GpuBuffer<NNFloat>> pbMultiKey = nullptr;
+        std::unique_ptr<GpuBuffer<NNFloat>> pbMultiFValue = nullptr;
+        NNFloat* pMultiKey = nullptr;
+        NNFloat* pMultiFValue = nullptr;
 
-        cudaIpcMemHandle_t keyMemHandle;  // Create IPC memory handle for key
-        cudaIpcMemHandle_t valMemHandle;  // Create IPC memory handle for value
+        cudaIpcMemHandle_t keyMemHandle;
+        cudaIpcMemHandle_t valMemHandle;
 
-        if (bMultiGPU)  // If multiple GPUs are being used
+        if (bMultiGPU)
         {
             if (getGpu()._id == 0)
             {
-                pbMultiKey = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * batch * K, true);  // Create unique pointer for multi-key buffer
-                pbMultiFValue = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * batch * K, true);  // Create unique pointer for multi-FValue buffer
-                pMultiKey = pbMultiKey->_pDevData;  // Get pointer to multi-key data
-                pMultiFValue = pbMultiFValue->_pDevData;  // Get pointer to multi-FValue data
+                pbMultiKey = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * batch * K, true);
+                pbMultiFValue = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * batch * K, true);
+                pMultiKey = pbMultiKey->_pDevData;
+                pMultiFValue = pbMultiFValue->_pDevData;
 
-                cudaError_t status = cudaIpcGetMemHandle(&keyMemHandle, pMultiKey);  // Get IPC memory handle for multi-key data
+                cudaError_t status = cudaIpcGetMemHandle(&keyMemHandle, pMultiKey);
                 RTERROR(status, "cudaIpcGetMemHandle: Failed to get IPC mem handle on pMultiKey");
 
-                status = cudaIpcGetMemHandle(&valMemHandle, pMultiFValue);  // Get IPC memory handle for multi-FValue data
+                status = cudaIpcGetMemHandle(&valMemHandle, pMultiFValue);
                 RTERROR(status, "cudaIpcGetMemHandle: Failed to get IPC mem handle on pMultiFValue");
             }
 
-            MPI_Bcast(&keyMemHandle, sizeof(cudaIpcMemHandle_t), MPI_BYTE, 0, MPI_COMM_WORLD);  // Broadcast IPC memory handle for multi-key data
-            MPI_Bcast(&valMemHandle, sizeof(cudaIpcMemHandle_t), MPI_BYTE, 0, MPI_COMM_WORLD);  // Broadcast IPC memory handle for multi-FValue data
+            MPI_Bcast(&keyMemHandle, sizeof(cudaIpcMemHandle_t), MPI_BYTE, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&valMemHandle, sizeof(cudaIpcMemHandle_t), MPI_BYTE, 0, MPI_COMM_WORLD);
 
             if (getGpu()._id != 0)
             {
-                cudaError_t status = cudaIpcOpenMemHandle((void**)&pMultiKey, keyMemHandle, cudaIpcMemLazyEnablePeerAccess);  // Open IPC memory handle for multi-key data
+                cudaError_t status = cudaIpcOpenMemHandle((void**)&pMultiKey, keyMemHandle, cudaIpcMemLazyEnablePeerAccess);
                 RTERROR(status, "cudaIpcOpenMemHandle: Unable to open key IPCMemHandle");
 
-                status = cudaIpcOpenMemHandle((void**)&pMultiFValue, valMemHandle, cudaIpcMemLazyEnablePeerAccess);  // Open IPC memory handle for multi-FValue data
+                status = cudaIpcOpenMemHandle((void**)&pMultiFValue, valMemHandle, cudaIpcMemLazyEnablePeerAccess);
                 RTERROR(status, "cudaIpcOpenMemHandle: Unable to open value IPCMemHandle");
             }
         }
 
-        for (unsigned long long int pos = 0; pos < pNetwork->GetExamples(); pos += pNetwork->GetBatch())  // Loop over examples in batches
+        for (unsigned long long int pos = 0; pos < pNetwork->GetExamples(); pos += pNetwork->GetBatch())
         {
-            pNetwork->SetPosition(pos);  // Set current position in the network
+            pNetwork->SetPosition(pos);
 
-            pNetwork->PredictBatch();  // Perform batch prediction
+            pNetwork->PredictBatch();
 
-            unsigned int batch = pNetwork->GetBatch();  // Get batch size
+            unsigned int batch = pNetwork->GetBatch();
 
-            if (pos + batch > pNetwork->GetExamples())  // Adjust batch size if necessary
+            if (pos + batch > pNetwork->GetExamples())
                 batch = pNetwork->GetExamples() - pos;
 
-            NNFloat* pTarget = pbTarget->_pSysData;  // Get pointer to target data
+            NNFloat* pTarget = pbTarget->_pSysData;
+            memset(pTarget, 0, STRIDE * batch * sizeof(NNFloat));
 
-            memset(pTarget, 0, STRIDE * batch * sizeof(NNFloat));  // Initialize target data to zero
-
-            const NNFloat* pOutputKey = pNetwork->GetUnitBuffer("Output");  // Get output key data
-            NNFloat* pOut = pOutputValue;  // Get pointer to output value data
-            cudaError_t status = cudaMemcpy(pOut, pOutputKey, batch * STRIDE * sizeof(NNFloat), cudaMemcpyDeviceToHost);  // Copy output value data from device to host
+            const NNFloat* pOutputKey = pNetwork->GetUnitBuffer("Output");
+            NNFloat* pOut = pOutputValue;
+            cudaError_t status = cudaMemcpy(pOut, pOutputKey, batch * STRIDE * sizeof(NNFloat), cudaMemcpyDeviceToHost);
             RTERROR(status, "cudaMemcpy GpuBuffer::Download failed");
 
-            for (int i = 0; i < batch; i++)  // Loop over examples in the batch
+            for (int i = 0; i < batch; i++)
             {
                 int j = pos + i;
-                vDataPoints[i] = pOutputDataSet->_vSparseEnd[j] - pOutputDataSet->_vSparseStart[j];  // Get number of data points for the example
+                vDataPoints[i] = pOutputDataSet->_vSparseEnd[j] - pOutputDataSet->_vSparseStart[j];
 
-                for (size_t k = pOutputDataSet->_vSparseStart[j]; k < pOutputDataSet->_vSparseEnd[j]; k++)  // Loop over data points in the example
+                for (size_t k = pOutputDataSet->_vSparseStart[j]; k < pOutputDataSet->_vSparseEnd[j]; k++)
                 {
-                    pTarget[pOutputDataSet->_vSparseIndex[k]] = 1.0f;  // Set target value to 1.0 for the data point
+                    pTarget[pOutputDataSet->_vSparseIndex[k]] = 1.0f;
                 }
 
-                if (bFilterPast)  // If filtering past data points
+                if (bFilterPast)
                 {
-                    for (size_t k = pInputDataSet->_vSparseStart[j]; k < pInputDataSet->_vSparseEnd[j]; k++)  // Loop over data points in the input dataset
+                    for (size_t k = pInputDataSet->_vSparseStart[j]; k < pInputDataSet->_vSparseEnd[j]; k++)
                     {
-                        pOut[pInputDataSet->_vSparseIndex[k]] = 0.0f;  // Set output value to 0.0 for the data point
+                        pOut[pInputDataSet->_vSparseIndex[k]] = 0.0f;
                     }
                 }
 
                 pTarget += STRIDE;
                 pOut += STRIDE;
             }
-            pbTarget->Upload();  // Upload target data to GPU
+            pbTarget->Upload();
 
-            pbOutput->Upload();  // Upload output data to GPU
+            pbOutput->Upload();
 
-            kCalculateOutput(pbOutput->_pDevData, pbTarget->_pDevData, pbKey->_pDevData, pbFValue->_pDevData, batch, STRIDE, K);  // Calculate output values
+            kCalculateOutput(pbOutput->_pDevData, pbTarget->_pDevData, pbKey->_pDevData, pbFValue->_pDevData, batch, STRIDE, K);
 
-            pbKey->Download();  // Download key data from GPU
+            pbKey->Download();
 
-            pbFValue->Download();  // Download FValue data from GPU
+            pbFValue->Download();
 
-            if (bMultiGPU)  // If multiple GPUs are being used
+            if (bMultiGPU)
             {
 
-                MPI_Reduce((getGpu()._id == 0) ? MPI_IN_PLACE : vDataPoints.data(), vDataPoints.data(), batch, MPI_UINT32_T, MPI_SUM, 0, MPI_COMM_WORLD);  // Reduce data points using MPI
+                MPI_Reduce((getGpu()._id == 0) ? MPI_IN_PLACE : vDataPoints.data(), vDataPoints.data(), batch, MPI_UINT32_T, MPI_SUM, 0, MPI_COMM_WORLD);
 
-                uint32_t offset = K * getGpu()._id;  // Calculate offset for multi-key and multi-FValue data
-                uint32_t kstride = K * getGpu()._numprocs;  // Calculate stride for multi-key and multi-FValue data
+                uint32_t offset = K * getGpu()._id;
+                uint32_t kstride = K * getGpu()._numprocs;
 
-                cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(NNFloat), pbKey->_pDevData, K * sizeof(NNFloat), K * sizeof(NNFloat), batch, cudaMemcpyDefault);  // Copy key data to multi-key data
-                cudaMemcpy2D(pMultiFValue + offset, kstride * sizeof(NNFloat), pbFValue->_pDevData, K * sizeof(NNFloat), K * sizeof(NNFloat), batch, cudaMemcpyDefault);  // Copy FValue data to multi-FValue data
+                cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(NNFloat), pbKey->_pDevData, K * sizeof(NNFloat), K * sizeof(NNFloat), batch, cudaMemcpyDefault);
+                cudaMemcpy2D(pMultiFValue + offset, kstride * sizeof(NNFloat), pbFValue->_pDevData, K * sizeof(NNFloat), K * sizeof(NNFloat), batch, cudaMemcpyDefault);
 
-                cudaDeviceSynchronize();  // Synchronize GPUs
+                cudaDeviceSynchronize();
 
-                MPI_Barrier(MPI_COMM_WORLD);  // Synchronize MPI processes
+                MPI_Barrier(MPI_COMM_WORLD);
 
-                if (getGpu()._id == 0)  // If GPU ID is 0
+                if (getGpu()._id == 0)
                 {
-                    kCalculateOutput(pbMultiKey->_pDevData, pbMultiFValue->_pDevData, pbKey->_pDevData, pbFValue->_pDevData, batch, getGpu()._numprocs * K, K);  // Calculate output values using multi-key and multi-FValue data
+                    kCalculateOutput(pbMultiKey->_pDevData, pbMultiFValue->_pDevData, pbKey->_pDevData, pbFValue->_pDevData, batch, getGpu()._numprocs * K, K);
                 }
             }
 
-            if (getGpu()._id == 0)  // If GPU ID is 0
+            if (getGpu()._id == 0)
             {
-                pbKey->Download();  // Download key data from GPU
-                pbFValue->Download();  // Download FValue data from GPU
+                pbKey->Download();
+                pbFValue->Download();
 
-                NNFloat* pKey = pbKey->_pSysData;  // Get pointer to key data
-                NNFloat* pValue = pbFValue->_pSysData;  // Get pointer to FValue data
+                NNFloat* pKey = pbKey->_pSysData;
+                NNFloat* pValue = pbFValue->_pSysData;
 
-                for (int i = 0; i < batch; i++)  // Loop over examples in the batch
+                for (int i = 0; i < batch; i++)
                 {
-                    NNFloat p = vDataPoints[i];  // Get number of data points for the example
+                    NNFloat p = vDataPoints[i];
 
-                    NNFloat tp = 0.0f;  // Initialize true positives
-                    NNFloat fp = 0.0f;  // Initialize false positives
-                    NNFloat idcg = 0.0f;  // Initialize ideal DCG
-                    NNFloat dcg = 0.0f;  // Initialize DCG
+                    NNFloat tp = 0.0f;
+                    NNFloat fp = 0.0f;
+                    NNFloat idcg = 0.0f;
+                    NNFloat dcg = 0.0f;
 
-                    for (NNFloat pp = 0.0f; pp < p; pp++)  // Calculate ideal DCG
+                    for (NNFloat pp = 0.0f; pp < p; pp++)
                     {
                         idcg += 1.0f / log2(pp + 2.0f);
                     }
 
-                    for (int j = 0; j < K; j++)  // Loop over top K values
+                    for (int j = 0; j < K; j++)
                     {
-                        if (pValue[j] == 1.0f)  // If value is 1.0
+                        if (pValue[j] == 1.0f)
                         {
-                            tp++;  // Increment true positives
-                            dcg += 1.0f / log2(static_cast<float>(j + 2));  // Calculate DCG
+                            tp++;
+                            dcg += 1.0f / log2(static_cast<float>(j + 2));
                         }
                         else
                         {
-                            fp++;  // Increment false positives
+                            fp++;
                         }
 
-                        vPrecision[j] += tp / (tp + fp);  // Update precision
-                        vRecall[j] += tp / p;  // Update recall
-                        vNDCG[j] += dcg / idcg;  // Update NDCG
+                        vPrecision[j] += tp / (tp + fp);
+                        vRecall[j] += tp / p;
+                        vNDCG[j] += dcg / idcg;
                     }
 
                     pKey += K;
@@ -306,47 +305,45 @@ int main(int argc, char** argv)
             }
         }
 
-        pbKey.reset();  // Reset key buffer
-        pbFValue.reset();  // Reset FValue buffer
-        pbUIValue.reset();  // Reset UIValue buffer
-        pbTarget.reset();  // Reset target buffer
-        pbOutput.reset();  // Reset output buffer
+        pbKey.reset();
+        pbFValue.reset();
+        pbUIValue.reset();
+        pbTarget.reset();
+        pbOutput.reset();
 
-        if (bMultiGPU)  // If multiple GPUs are being used
+        if (bMultiGPU)
         {
             if (getGpu()._id != 0)
             {
-                cudaError_t status = cudaIpcCloseMemHandle(pMultiKey);  // Close IPC memory handle for multi-key data
+                cudaError_t status = cudaIpcCloseMemHandle(pMultiKey);
                 RTERROR(status, "cudaIpcCloseMemHandle: Error closing MultiKey IpcMemHandle");
 
-                status = cudaIpcCloseMemHandle(pMultiFValue);  // Close IPC memory handle for multi-FValue data
+                status = cudaIpcCloseMemHandle(pMultiFValue);
                 RTERROR(status, "cudaIpcCloseMemHandle: Error closing MultiFValue IpcMemHandle");
             }
 
-            pbMultiKey.reset();  // Reset multi-key buffer
-            pbMultiFValue.reset();  // Reset multi-FValue buffer
+            pbMultiKey.reset();
+            pbMultiFValue.reset();
         }
 
-        if (getGpu()._id == 0)  // If GPU ID is 0
+        if (getGpu()._id == 0)
         {
-            for (int i = 0; i < K; i++)  // Loop over top K values
-                std::cout << i + 1 << "," << vPrecision[i] / pNetwork->GetExamples() << "," << vRecall[i] / pNetwork->GetExamples() << "," << vNDCG[i] / pNetwork->GetExamples() << '\n';  // Print precision, recall, and NDCG values
+            for (int i = 0; i < K; i++)
+                std::cout << i + 1 << "," << vPrecision[i] / pNetwork->GetExamples() << "," << vRecall[i] / pNetwork->GetExamples() << "," << vNDCG[i] / pNetwork->GetExamples() << '\n';
         }
     }
 
-    getGpu().GetMemoryUsage(&totalGPUMemory, &totalCPUMemory);  // Get memory usage from GPU
+    getGpu().GetMemoryUsage(&totalGPUMemory, &totalCPUMemory);
 
-    if (getGpu()._id == 0)  // If GPU ID is 0
+    if (getGpu()._id == 0)
     {
-        std::cout << "GPU Memory Usage: " << totalGPUMemory << " KB\n";  // Print GPU memory usage
-        std::cout << "CPU Memory Usage: " << totalCPUMemory << " KB\n";  // Print CPU memory usage
+        std::cout << "GPU Memory Usage: " << totalGPUMemory << " KB\n";
+        std::cout << "CPU Memory Usage: " << totalCPUMemory << " KB\n";
     }
 
-    pNetwork.reset();  // Reset network
+    pNetwork.reset();
+    vDataSet.clear();
+    getGpu().Shutdown();
 
-    vDataSet.clear();  // Clear dataset vector
-
-    getGpu().Shutdown();  // Shutdown GPU
-
-    return 0;  // Return from main function
+    return 0;
 }
