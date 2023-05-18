@@ -9,12 +9,12 @@ package com.system.tensorhub
  * @property examples The number of examples.
  * @property stride The stride calculated based on the dimensions.
  */
-class Dim(
+data class Dim(
     val dimensions: Int,
     val x: Int,
     val y: Int,
     val z: Int,
-    val examples: Int,
+    val examples: Int
 ) {
     /**
      * The stride calculated based on the dimensions.
@@ -30,11 +30,11 @@ class Dim(
      * @param examples The number of examples.
      */
     constructor(dimensions: Int, x: Int, y: Int, z: Int, examples: Int) : this(
-        dimensions = dimensions,
-        x = x,
-        y = y,
-        z = z,
-        examples = examples
+        dimensions,
+        x,
+        y,
+        z,
+        examples
     )
 
     /**
@@ -43,11 +43,11 @@ class Dim(
      * @param examples The number of examples.
      */
     constructor(dim: Dim, examples: Int) : this(
-        dimensions = dim.dimensions,
-        x = dim.x,
-        y = dim.y,
-        z = dim.z,
-        examples = examples
+        dim.dimensions,
+        dim.x,
+        dim.y,
+        dim.z,
+        examples
     )
 
     companion object {
@@ -57,9 +57,7 @@ class Dim(
          * @param examples The number of examples.
          * @return The created 1-dimensional `Dim` object.
          */
-        fun _1d(x: Int, examples: Int): Dim {
-            return Dim(dimensions = 1, x = x, y = 1, z = 1, examples = examples)
-        }
+        fun _1d(x: Int, examples: Int): Dim = Dim(1, x, 1, 1, examples)
 
         /**
          * Creates a 2-dimensional `Dim` object with the specified sizes and number of examples.
@@ -68,9 +66,7 @@ class Dim(
          * @param examples The number of examples.
          * @return The created 2-dimensional `Dim` object.
          */
-        fun _2d(x: Int, y: Int, examples: Int): Dim {
-            return Dim(dimensions = 2, x = x, y = y, z = 1, examples = examples)
-        }
+        fun _2d(x: Int, y: Int, examples: Int): Dim = Dim(2, x, y, 1, examples)
 
         /**
          * Creates a 3-dimensional `Dim` object with the specified sizes and number of examples.
@@ -80,8 +76,6 @@ class Dim(
          * @param examples The number of examples.
          * @return The created 3-dimensional `Dim` object.
          */
-        fun _3d(x: Int, y: Int, z: Int, examples: Int): Dim {
-            return Dim(dimensions = 3, x = x, y = y, z = z, examples = examples)
-        }
+        fun _3d(x: Int, y: Int, z: Int, examples: Int): Dim = Dim(3, x, y, z, examples)
     }
 }
