@@ -1,99 +1,81 @@
-#include <jni.h>
+#include <cstddef>
 
-#ifndef _Included_com_system_tensorhub_knn_KNearestNeighborsCuda
-#define _Included_com_system_tensorhub_knn_KNearestNeighborsCuda
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * @brief Constant representing the value of a null pointer.
- */
-#undef com_system_tensorhub_knn_KNearestNeighborsCuda_NULLPTR
-#define com_system_tensorhub_knn_KNearestNeighborsCuda_NULLPTR 0LL
+using jlong = long long;
+using jint = int;
+using jchar = char;
+using jfloatArray = float*;
+using jintArray = int*;
+using jobjectArray = jobject*;
+using jobject = void*;
 
 /**
- * @brief Constant representing the default delimiter for key-value pairs in the input data.
- */
-#undef com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_KEYVAL_DELIM
-#define com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_KEYVAL_DELIM 9L
-
-/**
- * @brief Constant representing the default delimiter for vector elements in the input data.
- */
-#undef com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_VEC_DELIM
-#define com_system_tensorhub_knn_KNearestNeighborsCuda_DEFAULT_VEC_DELIM 32L
-
-/**
- * @brief JNI function to initialize the KNearestNeighborsCuda instance.
+ * @brief Initializes the KNearestNeighborsCuda instance.
  *
- * @param env Pointer to the JNI environment.
- * @param clazz Reference to the calling class.
- * @param rows Number of rows in the input data.
- * @param cols Number of columns in the input data.
- * @param k Number of nearest neighbors to be found.
- * @param num_threads Number of threads to be used in the computation.
- * @return Handle to the KNearestNeighborsCuda instance.
+ * @param env The JNI environment.
+ * @param clazz The Java class.
+ * @param rows The number of rows in the data.
+ * @param cols The number of columns in the data.
+ * @param k The number of nearest neighbors to find.
+ * @param num_threads The number of threads to use.
+ * @return The handle to the initialized instance.
  */
-JNIEXPORT jlong JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_initialize
-  (JNIEnv *env, jclass clazz, jint rows, jint cols, jint k, jint num_threads);
+inline jlong Java_com_system_tensorhub_knn_KNearestNeighborsCuda_initialize(JNIEnv* env, jclass clazz, jint rows, jint cols, jint k, jint num_threads);
 
 /**
- * @brief JNI function to load the input data into the KNearestNeighborsCuda instance.
+ * @brief Loads the data into the KNearestNeighborsCuda instance.
  *
- * @param env Pointer to the JNI environment.
- * @param clazz Reference to the calling class.
- * @param data Object array holding the input data.
- * @param labels Integer array holding the labels for the input data.
- * @param keyval_delim Delimiter for key-value pairs in the input data.
- * @param vec_delim Delimiter for vector elements in the input data.
- * @param handle Handle to the KNearestNeighborsCuda instance.
+ * @param env The JNI environment.
+ * @param clazz The Java class.
+ * @param data The data array.
+ * @param labels The labels array.
+ * @param keyval_delim The delimiter for key-value pairs.
+ * @param vec_delim The delimiter for vector elements.
+ * @param handle The handle to the KNearestNeighborsCuda instance.
  */
-JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_load
-  (JNIEnv *env, jclass clazz, jobjectArray data, jintArray labels, jchar keyval_delim, jchar vec_delim, jlong handle);
+inline void Java_com_system_tensorhub_knn_KNearestNeighborsCuda_load(JNIEnv* env, jclass clazz, jobjectArray data, jintArray labels, jchar keyval_delim, jchar vec_delim, jlong handle);
 
 /**
- * @brief JNI function to shut down the KNearestNeighborsCuda instance.
+ * @brief Shuts down the KNearestNeighborsCuda instance.
  *
- * @param env Pointer to the JNI environment.
- * @param clazz Reference to the calling class.
- * @param handle Handle to the KNearestNeighborsCuda instance.
+ * @param env The JNI environment.
+ * @param clazz The Java class.
+ * @param handle The handle to the KNearestNeighborsCuda instance.
  */
-JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_shutdown
-  (JNIEnv *env, jclass clazz, jlong handle);
+inline void Java_com_system_tensorhub_knn_KNearestNeighborsCuda_shutdown(JNIEnv* env, jclass clazz, jlong handle);
 
 /**
- * @brief JNI function to find the k nearest neighbors for a query vector.
+ * @brief Finds the K-nearest neighbors for a given query vector and returns the distances and labels.
  *
- * @param env Pointer to the JNI environment.
- * @param clazz Reference to the calling class.
- * @param k Number of nearest neighbors to be found.
- * @param query_vec Query vector.
- * @param query_len Length of the query vector.
- * @param num_results Number of results to be returned.
- * @param distances Array to store the distances of the nearest neighbors.
- * @param labels Array to store the labels of the nearest neighbors.
- * @param handle Handle to the KNearestNeighborsCuda instance.
+ * @param env The JNI environment.
+ * @param clazz The Java class.
+ * @param k The number of nearest neighbors to find.
+ * @param query_vec The query vector.
+ * @param query_len The length of the query vector.
+ * @param num_results The number of results to return.
+ * @param distances The array to store the distances.
+ * @param labels The array to store the labels.
+ * @param handle The handle to the KNearestNeighborsCuda instance.
  */
-JNIEXPORT void JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J
-  (JNIEnv *env, jclass clazz, jint k, jfloatArray query_vec, jint query_len, jint num_results, jfloatArray distances, jobjectArray labels, jlong handle);
+inline void Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FII_3F_3Ljava_lang_String_2J(JNIEnv* env, jclass clazz, jint k, jfloatArray query_vec, jint query_len, jint num_results, jfloatArray distances, jobjectArray labels, jlong handle);
 
 /**
- * @brief JNI function to find the k nearest neighbors for a query vector and return the results as a KnnResult object.
+ * @brief Finds the K-nearest neighbors for a given query vector and returns a Java object containing the results.
  *
- * @param env Pointer to the JNI environment.
- * @param clazz Reference to the calling class.
- * @param k Number of nearest neighbors to be found.
- * @param query_vec Query vector.
- * @param query_len Length of the query vector.
- * @param num_results Number of results to be returned.
- * @param handle Handle to the KNearestNeighborsCuda instance.
- * @return KnnResult object holding the results of the nearest neighbor search.
+ * @param env The JNI environment.
+ * @param clazz The Java class.
+ * @param k The number of nearest neighbors to find.
+ * @param query_vec The query vector.
+ * @param query_len The length of the query vector.
+ * @param num_results The number of results to return.
+ * @param handle The handle to the KNearestNeighborsCuda instance.
+ * @return The Java object containing the results.
  */
-JNIEXPORT jobject JNICALL Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FIIJ
-  (JNIEnv *env, jclass clazz, jint k, jfloatArray query_vec, jint query_len, jint num_results, jlong handle);
+inline jobject Java_com_system_tensorhub_knn_KNearestNeighborsCuda_findKnn__I_3FIIJ(JNIEnv* env, jclass clazz, jint k, jfloatArray query_vec, jint query_len, jint num_results, jlong handle);
 
 #ifdef __cplusplus
 }
-#endif
 #endif
