@@ -26,7 +26,7 @@ private:
     const uint32_t maxK;
 
     // Map of output scores buffers for each layer.
-    std::map<std::string, GpuBuffer<NNFloat>*> dOutputScores;
+    std::map<std::string, GpuBuffer<Float>*> dOutputScores;
     // Map of output indexes buffers for each layer.
     std::map<std::string, GpuBuffer<uint32_t>*> dOutputIndexes;
 
@@ -51,20 +51,20 @@ public:
      * @brief Retrieves the neural network associated with this context.
      * @return Pointer to the neural network.
      */
-    NNNetwork* getNetwork() const;
+    Network* getNetwork() const;
 
     /**
      * @brief Initializes input layer data sets.
      * @param datasetDescriptors Vector of dataset descriptors.
      */
-    void initInputLayerDataSets(const std::vector<NNDataSetDescriptor>& datasetDescriptors);
+    void initInputLayerDataSets(const std::vector<DataSetDescriptor>& datasetDescriptors);
 
     /**
      * @brief Retrieves the output scores buffer for a specific layer.
      * @param layerName Name of the layer.
      * @return Pointer to the output scores buffer.
      */
-    GpuBuffer<NNFloat>* getOutputScoresBuffer(const std::string& layerName);
+    GpuBuffer<Float>* getOutputScoresBuffer(const std::string& layerName);
 
     /**
      * @brief Retrieves the output indexes buffer for a specific layer.
