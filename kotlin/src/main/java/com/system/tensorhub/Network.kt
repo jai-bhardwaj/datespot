@@ -22,9 +22,7 @@ class Network(
      * Throws a RuntimeException if the number of output layers is more than 1.
      */
     init {
-        if (outputLayers.size > 1) {
-            throw RuntimeException("Only one output layer is supported at the moment. Got ${outputLayers.size}")
-        }
+        require(outputLayers.size == 1) { "Only one output layer is supported at the moment. Got ${outputLayers.size}" }
     }
 
     /**
@@ -44,9 +42,7 @@ class Network(
      * @param output The output object to store the predicted result.
      */
     fun predict(input: DataSet, output: Output) {
-        if (inputLayers.size != 1 || outputLayers.size != 1) {
-            throw UnsupportedOperationException("Method can only be used with networks with a single input/output layer")
-        }
+        require(inputLayers.size == 1 && outputLayers.size == 1) { "Method can only be used with networks with a single input/output layer" }
         predict(arrayOf(input), arrayOf(output))
     }
 
@@ -57,10 +53,6 @@ class Network(
      * @return Array of output objects containing the predicted results.
      */
     fun predict(inputs: Array<DataSet>): Array<Output> {
-        val outputs = Array(outputLayers.size) {
-            val outputLayer = outputLayers[it]
-            Output.create(config, outputLayer)
-        }
         predict(inputs, outputs)
         return outputs
     }
@@ -91,33 +83,22 @@ class Network(
      * or if the examples in input/output data do not match the batch size of the network.
      */
     private fun checkArguments(inputs: Array<DataSet>, outputs: Array<Output>) {
-        if (inputs.size != inputLayers.size) {
-            throw IllegalArgumentException("Number of input data and input layers do not match")
-        }
+        require(inputs.size == inputLayers.size) { "Number of input data and input layers do not match" }
+        require(outputs.size == outputLayers.size) { "Number of output data and output layers do not match" }
 
         for (i in inputs.indices) {
             val datasetName = inputs[i].name
             val dataDim = inputs[i].dim
             val inputLayer = inputLayers[i]
 
-            if (dataDim.dimensions != inputLayer.dimensions) {
-                throw IllegalArgumentException("Num dimension mismatch between layer ${inputLayer.name} and data $datasetName")
+            when {
+                dataDim.dimensions != inputLayer.dimensions ->
+                    throw IllegalArgumentException("Num dimension mismatch between layer ${inputLayer.name} and data $datasetName")
+                dataDim.x != inputLayer.dimX || dataDim.y != inputLayer.dimY || dataDim.z != inputLayer.dimZ ->
+                    throw IllegalArgumentException("Dimension mismatch between input layer ${inputLayer.name} and input data $datasetName")
+                dataDim.examples != config.batchSize ->
+                    throw IllegalArgumentException("Examples in input data $i do not match the batch size of the network")
             }
-
-            if (dataDim.x != inputLayer.dimX ||
-                dataDim.y != inputLayer.dimY ||
-                dataDim.z != inputLayer.dimZ
-            ) {
-                throw IllegalArgumentException("Dimension mismatch between input layer ${inputLayer.name} and input data $datasetName")
-            }
-
-            if (dataDim.examples != config.batchSize) {
-                throw IllegalArgumentException("Examples in input data $i do not match the batch size of the network")
-            }
-        }
-
-        if (outputs.size != outputLayers.size) {
-            throw IllegalArgumentException("Number of output data and output layers do not match")
         }
 
         for (i in outputs.indices) {
@@ -126,32 +107,22 @@ class Network(
             val dataDim = outputs[i].dim
 
             if (config.k == NetworkConfig.ALL) {
-                if (dataDim.x != outputLayer.dimX ||
-                    dataDim.y != outputLayer.dimY ||
-                    dataDim.z != outputLayer.dimZ
-                ) {
-                    throw IllegalArgumentException("Dimension mismatch between output layer ${outputLayer.name} and output data $datasetName")
+                require(dataDim.x == outputLayer.dimX && dataDim.y == outputLayer.dimY && dataDim.z == outputLayer.dimZ) {
+                    "Dimension mismatch between output layer ${outputLayer.name} and output data $datasetName"
                 }
             } else {
-                if (dataDim.x != config.k ||
-                    dataDim.y != 1 ||
-                    dataDim.z != 1
-                ) {
-                    throw IllegalArgumentException("Data dimX != k or dimY != dimZ != 1 for dataset $datasetName")
+                require(dataDim.x == config.k && dataDim.y == 1 && dataDim.z == 1) {
+                    "Data dimX != k or dimY != dimZ != 1 for dataset $datasetName"
                 }
             }
 
-            if (dataDim.examples != config.batchSize) {
-                throw IllegalArgumentException("Examples in output data $i do not match the batch size of the network")
-            }
+            require(dataDim.examples == config.batchSize) { "Examples in output data $i do not match the batch size of the network" }
         }
     }
-
 
     /**
      * Closes the Network and releases any associated resources.
      * This method shuts down the Tensorhub using the provided pointer.
-     * It should be called when the Network is no longer needed.
      */
     override fun close() {
         Tensorhub.shutdown(ptr)
