@@ -1,6 +1,5 @@
 package com.system.tensorhub.knn
 
-import java.util.Arrays
 import java.util.Objects
 
 /**
@@ -41,11 +40,6 @@ class NearestNeighbors private constructor() {
             return this
         }
 
-        internal fun populate(instance: NearestNeighbors) {
-            instance.index = this.index
-            instance.neighbors = this.neighbors
-        }
-
         /**
          * Builds and returns a NearestNeighbors object.
          *
@@ -53,7 +47,8 @@ class NearestNeighbors private constructor() {
          */
         fun build(): NearestNeighbors {
             val instance = NearestNeighbors()
-            populate(instance)
+            instance.index = this.index
+            instance.neighbors = this.neighbors
             return instance
         }
     }
@@ -64,15 +59,7 @@ class NearestNeighbors private constructor() {
      * @return The calculated hash code.
      */
     override fun hashCode(): Int {
-        return internalHashCodeCompute(
-            classNameHashCode,
-            index,
-            neighbors
-        )
-    }
-
-    private fun internalHashCodeCompute(vararg objects: Any?): Int {
-        return Arrays.hashCode(objects)
+        return Objects.hash(index, neighbors)
     }
 
     /**
@@ -85,15 +72,12 @@ class NearestNeighbors private constructor() {
         if (this === other) {
             return true
         }
-
         if (other !is NearestNeighbors) {
             return false
         }
-
         val that = other as NearestNeighbors
-
-        return Objects.equals(index, that.index) &&
-                Objects.equals(neighbors, that.neighbors)
+        return index == that.index &&
+                neighbors == that.neighbors
     }
 
     /**
@@ -102,24 +86,10 @@ class NearestNeighbors private constructor() {
      * @return The string representation.
      */
     override fun toString(): String {
-        val ret = StringBuilder()
-        ret.append("NearestNeighbors(")
-
-        ret.append("index=")
-        ret.append(index.toString())
-        ret.append(", ")
-
-        ret.append("neighbors=")
-        ret.append(neighbors.toString())
-        ret.append(")")
-
-        return ret.toString()
+        return "NearestNeighbors(index=$index, neighbors=$neighbors)"
     }
 
     companion object {
-        private val classNameHashCode =
-            internalHashCodeCompute("com.system.tensorhub.knn.NearestNeighbors")
-
         /**
          * Returns a new instance of the Builder class for constructing NearestNeighbors objects.
          *
@@ -127,10 +97,6 @@ class NearestNeighbors private constructor() {
          */
         fun builder(): Builder {
             return Builder()
-        }
-
-        private fun internalHashCodeCompute(vararg objects: Any?): Int {
-            return Arrays.hashCode(objects)
         }
     }
 }
