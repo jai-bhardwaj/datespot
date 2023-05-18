@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <vector>
 
-#include "system/tensorhub/engine/GpuTypes.h"
-#include "system/tensorhub/engine/Types.h"
-#include "system/tensorhub/engine/Layer.h"
+#include "engine/GpuTypes.h"
+#include "engine/Types.h"
+#include "engine/Layer.h"
 
 /**
  * @brief The Context class represents the execution context for a neural network.
