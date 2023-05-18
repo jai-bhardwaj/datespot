@@ -7,40 +7,36 @@
 #include <unordered_map>
 
 /**
- * @class AbstractFilter
- * @brief The base abstract class for filters.
+ * @brief Abstract base class for filters.
  */
 class AbstractFilter
 {
 public:
-    /**
-     * @brief Virtual destructor for AbstractFilter.
-     */
     virtual ~AbstractFilter() = default;
 
     /**
-     * @brief Loads the filter data from a file.
+     * @brief Loads a filter from a file.
      *
-     * @param xMInput The input map to populate with data.
-     * @param xMSamples The samples map to populate with data.
-     * @param filePath The path of the file to load.
+     * @param xMInput The input map.
+     * @param xMSamples The samples map.
+     * @param filePath The path to the filter file.
      */
     virtual void loadFilter(std::unordered_map<std::string, unsigned int> &xMInput,
                             std::unordered_map<std::string, unsigned int> &xMSamples,
                             const std::string &filePath) = 0;
 
     /**
-     * @brief Applies the filter to an array of floats.
+     * @brief Applies the filter to an array of samples at the given index.
      *
-     * @param xArray The array to apply the filter to.
+     * @param xArray The array of samples.
      * @param xSamplesIndex The index of the samples.
      */
     virtual void applyFilter(float *xArray, int xSamplesIndex) const = 0;
 
     /**
-     * @brief Applies the filter to a subset of an array of floats.
+     * @brief Applies the filter to a subset of samples within an array.
      *
-     * @param xArray The array to apply the filter to.
+     * @param xArray The array of samples.
      * @param xSamplesIndex The index of the samples.
      * @param offset The offset within the array.
      * @param width The width of the subset to apply the filter to.
@@ -50,41 +46,44 @@ public:
     /**
      * @brief Gets the type of the filter.
      *
-     * @return The filter type as a string.
+     * @return The filter type.
      */
     virtual std::string getFilterType() const = 0;
 
 protected:
     /**
-     * @brief Updates the records using the given array and filter.
+     * @brief Updates records using the provided filter.
      *
-     * @param xArray The array to update the records from.
-     * @param xFilter The filter to apply to the records.
+     * @param xArray The array of samples.
+     * @param xFilter The filter to apply.
      */
     void updateRecords(float *xArray, const std::unordered_map<int, float> *xFilter) const;
 
     /**
-     * @brief Updates a subset of the records using the given array, filter, offset, and width.
+     * @brief Updates a subset of records using the provided filter.
      *
-     * @param xArray The array to update the records from.
-     * @param xFilter The filter to apply to the records.
+     * @param xArray The array of samples.
+     * @param xFilter The filter to apply.
      * @param offset The offset within the array.
-     * @param width The width of the subset to update the records.
+     * @param width The width of the subset to update.
      */
     void updateRecords(float *xArray, const std::unordered_map<int, float> *xFilter, int offset, int width) const;
 };
 
+/**
+ * @brief Filter class for processing samples.
+ */
 class SamplesFilter : public AbstractFilter
 {
-    std::unique_ptr<std::vector<std::unique_ptr<std::unordered_map<int, float>>>> samplefilters;
+    std::vector<std::unique_ptr<std::unordered_map<int, float>>> samplefilters;
 
     /**
      * @brief Loads a single filter from a file.
      *
-     * @param xMInput The input map to populate with data.
-     * @param xMSamples The samples map to populate with data.
-     * @param sampleFilters The vector of sample filters to populate.
-     * @param filePath The path of the file to load.
+     * @param xMInput The input map.
+     * @param xMSamples The samples map.
+     * @param sampleFilters The vector to store the loaded filters.
+     * @param filePath The path to the filter file.
      */
     void loadSingleFilter(std::unordered_map<std::string, unsigned int> &xMInput,
                           std::unordered_map<std::string, unsigned int> &xMSamples,
@@ -92,77 +91,53 @@ class SamplesFilter : public AbstractFilter
                           const std::string &filePath);
 
 public:
-    /**
-     * @brief Loads the filter data from a file.
-     *
-     * @param xMInput The input map to populate with data.
-     * @param xMSamples The samples map to populate with data.
-     * @param filePath The path of the file to load.
-     */
     void loadFilter(std::unordered_map<std::string, unsigned int> &xMInput,
                     std::unordered_map<std::string, unsigned int> &xMSamples,
-                    const std::string &filePath);
+                    const std::string &filePath) override;
 
-    /**
-     * @brief Applies the filter to an array of floats.
-     *
-     * @param xArray The array to apply the filter to.
-     * @param xSamplesIndex The index of the samples.
-     */
-    void applyFilter(float *xArray, int xSamplesIndex) const;
+    void applyFilter(float *xArray, int xSamplesIndex) const override;
 
-    /**
-     * @brief Applies the filter to a subset of an array of floats.
-     *
-     * @param xArray The array to apply the filter to.
-     * @param xSamplesIndex The index of the samples.
-     * @param offset The offset within the array.
-     * @param width The width of the subset to apply the filter to.
-     */
-    void applyFilter(float *xArray, int xSamplesIndex, int offset, int width) const;
+    void applyFilter(float *xArray, int xSamplesIndex, int offset, int width) const override;
 
-    /**
-     * @brief Gets the type of the filter.
-     *
-     * @return The filter type as a string.
-     */
-    std::string getFilterType() const
+    std::string getFilterType() const override
     {
         return "samplesFilterType";
     }
 };
 
 /**
- * @class FilterConfig
  * @brief Configuration class for filters.
  */
 class FilterConfig
 {
-    std::unique_ptr<SamplesFilter> sampleFilter; /**< Unique pointer to the SamplesFilter object. */
-    std::string outputFileName; /**< Output file name. */
+    std::unique_ptr<SamplesFilter> sampleFilter;
+    std::string_view outputFileName;
 
 public:
     /**
      * @brief Sets the output file name.
-     * @param xOutputFileName The output file name to set.
+     *
+     * @param xOutputFileName The output file name.
      */
-    void setOutputFileName(const std::string &xOutputFileName)
+    void setOutputFileName(std::string_view xOutputFileName)
     {
         outputFileName = xOutputFileName;
     }
 
     /**
      * @brief Gets the output file name.
+     *
      * @return The output file name.
      */
-    std::string getOutputFileName() const
+    std::string_view getOutputFileName() const
     {
         return outputFileName;
     }
 
     /**
-     * @brief Sets the SamplesFilter object.
-     * @param xSampleFilter A pointer to the SamplesFilter object to set.
+     * @brief Sets the samples filter.
+     *
+     * @param xSampleFilter The samples filter.
      */
     void setSamplesFilter(SamplesFilter *xSampleFilter)
     {
@@ -170,11 +145,12 @@ public:
     }
 
     /**
-     * @brief Applies the samples filter.
-     * @param xInput The input array of samples.
-     * @param xSampleIndex The index of the sample.
-     * @param offset The offset value.
-     * @param width The width value.
+     * @brief Applies the samples filter to an input array.
+     *
+     * @param xInput The input array.
+     * @param xSampleIndex The index of the samples.
+     * @param offset The offset within the array.
+     * @param width The width of the subset to apply the filter to.
      */
     void applySamplesFilter(float *xInput, int xSampleIndex, int offset, int width) const
     {
@@ -186,12 +162,14 @@ public:
 };
 
 /**
- * @brief Loads filters from a file.
- * @param samplesFilterFileName The file name containing the samples filter.
+ * @brief Loads filters from file.
+ *
+ * @param samplesFilterFileName The file name for the samples filter.
  * @param outputFileName The output file name.
- * @param xMInput Reference to the unordered map for input.
- * @param xMSamples Reference to the unordered map for samples.
- * @return A pointer to the loaded FilterConfig object.
+ * @param xMInput The input map.
+ * @param xMSamples The samples map.
+ *
+ * @return The loaded filter configuration.
  */
 FilterConfig* loadFilters(const std::string &samplesFilterFileName,
                           const std::string &outputFileName,
