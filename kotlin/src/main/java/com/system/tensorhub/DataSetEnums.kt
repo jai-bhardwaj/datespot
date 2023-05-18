@@ -3,7 +3,7 @@ package com.system.tensorhub
 /**
  * Contains the enumerations and utility functions related to data sets.
  */
-class DataSetEnums {
+object DataSetEnums {
     /**
      * Represents the attribute types of a data set.
      */
@@ -97,56 +97,56 @@ class DataSetEnums {
     /**
      * Represents the data types used in the data sets.
      */
-    enum class DataType {
+    enum class DataType(val sizeInBytes: Int) {
         /**
          * Unsigned integer data type.
          */
-        UInt,
+        UInt(Integer.SIZE_BYTES),
 
         /**
          * Integer data type.
          */
-        Int,
+        Int(Integer.SIZE_BYTES),
 
         /**
          * Long long integer data type.
          */
-        LLInt,
+        LLInt(Long.SIZE_BYTES),
 
         /**
          * Unsigned long long integer data type.
          */
-        ULLInt,
+        ULLInt(Long.SIZE_BYTES),
 
         /**
          * Floating-point data type.
          */
-        Float,
+        Float(java.lang.Float.SIZE_BYTES),
 
         /**
          * Double precision floating-point data type.
          */
-        Double,
+        Double(java.lang.Double.SIZE_BYTES),
 
         /**
          * RGB 8-bit data type.
          */
-        RGB8,
+        RGB8(Byte.SIZE_BYTES * 3),
 
         /**
          * RGB 16-bit data type.
          */
-        RGB16,
+        RGB16(Short.SIZE_BYTES * 3),
 
         /**
          * Unsigned character data type.
          */
-        UChar,
+        UChar(Byte.SIZE_BYTES),
 
         /**
          * Character data type.
          */
-        Char;
+        Char(Byte.SIZE_BYTES);
 
         companion object {
             /**
@@ -156,16 +156,7 @@ class DataSetEnums {
              * @return The size in bytes.
              * @throws IllegalArgumentException if the data type is not supported.
              */
-            fun sizeof(dataType: DataType): Int {
-                return when (dataType) {
-                    DataType.Int -> Integer.SIZE / 8
-                    DataType.LLInt -> Long.SIZE / 8
-                    DataType.Float -> java.lang.Float.SIZE / 8
-                    DataType.Double -> java.lang.Double.SIZE / 8
-                    DataType.Char -> Character.SIZE / 8
-                    else -> throw IllegalArgumentException("$dataType not supported in Kotlin binding")
-                }
-            }
+            fun sizeof(dataType: DataType): Int = dataType.sizeInBytes
         }
     }
 }
