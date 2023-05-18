@@ -1,7 +1,6 @@
-package com.system.tensorhub.knn;
+package com.system.tensorhub.knn
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ArrayList
 
 /**
  * Represents an unbatched k-nearest neighbors implementation.
@@ -17,17 +16,17 @@ open class UnbatchedKNearestNeighbors(private val knnCuda: KNearestNeighborsCuda
     /**
      * The array to store input values.
      */
-    private val inputs: FloatArray = FloatArray(getBatchSize() * getFeatureSize())
+    private val inputs: FloatArray
 
     /**
      * The array to store scores.
      */
-    private val scores: FloatArray = FloatArray(getBatchSize() * getMaxK())
+    private val scores: FloatArray
 
     /**
      * The array to store IDs.
      */
-    private val ids: Array<String?> = arrayOfNulls(getBatchSize() * getMaxK())
+    private val ids: Array<String?>
 
     /**
      * Constructor for the UnbatchedKNearestNeighbors class.
@@ -42,17 +41,14 @@ open class UnbatchedKNearestNeighbors(private val knnCuda: KNearestNeighborsCuda
         setBatchSize(knnCuda.batchSize)
     }
 
-    /**
-     * Initializes the UnbatchedKNearestNeighbors instance.
-     */
     init {
         val batchSize = getBatchSize()
         val featureSize = getFeatureSize()
         val maxK = getMaxK()
 
-        this.inputs = FloatArray(batchSize * featureSize)
-        this.scores = FloatArray(batchSize * maxK)
-        this.ids = arrayOfNulls(batchSize * maxK)
+        inputs = FloatArray(batchSize * featureSize)
+        scores = FloatArray(batchSize * maxK)
+        ids = arrayOfNulls(batchSize * maxK)
     }
 
     /**
@@ -68,7 +64,7 @@ open class UnbatchedKNearestNeighbors(private val knnCuda: KNearestNeighborsCuda
 
         val coordinates = inputVector.coordinates
 
-        for (i in coordinates.indices) {
+        inputs.indices.forEach { i ->
             inputs[i] = coordinates[i]
         }
 
@@ -93,10 +89,6 @@ open class UnbatchedKNearestNeighbors(private val knnCuda: KNearestNeighborsCuda
      * @return The list of NearestNeighbors objects containing the nearest neighbors for each input vector.
      */
     override fun findKnnBatch(k: Int, inputBatch: List<Vector>): List<NearestNeighbors> {
-        val results = ArrayList<NearestNeighbors>(inputBatch.size)
-        for (vector in inputBatch) {
-            results.add(findKnn(k, vector))
-        }
-        return results
+        return inputBatch.map { vector -> findKnn(k, vector) }
     }
 }
