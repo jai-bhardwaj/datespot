@@ -39,7 +39,7 @@ module1 = Extension(
         '../system-tensorhub/lib',
         '/usr/local/lib/python3.8/dist-packages/tensorflow'
     ],
-    language='c++17',
+    language='c++20',
     extra_compile_args=['-DOMPI_SKIP_MPICXX']
 )
 
