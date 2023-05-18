@@ -3,7 +3,6 @@ package com.system.tensorhub.knn
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 
@@ -22,9 +21,7 @@ object DataUtil {
      * @throws IllegalArgumentException if the collection of data files is empty or if feature sizes are different.
      */
     fun findFeatureSize(dataFiles: Collection<File>, keyValDelim: String, vectorDelim: String): Int {
-        if (dataFiles.size < 1) {
-            throw IllegalArgumentException("data files is empty, must pass at least one file")
-        }
+        require(dataFiles.isNotEmpty()) { "Data files collection is empty, must pass at least one file" }
 
         val dataToFeatureSize = LinkedHashMap<File, Int>()
 
@@ -33,17 +30,10 @@ object DataUtil {
             dataToFeatureSize[dataFile] = featureSize
         }
 
-        var featureSize = 0
-        for (fs in dataToFeatureSize.values) {
-            if (featureSize == 0) {
-                featureSize = fs
-            } else {
-                if (featureSize != fs) {
-                    throw IllegalArgumentException("Feature sizes are different in data files: $dataToFeatureSize")
-                }
-            }
-        }
-        return featureSize
+        val distinctFeatureSizes = dataToFeatureSize.values.distinct()
+        require(distinctFeatureSizes.size == 1) { "Feature sizes are different in data files: $dataToFeatureSize" }
+
+        return distinctFeatureSizes.first()
     }
 
     /**
@@ -58,9 +48,7 @@ object DataUtil {
     fun findFeatureSize(dataFile: File, keyValDelim: String, vectorDelim: String): Int {
         BufferedReader(InputStreamReader(FileInputStream(dataFile), Charset.forName("UTF-8"))).use { reader ->
             val line = reader.readLine()
-            if (line == null) {
-                throw IllegalArgumentException("file: $dataFile is empty")
-            }
+            require(line != null) { "File: $dataFile is empty" }
             return findFeatureSize(line, keyValDelim, vectorDelim)
         }
     }
@@ -89,20 +77,13 @@ object DataUtil {
      * @throws IllegalArgumentException if the line contains a malformed key-value pair or vector.
      */
     fun parseLine(line: String, keyValDelim: String, vectorDelim: String): Row {
-        val keyValue = line.split(keyValDelim).toTypedArray()
-        if (keyValue.size != 2) {
-            throw IllegalArgumentException("Malformed key-value pair in line: $line")
-        }
+        val keyValue = line.split(keyValDelim)
+        require(keyValue.size == 2) { "Malformed key-value pair in line: $line" }
 
-        val vectorLiteral = keyValue[1].split(vectorDelim).toTypedArray()
-        if (vectorLiteral.isEmpty()) {
-            throw IllegalArgumentException("Malformed vector in line: $line")
-        }
+        val vectorLiteral = keyValue[1].split(vectorDelim)
+        require(vectorLiteral.isNotEmpty()) { "Malformed vector in line: $line" }
 
-        val vector = FloatArray(vectorLiteral.size)
-        for (i in vector.indices) {
-            vector[i] = vectorLiteral[i].toFloat()
-        }
+        val vector = vectorLiteral.map { it.toFloat() }.toFloatArray()
 
         return Row(keyValue[0], vector)
     }
@@ -114,5 +95,4 @@ object DataUtil {
      * @property vector The vector.
      */
     data class Row(val key: String, val vector: FloatArray)
-
 }
