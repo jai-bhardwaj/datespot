@@ -5,7 +5,8 @@
 #include <string_view>
 #include <vector>
 #include <filesystem>
-#include "Utils.h"
+#include <Utils.h>
+#include <CWMetric.h>
 
 /**
  * @brief Updates the metrics with the given metric and value.
@@ -15,6 +16,16 @@
  */
 void CWMetric::updateMetrics(std::string_view metric, std::string_view value)
 {
+    static const std::string executable = "/usr/bin/cw_monitoring.py";
+    std::filesystem::path executablePath(executable);
+
+    if (std::filesystem::exists(executablePath) && std::filesystem::is_regular_file(executablePath))
+    {
+        std::stringstream command;
+        command << "python " << executablePath << " --metric " << metric << " --value " << value;
+        std::cout << "Executing " << command.str() << std::endl;
+        std::system(command.str().c_str());
+    }
 }
 
 /**
@@ -23,9 +34,9 @@ void CWMetric::updateMetrics(std::string_view metric, std::string_view value)
  * @param begin The beginning of the command-line arguments.
  * @param end The end of the command-line arguments.
  * @param option The option to search for.
- * @return char* The value of the option if found, nullptr otherwise.
+ * @return std::string_view The value of the option if found, nullptr otherwise.
  */
-char* getCmdOption(char** begin, char** end, std::string_view option)
+std::string_view getCmdOption(char** begin, char** end, std::string_view option)
 {
     auto itr = std::find(begin, end, option);
     if (itr != end && ++itr != end)
@@ -41,7 +52,7 @@ char* getCmdOption(char** begin, char** end, std::string_view option)
  * @param begin The beginning of the command-line arguments.
  * @param end The end of the command-line arguments.
  * @param option The option to search for.
- * @return true if the option exists, false otherwise.
+ * @return bool true if the option exists, false otherwise.
  */
 bool cmdOptionExists(char** begin, char** end, std::string_view option)
 {
@@ -97,7 +108,7 @@ std::string getOptionalArgValue(int argc, char** argv, std::string_view flag, st
  * @brief Checks if a file has the NetCDF extension.
  * 
  * @param filename The name of the file.
- * @return true if the file has the NetCDF extension, false otherwise.
+ * @return bool true if the file has the NetCDF extension, false otherwise.
  */
 bool isNetCDFfile(std::string_view filename)
 {
@@ -116,7 +127,7 @@ bool isNetCDFfile(std::string_view filename)
 std::vector<std::string> split(std::string_view s, char delim)
 {
     std::vector<std::string> elems;
-    std::stringstream ss(s);
+    std::stringstream ss(s.data());
     std::string item;
     while (std::getline(ss, item, delim))
     {
@@ -129,7 +140,7 @@ std::vector<std::string> split(std::string_view s, char delim)
  * @brief Checks if a path is a directory.
  * 
  * @param dirname The name of the directory.
- * @return true if the path is a directory, false otherwise.
+ * @return bool true if the path is a directory, false otherwise.
  */
 bool isDirectory(std::string_view dirname)
 {
@@ -140,7 +151,7 @@ bool isDirectory(std::string_view dirname)
  * @brief Checks if a path is a regular file.
  * 
  * @param filename The name of the file.
- * @return true if the path is a regular file, false otherwise.
+ * @return bool true if the path is a regular file, false otherwise.
  */
 bool isFile(std::string_view filename)
 {
@@ -164,17 +175,16 @@ int listFiles(std::string_view dirname, bool recursive, std::vector<std::string>
     }
     else if (std::filesystem::is_directory(dirPath))
     {
-        std::filesystem::directory_iterator it(dirPath), end;
-        for (; it != end; ++it)
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(dirPath))
         {
-            const std::string& relativeChildFilePath = it->path().filename().string();
+            const std::string& relativeChildFilePath = entry.path().filename().string();
             if (relativeChildFilePath == "." || relativeChildFilePath == "..")
             {
                 continue;
             }
-            std::string absoluteChildFilePath = (dirPath / relativeChildFilePath).string();
+            std::string absoluteChildFilePath = entry.path().string();
 
-            if (recursive && std::filesystem::is_directory(absoluteChildFilePath))
+            if (recursive && std::filesystem::is_directory(entry.status()))
             {
                 listFiles(absoluteChildFilePath, recursive, files);
             }
