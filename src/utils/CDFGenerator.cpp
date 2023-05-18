@@ -1,6 +1,5 @@
 #include <chrono>
 #include <vector>
-#include <cstdio>
 #include <iostream>
 #include <unordered_map>
 #include <iomanip>
@@ -16,6 +15,7 @@ namespace fs = std::filesystem;
 
 const std::string DATASET_TYPE_INDICATOR = "indicator";
 const std::string DATASET_TYPE_ANALOG = "analog";
+
 /**
  * Prints the usage information for the NetCDFGenerator.
  */
@@ -32,6 +32,7 @@ void printUsageNetCDFGenerator() {
     std::cout << "    -t type: (default = 'indicator') the type of dataset to generate. Valid values are: [" << std::quoted("indicator") << ", " << std::quoted("analog") << "].\n";
     std::cout << '\n';
 }
+
 /**
  * Entry point of the program.
  *
@@ -45,39 +46,39 @@ int main(int argc, char** argv) {
         std::exit(1);
     }
 
-    std::optional<std::string> inputFile = getRequiredArgValue(argc, argv, "-i", "input text file to convert.", [](){
+    auto inputFile = getRequiredArgValue<std::string>(argc, argv, "-i", "input text file to convert.", [](){
         printUsageNetCDFGenerator();
         std::exit(1);
     });
 
-    std::optional<std::string> outputFile = getRequiredArgValue(argc, argv, "-o", "output NetCDF file to generate.", [](){
+    auto outputFile = getRequiredArgValue<std::string>(argc, argv, "-o", "output NetCDF file to generate.", [](){
         printUsageNetCDFGenerator();
         std::exit(1);
     });
 
-    std::optional<std::string> datasetName = getRequiredArgValue(argc, argv, "-d", "dataset name for the NetCDF metadata.", [](){
+    auto datasetName = getRequiredArgValue<std::string>(argc, argv, "-d", "dataset name for the NetCDF metadata.", [](){
         printUsageNetCDFGenerator();
         std::exit(1);
     });
 
-    std::optional<std::string> featureIndexFile = getRequiredArgValue(argc, argv, "-f", "feature index file.", [](){
+    auto featureIndexFile = getRequiredArgValue<std::string>(argc, argv, "-f", "feature index file.", [](){
         printUsageNetCDFGenerator();
         std::exit(1);
     });
 
-    std::optional<std::string> sampleIndexFile = getRequiredArgValue(argc, argv, "-s", "samples index file.", [](){
+    auto sampleIndexFile = getRequiredArgValue<std::string>(argc, argv, "-s", "samples index file.", [](){
         printUsageNetCDFGenerator();
         std::exit(1);
     });
 
     bool createFeatureIndex = isArgSet(argc, argv, "-c");
     if (createFeatureIndex) {
-        std::cout << "Flag -c is set. Will create a new feature file and overwrite: " << featureIndexFile.value() << '\n';
+        std::cout << "Flag -c is set. Will create a new feature file and overwrite: " << featureIndexFile << '\n';
     }
 
     bool mergeFeatureIndex = isArgSet(argc, argv, "-m");
     if (mergeFeatureIndex) {
-        std::cout << "Flag -m is set. Will merge with existing feature file and overwrite: " << featureIndexFile.value() << '\n';
+        std::cout << "Flag -m is set. Will merge with existing feature file and overwrite: " << featureIndexFile << '\n';
     }
 
     if (createFeatureIndex && mergeFeatureIndex) {
