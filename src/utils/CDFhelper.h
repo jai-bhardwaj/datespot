@@ -1,16 +1,22 @@
 #pragma once
 
-#include <iosfwd>
-#include <string>
-#include <vector>
+#include <iostream>
 #include <unordered_map>
+#include <string_view>
+#include <vector>
+#include <map>
 #include <netcdf>
+#include <span>
+#include <fstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 /**
  * @brief Struct representing index data.
  */
 struct IndexData {
-    std::unordered_map<std::string, unsigned int>& labelsToIndices; /**< Map of labels to indices. */
+    std::unordered_map<std::string_view, unsigned int>& labelsToIndices; /**< Map of labels to indices. */
     std::ostream& outputStream; /**< Output stream for logging. */
 };
 
@@ -38,7 +44,7 @@ bool loadIndexFromFile(IndexData& indexData, const std::string& inputFile);
  * @param labelToIndex The labels-to-indices map to export.
  * @param indexFileName The name of the output index file.
  */
-void exportIndex(std::unordered_map<std::string, unsigned int>& labelToIndex, std::string indexFileName);
+void exportIndex(std::unordered_map<std::string_view, unsigned int>& labelToIndex, const std::string& indexFileName);
 
 /**
  * @brief Struct representing data for parsing samples.
@@ -46,8 +52,8 @@ void exportIndex(std::unordered_map<std::string, unsigned int>& labelToIndex, st
 struct ParseSamplesData {
     std::istream& inputStream; /**< Input stream containing the sample data. */
     bool enableFeatureIndexUpdates; /**< Flag indicating whether to update the feature index. */
-    std::unordered_map<std::string, unsigned int>& featureIndex; /**< Map of feature names to indices. */
-    std::unordered_map<std::string, unsigned int>& sampleIndex; /**< Map of sample names to indices. */
+    std::unordered_map<std::string_view, unsigned int>& featureIndex; /**< Map of feature names to indices. */
+    std::unordered_map<std::string_view, unsigned int>& sampleIndex; /**< Map of sample names to indices. */
     bool& featureIndexUpdated; /**< Flag indicating whether the feature index was updated. */
     bool& sampleIndexUpdated; /**< Flag indicating whether the sample index was updated. */
     std::map<unsigned int, std::vector<unsigned int>>& signals; /**< Map of signal indices to signal data. */
@@ -69,8 +75,8 @@ bool parseSamples(ParseSamplesData& parseData);
 struct ImportSamplesData {
     std::string samplesPath; /**< Path to the samples data. */
     bool enableFeatureIndexUpdates; /**< Flag indicating whether to update the feature index. */
-    std::unordered_map<std::string, unsigned int>& featureIndex; /**< Map of feature names to indices. */
-    std::unordered_map<std::string, unsigned int>& sampleIndex; /**< Map of sample names to indices. */
+    std::unordered_map<std::string_view, unsigned int>& featureIndex; /**< Map of feature names to indices. */
+    std::unordered_map<std::string_view, unsigned int>& sampleIndex; /**< Map of sample names to indices. */
     bool& featureIndexUpdated; /**< Flag indicating whether the feature index was updated. */
     bool& sampleIndexUpdated; /**< Flag indicating whether the sample index was updated. */
     std::vector<unsigned int>& vSparseStart; /**< Vector containing the start indices of sparse data. */
@@ -96,8 +102,8 @@ struct GenerateNetCDFIndexesData {
     bool enableFeatureIndexUpdates; /**< Flag indicating whether to update the feature index. */
     std::string outFeatureIndexFileName; /**< Output file name for the feature index. */
     std::string outSampleIndexFileName; /**< Output file name for the sample index. */
-    std::unordered_map<std::string, unsigned int>& featureIndex; /**< Map of feature names to indices. */
-    std::unordered_map<std::string, unsigned int>& sampleIndex; /**< Map of sample names to indices. */
+    std::unordered_map<std::string_view, unsigned int>& featureIndex; /**< Map of feature names to indices. */
+    std::unordered_map<std::string_view, unsigned int>& sampleIndex; /**< Map of sample names to indices. */
     std::vector<unsigned int>& vSparseStart; /**< Vector containing the start indices of sparse data. */
     std::vector<unsigned int>& vSparseEnd; /**< Vector containing the end indices of sparse data. */
     std::vector<unsigned int>& vSparseIndex; /**< Vector containing the indices of sparse data. */
@@ -124,12 +130,12 @@ bool generateNetCDFIndexes(GenerateNetCDFIndexesData& generateData);
  * @param datasetName The name of the dataset in the NetCDF file.
  * @param maxFeatureIndex The maximum feature index.
  */
-void writeNetCDFFile(const std::vector<unsigned int>& vSparseStart,
-                     const std::vector<unsigned int>& vSparseEnd,
-                     const std::vector<unsigned int>& vSparseIndex,
-                     const std::vector<float>& vSparseValue,
-                     std::string fileName,
-                     std::string datasetName,
+void writeNetCDFFile(const std::span<const unsigned int> vSparseStart,
+                     const std::span<const unsigned int> vSparseEnd,
+                     const std::span<const unsigned int> vSparseIndex,
+                     const std::span<const float> vSparseValue,
+                     const std::string& fileName,
+                     const std::string& datasetName,
                      unsigned int maxFeatureIndex);
 
 /**
@@ -142,11 +148,11 @@ void writeNetCDFFile(const std::vector<unsigned int>& vSparseStart,
  * @param datasetName The name of the dataset in the NetCDF file.
  * @param maxFeatureIndex The maximum feature index.
  */
-void writeNetCDFFile(const std::vector<unsigned int>& vSparseStart,
-                     const std::vector<unsigned int>& vSparseEnd,
-                     const std::vector<unsigned int>& vSparseIndex,
-                     std::string fileName,
-                     std::string datasetName,
+void writeNetCDFFile(const std::span<const unsigned int> vSparseStart,
+                     const std::span<const unsigned int> vSparseEnd,
+                     const std::span<const unsigned int> vSparseIndex,
+                     const std::string& fileName,
+                     const std::string& datasetName,
                      unsigned int maxFeatureIndex);
 
 /**
@@ -189,11 +195,11 @@ int listFiles(const std::string& dirname, bool recursive, std::vector<std::strin
  */
 void writeNETCDF(const std::string& fileName,
                  const std::vector<std::string>& vSamplesName,
-                 const std::map<std::string, unsigned int>& mInputFeatureNameToIndex,
+                 const std::map<std::string_view, unsigned int>& mInputFeatureNameToIndex,
                  std::vector<std::vector<unsigned int>>& vInputSamples,
                  const std::vector<std::vector<unsigned int>>& vInputSamplesTime,
                  std::vector<std::vector<float>>& vInputSamplesData,
-                 const std::map<std::string, unsigned int>& mOutputFeatureNameToIndex,
+                 const std::map<std::string_view, unsigned int>& mOutputFeatureNameToIndex,
                  const std::vector<std::vector<unsigned int>>& vOutputSamples,
                  const std::vector<std::vector<unsigned int>>& vOutputSamplesTime,
                  const std::vector<std::vector<float>>& vOutputSamplesData,
@@ -248,7 +254,7 @@ unsigned int align(size_t size);
 bool addDataToNetCDF(netCDF::NcFile& nc,
                      const long long dataIndex,
                      const std::string& dataName,
-                     const std::map<std::string, unsigned int>& mFeatureNameToIndex,
+                     const std::map<std::string_view, unsigned int>& mFeatureNameToIndex,
                      const std::vector<std::vector<unsigned int>>& vInputSamples,
                      const std::vector<std::vector<unsigned int>>& vInputSamplesTime,
                      const std::vector<std::vector<float>>& vInputSamplesData,
