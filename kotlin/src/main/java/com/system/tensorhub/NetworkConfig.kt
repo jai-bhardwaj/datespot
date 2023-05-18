@@ -13,16 +13,12 @@ import java.nio.file.Paths
  * @property outputDataSets The output data sets for the network.
  */
 data class NetworkConfig(
-    private val networkFilePath: String,
-    private val networkName: String,
-    @Builder.Default
-    private val batchSize: Int = 32,
-    @Builder.Default
-    private val k: Int = ALL,
-    @Singular
-    private val inputDataSets: Map<String, DataSet>,
-    @Singular
-    private val outputDataSets: Map<String, DataSet>
+    val networkFilePath: String,
+    val networkName: String = "",
+    val batchSize: Int = 32,
+    val k: Int = ALL,
+    val inputDataSets: Map<String, DataSet> = emptyMap(),
+    val outputDataSets: Map<String, DataSet> = emptyMap()
 ) {
     companion object {
         private const val EXTENSION_SEPARATOR: Char = '.'
@@ -37,7 +33,7 @@ data class NetworkConfig(
      * @return The network name.
      */
     fun getNetworkName(): String {
-        return if (networkName.isNullOrEmpty()) {
+        return if (networkName.isBlank()) {
             val fileName = Paths.get(networkFilePath).fileName.toString()
             val index = fileName.lastIndexOf(EXTENSION_SEPARATOR)
             fileName.substring(0, index)
