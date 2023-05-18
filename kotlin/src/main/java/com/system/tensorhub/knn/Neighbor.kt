@@ -1,6 +1,5 @@
 package com.system.tensorhub.knn
 
-import java.util.Arrays
 import java.util.Objects
 
 class Neighbor private constructor() {
@@ -9,7 +8,7 @@ class Neighbor private constructor() {
      */
     var id: String? = null
         private set
-    
+
     /**
      * The score of the neighbor.
      */
@@ -57,25 +56,14 @@ class Neighbor private constructor() {
         }
 
         /**
-         * Populates the Neighbor instance with the values from the builder.
-         *
-         * @param instance the Neighbor instance to populate
-         */
-        protected fun populate(instance: Neighbor) {
-            instance.id = this.id
-            instance.score = this.score
-        }
-
-        /**
          * Builds a Neighbor instance with the set values.
          *
          * @return the built Neighbor instance
          */
         fun build(): Neighbor {
             val instance = Neighbor()
-
-            populate(instance)
-
+            instance.id = this.id
+            instance.score = this.score
             return instance
         }
     }
@@ -86,17 +74,7 @@ class Neighbor private constructor() {
      * @return The hash code calculated for the Neighbor.
      */
     override fun hashCode(): Int {
-        return internalHashCodeCompute(classNameHashCode, id, score)
-    }
-
-    /**
-     * Calculates the hash code for an array of objects.
-     *
-     * @param objects The objects to calculate the hash code for.
-     * @return The hash code calculated for the objects array.
-     */
-    private fun internalHashCodeCompute(vararg objects: Any?): Int {
-        return Arrays.hashCode(objects)
+        return Objects.hash(id, score)
     }
 
     /**
@@ -109,15 +87,12 @@ class Neighbor private constructor() {
         if (this === other) {
             return true
         }
-
         if (other !is Neighbor) {
             return false
         }
-
         val that = other as Neighbor
-
-        return Objects.equals(id, that.id) &&
-                Objects.equals(score, that.score)
+        return id == that.id &&
+                score == that.score
     }
 
     /**
@@ -126,17 +101,6 @@ class Neighbor private constructor() {
      * @return A string representation of the Neighbor.
      */
     override fun toString(): String {
-        val ret = StringBuilder()
-        ret.append("Neighbor(")
-
-        ret.append("id=")
-        ret.append(id)
-        ret.append(", ")
-
-        ret.append("score=")
-        ret.append(score)
-        ret.append(")")
-
-        return ret.toString()
+        return "Neighbor(id=$id, score=$score)"
     }
 }
