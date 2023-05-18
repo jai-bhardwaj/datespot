@@ -8,6 +8,8 @@
 namespace astdl {
 namespace math {
 
+constexpr int kBlockSize = 128;
+
 /**
  * @brief CUDA kernel to convert an array of floats to half-precision floats.
  *
