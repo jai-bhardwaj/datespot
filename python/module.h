@@ -8,15 +8,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "GpuTypes.h"
 #include "Types.h"
 #include "cdl.h"
 #include <span>
 
-using std::map;
-using std::string;
-
+/**
+ * @brief Mapping from string representation to corresponding Mode enumeration.
+ */
 static std::unordered_map<std::string_view, Mode> stringToIntModeMap = {
     {"Prediction",  Mode::Prediction}, // Mapping from "Prediction" to Mode::Prediction.
     {"Training",    Mode::Training},   // Mapping from "Training" to Mode::Training.
@@ -29,6 +31,9 @@ static std::unordered_map<std::string_view, Mode> stringToIntModeMap = {
  */
 using StringToIntModeMap = std::unordered_map<std::string_view, Mode>;
 
+/**
+ * @brief Mapping from Mode enumeration to corresponding string representation.
+ */
 static std::unordered_map<Mode, std::string_view> intToStringModeMap = {
     {Mode::Prediction,  "Prediction"}, // Mapping from Mode::Prediction to "Prediction".
     {Mode::Training,    "Training"},   // Mapping from Mode::Training to "Training".
@@ -41,6 +46,9 @@ static std::unordered_map<Mode, std::string_view> intToStringModeMap = {
  */
 using IntToStringModeMap = std::unordered_map<Mode, std::string_view>;
 
+/**
+ * @brief Mapping from string representation to corresponding TrainingMode enumeration.
+ */
 static std::unordered_map<std::string_view, TrainingMode> stringToIntTrainingModeMap = {
     {"SGD",      TrainingMode::SGD},      // Mapping from "SGD" to TrainingMode::SGD.
     {"Momentum", TrainingMode::Momentum}, // Mapping from "Momentum" to TrainingMode::Momentum.
@@ -56,6 +64,9 @@ static std::unordered_map<std::string_view, TrainingMode> stringToIntTrainingMod
  */
 using StringToIntTrainingModeMap = std::unordered_map<std::string_view, TrainingMode>;
 
+/**
+ * @brief Mapping from TrainingMode enumeration to corresponding string representation.
+ */
 static std::unordered_map<TrainingMode, std::string_view> intToStringTrainingModeMap = {
     {TrainingMode::SGD,      "SGD"},      // Mapping from TrainingMode::SGD to "SGD".
     {TrainingMode::Momentum, "Momentum"}, // Mapping from TrainingMode::Momentum to "Momentum".
@@ -71,16 +82,17 @@ static std::unordered_map<TrainingMode, std::string_view> intToStringTrainingMod
  */
 using IntToStringTrainingModeMap = std::unordered_map<TrainingMode, std::string_view>;
 
-template <typename T>
 /**
  * @brief Parses a Python tuple and extracts a pointer from the capsule.
  *
+ * @tparam T The type of the pointer.
  * @param args The Python tuple containing the arguments.
  * @param key The key associated with the capsule.
  * @return T const The extracted pointer.
  * @note If the parsing fails or the capsule is invalid, nullptr is returned.
  * @note The caller is responsible for managing the lifetime and validity of the returned pointer.
  */
+template <typename T>
 static T const parsePtr(PyObject* args, char const* key) {
     PyObject* capsule = nullptr;
     if (!PyArg_ParseTuple(args, "O", &capsule))
@@ -99,10 +111,11 @@ static T const parsePtr(PyObject* args, char const* key) {
     }
 }
 
-template <typename T, typename V>
 /**
  * @brief Parses a Python tuple and extracts a pointer and one value.
  *
+ * @tparam T The type of the pointer.
+ * @tparam V The type of the value.
  * @param args The Python tuple containing the arguments.
  * @param value The reference to the value to be extracted.
  * @param key The key associated with the capsule.
@@ -111,6 +124,7 @@ template <typename T, typename V>
  * @note If the parsing fails or the capsule is invalid, nullptr is returned.
  * @note The caller is responsible for managing the lifetime and validity of the returned pointer.
  */
+template <typename T, typename V>
 static T const parsePtrAndOneValue(PyObject* args, V& value, char const* key, char const* format) {
     PyObject* capsule = nullptr;
     if (!PyArg_ParseTuple(args, format, &capsule, &value))
@@ -129,10 +143,12 @@ static T const parsePtrAndOneValue(PyObject* args, V& value, char const* key, ch
     }
 }
 
-template <typename T, typename V, typename W>
 /**
  * @brief Parses a Python tuple and extracts a pointer and two values.
  *
+ * @tparam T The type of the pointer.
+ * @tparam V The type of the first value.
+ * @tparam W The type of the second value.
  * @param args The Python tuple containing the arguments.
  * @param value1 The reference to the first value to be extracted.
  * @param value2 The reference to the second value to be extracted.
@@ -142,6 +158,7 @@ template <typename T, typename V, typename W>
  * @note If the parsing fails or the capsule is invalid, nullptr is returned.
  * @note The caller is responsible for managing the lifetime and validity of the returned pointer.
  */
+template <typename T, typename V, typename W>
 static T const parsePtrAndTwoValues(PyObject* args, V& value1, W& value2, char const* key, char const* format) {
     PyObject* capsule = nullptr;
     if (!PyArg_ParseTuple(args, format, &capsule, &value1, &value2))
@@ -160,10 +177,13 @@ static T const parsePtrAndTwoValues(PyObject* args, V& value1, W& value2, char c
     }
 }
 
-template <typename T, typename V, typename W, typename X>
 /**
  * @brief Parses a Python tuple and extracts a pointer and three values.
  *
+ * @tparam T The type of the pointer.
+ * @tparam V The type of the first value.
+ * @tparam W The type of the second value.
+ * @tparam X The type of the third value.
  * @param args The Python tuple containing the arguments.
  * @param value1 The reference to the first value to be extracted.
  * @param value2 The reference to the second value to be extracted.
@@ -174,6 +194,7 @@ template <typename T, typename V, typename W, typename X>
  * @note If the parsing fails or the capsule is invalid, nullptr is returned.
  * @note The caller is responsible for managing the lifetime and validity of the returned pointer.
  */
+template <typename T, typename V, typename W, typename X>
 static T const parsePtrAndThreeValues(PyObject* args, V& value1, W& value2, X& value3, char const* key, char const* format) {
     PyObject* capsule = nullptr;
     if (!PyArg_ParseTuple(args, format, &capsule, &value1, &value2, &value3))
@@ -192,10 +213,14 @@ static T const parsePtrAndThreeValues(PyObject* args, V& value1, W& value2, X& v
     }
 }
 
-template <typename T, typename V, typename W, typename X, typename Y>
 /**
  * @brief Parses a Python tuple and extracts a pointer and four values.
  *
+ * @tparam T The type of the pointer.
+ * @tparam V The type of the first value.
+ * @tparam W The type of the second value.
+ * @tparam X The type of the third value.
+ * @tparam Y The type of the fourth value.
  * @param args The Python tuple containing the arguments.
  * @param value1 The reference to the first value to be extracted.
  * @param value2 The reference to the second value to be extracted.
@@ -207,6 +232,7 @@ template <typename T, typename V, typename W, typename X, typename Y>
  * @note If the parsing fails or the capsule is invalid, nullptr is returned.
  * @note The caller is responsible for managing the lifetime and validity of the returned pointer.
  */
+template <typename T, typename V, typename W, typename X, typename Y>
 static T const parsePtrAndFourValues(PyObject* args, V& value1, W& value2, X& value3, Y& value4, char const* key, char const* format) {
     PyObject* capsule = nullptr;
     if (!PyArg_ParseTuple(args, format, &capsule, &value1, &value2, &value3, &value4))
@@ -225,10 +251,15 @@ static T const parsePtrAndFourValues(PyObject* args, V& value1, W& value2, X& va
     }
 }
 
-template <typename T, typename V, typename W, typename X, typename Y, typename Z>
 /**
  * @brief Parses a Python tuple and extracts a pointer and five values.
  *
+ * @tparam T The type of the pointer.
+ * @tparam V The type of the first value.
+ * @tparam W The type of the second value.
+ * @tparam X The type of the third value.
+ * @tparam Y The type of the fourth value.
+ * @tparam Z The type of the fifth value.
  * @param args The Python tuple containing the arguments.
  * @param value1 The reference to the first value to be extracted.
  * @param value2 The reference to the second value to be extracted.
@@ -241,6 +272,7 @@ template <typename T, typename V, typename W, typename X, typename Y, typename Z
  * @note If the parsing fails or the capsule is invalid, nullptr is returned.
  * @note The caller is responsible for managing the lifetime and validity of the returned pointer.
  */
+template <typename T, typename V, typename W, typename X, typename Y, typename Z>
 static T const parsePtrAndFiveValues(PyObject* args, V& value1, W& value2, X& value3, Y& value4, Z& value5, char const* key, char const* format) {
     PyObject* capsule = nullptr;
     if (!PyArg_ParseTuple(args, format, &capsule, &value1, &value2, &value3, &value4, &value5))
@@ -259,133 +291,92 @@ static T const parsePtrAndFiveValues(PyObject* args, V& value1, W& value2, X& va
     }
 }
 
-template <typename T, typename U, typename V, typename W, typename X, typename Y, typename Z>
 /**
- * @brief Parses a Python tuple and extracts a pointer and six values.
- *
- * @param args The Python tuple containing the arguments.
- * @param value1 The reference to the first value to be extracted.
- * @param value2 The reference to the second value to be extracted.
- * @param value3 The reference to the third value to be extracted.
- * @param value4 The reference to the fourth value to be extracted.
- * @param value5 The reference to the fifth value to be extracted.
- * @param value6 The reference to the sixth value to be extracted.
- * @param key The key associated with the capsule.
- * @param format The format string for parsing the tuple.
- * @return T const The extracted pointer.
- * @note If the parsing fails or the capsule is invalid, nullptr is returned.
- * @note The caller is responsible for managing the lifetime and validity of the returned pointer.
+ * @brief Module class.
  */
-static T const parsePtrAndSixValues(PyObject* args, U& value1, V& value2, W& value3, X& value4, Y& value5, Z& value6,
-                                    char const* key, char const* format) {
-    PyObject* capsule = nullptr;
-    if (!PyArg_ParseTuple(args, format, &capsule, &value1, &value2, &value3, &value4, &value5, &value6))
-        return nullptr;
+class Module {
+public:
+    /**
+     * @brief Default constructor.
+     */
+    Module();
 
-    if (PyCapsule_IsValid(capsule, key) != 0) {
-        T const ptr = reinterpret_cast<T const>(static_cast<void*>(PyCapsule_GetPointer(capsule, key)));
-        if (ptr == nullptr)
-            return nullptr;
-        return ptr;
-    } else {
-        std::string_view capsuleName(PyCapsule_GetName(capsule));
-        std::string message = "parsePtrAndFiveValues invalid capsule: name = " + std::string(capsuleName) + "  key = " + std::string(key);
-        PyErr_Format(PyExc_RuntimeError, "%s", message.c_str());
-        return nullptr;
-    }
-}
+    /**
+     * @brief Destructor.
+     */
+    ~Module();
 
-/**
- * @brief Checks if the given NumPy array is of the expected type (float32).
- *
- * @param numpyArray The NumPy array to be checked.
- * @return PyArrayObject* The input NumPy array if it meets the expected type, otherwise nullptr.
- * @note If the input array does not match the expected type, a runtime error is set.
- * @note The caller is responsible for managing the memory and lifetime of the NumPy array.
- */
-static PyArrayObject* CheckNumPyArray(PyArrayObject* numpyArray) {
-    if (!PyArray_ISFLOAT(numpyArray) || !std::is_same_v<float, decltype(*PyArray_DATA(numpyArray))>) {
-        PyErr_SetString(PyExc_RuntimeError, "CheckNumPyArray received incorrect NumPy array type; expected float32");
-        return nullptr;
-    }
-    return numpyArray;
-}
+    /**
+     * @brief Initializes the module.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of the initialization.
+     */
+    static PyObject* initialize(PyObject* self, PyObject* args);
 
-/**
- * @brief Converts a NumPy array to a vector of floats.
- *
- * @param numpyArray The NumPy array to be converted.
- * @return vector<float> The vector of floats containing the data from the NumPy array.
- * @note The returned vector may be empty if the conversion fails or the input array is empty.
- * @note The caller is responsible for managing the memory and lifetime of the NumPy array.
- */
-static vector<float> NumPyArrayToVector(PyArrayObject* numpyArray) {
-    npy_intp n = std::size(numpyArray);
-    std::vector<float> v(n);
-    void* data = PyArray_DATA(numpyArray);
-    if (data == nullptr)
-        return v;
-    std::span<float> dataSpan(static_cast<float*>(data), n);
-    std::copy(dataSpan.begin(), dataSpan.end(), v.begin());
-    return v;
-}
+    /**
+     * @brief Sets the mode of the module.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of setting the mode.
+     */
+    static PyObject* setMode(PyObject* self, PyObject* args);
 
-/**
- * @brief Converts a Python list to a vector of DataSetBase pointers.
- *
- * @param list The Python list containing the DataSetBase pointers.
- * @return vector<DataSetBase*> The vector of DataSetBase pointers.
- * @note The returned vector may contain nullptr elements if conversion fails for any item.
- * @note The caller is responsible for managing the memory and lifetime of the DataSetBase pointers.
- */
-static vector<DataSetBase*> PythonListToDataSetBaseVector(PyObject* list) {
-    Py_ssize_t size = PyList_Size(list);
-    std::vector<DataSetBase*> vect(size, nullptr);
-    try {
-        for (Py_ssize_t i = 0; i < size; i++) {
-            PyObject* capsule = PyList_GetItem(list, i);
-            if (capsule == nullptr)
-                throw std::runtime_error("Failed to retrieve item from Python list.");
-            DataSetBase* pDataSetBase = reinterpret_cast<DataSetBase*>(PyCapsule_GetPointer(capsule, "data set"));
-            if (pDataSetBase == nullptr)
-                throw std::runtime_error("Failed to retrieve pointer from capsule.");
-            vect.at(i) = pDataSetBase;
-        }
-    } catch (...) {
-        vect.clear();
-    }
-    return vect;
-}
+    /**
+     * @brief Sets the training mode of the module.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of setting the training mode.
+     */
+    static PyObject* setTrainingMode(PyObject* self, PyObject* args);
 
-/**
- * @brief Converts a vector of DataSetBase pointers to a Python list.
- *
- * @param vDataSetBase The vector of DataSetBase pointers.
- * @return PyObject* The Python list containing the converted DataSetBase pointers.
- * @note The caller is responsible for managing the reference count of the returned PyObject*.
- */
-static PyObject* DataSetBaseVectorToPythonList(vector<DataSetBase*>& vDataSetBase) {
-    Py_ssize_t size = std::size(vDataSetBase);
-    PyObject* list = PyList_New(size);
-    if (list == nullptr) {
-        std::string message = "DataSetVectorToPythonArray failed in PyList_New(" + std::to_string(size) + ")";
-        PyErr_SetString(PyExc_RuntimeError, message.c_str());
-        return nullptr;
-    }
-    try {
-        for (Py_ssize_t i = 0; i < size; i++) {
-            PyObject* pDataSetBase = PyCapsule_New(reinterpret_cast<void*>(vDataSetBase.at(i)), "data set", nullptr);
-            if (PyList_SetItem(list, i, pDataSetBase) < 0) {
-                std::string message = "DataSetVectorToPythonArray failed in PyList_SetItem for index = " + std::to_string(i);
-                PyErr_SetString(PyExc_RuntimeError, message.c_str());
-                throw std::runtime_error("Failed to set item in Python list.");
-            }
-        }
-        return list;
-    } catch (...) {
-        Py_DECREF(list);
-        return nullptr;
-    }
-}
+    /**
+     * @brief Registers a module with the module manager.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of registering the module.
+     */
+    static PyObject* registerModule(PyObject* self, PyObject* args);
 
-#endif
+    /**
+     * @brief Registers a layer with the module manager.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of registering the layer.
+     */
+    static PyObject* registerLayer(PyObject* self, PyObject* args);
+
+    /**
+     * @brief Computes the forward pass of the module.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of the forward pass.
+     */
+    static PyObject* forward(PyObject* self, PyObject* args);
+
+    /**
+     * @brief Computes the backward pass of the module.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of the backward pass.
+     */
+    static PyObject* backward(PyObject* self, PyObject* args);
+
+    /**
+     * @brief Updates the module parameters using the specified optimizer.
+     *
+     * @param args The Python tuple containing the arguments.
+     * @return PyObject* The result of the update.
+     */
+    static PyObject* update(PyObject* self, PyObject* args);
+
+private:
+    Mode mode_; ///< The current mode of the module.
+    TrainingMode trainingMode_; ///< The current training mode of the module.
+    std::unordered_map<std::string, ModuleBase*> modules_; ///< The registered modules.
+    std::unordered_map<std::string, LayerBase*> layers_; ///< The registered layers.
+};
+
+#endif  // __MODULE_H__
+
+
