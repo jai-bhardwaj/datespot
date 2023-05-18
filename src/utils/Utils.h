@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <vector>
 #include <map>
@@ -6,33 +7,14 @@
 #include <ratio>
 #include <string>
 #include <utility>
-#include <iostream>
-#include <vector>
-#include <chrono>
 #include <random>
 #include <filesystem>
 
-using std::string;
-using std::vector;
+namespace fs = std::filesystem;
 
-/**
- * @brief Suffix for input dataset names.
- */
 constexpr std::string_view INPUT_DATASET_SUFFIX = "_input";
-
-/**
- * @brief Suffix for output dataset names.
- */
 constexpr std::string_view OUTPUT_DATASET_SUFFIX = "_output";
-
-/**
- * @brief File extension for NetCDF files.
- */
 constexpr std::string_view NETCDF_FILE_EXTENTION = ".nc";
-
-/**
- * @brief Fixed seed value for random number generation.
- */
 constexpr unsigned long FIXED_SEED = 12134ull;
 
 /**
@@ -42,18 +24,18 @@ class CWMetric
 {
 public:
     /**
-     * @brief Updates a metric with a string value.
-     *
-     * @param metric The name of the metric.
-     * @param value The value of the metric as a string.
+     * @brief Updates the metrics with the given metric and value.
+     * 
+     * @param metric The metric to update.
+     * @param value The value of the metric.
      */
     static void updateMetrics(const std::string& metric, const std::string& value);
 
     /**
-     * @brief Updates a metric with a generic value.
-     *
+     * @brief Updates the metrics with the given metric and value.
+     * 
      * @tparam Value The type of the value.
-     * @param metric The name of the metric.
+     * @param metric The metric to update.
      * @param value The value of the metric.
      */
     template <typename Value, typename = decltype(std::to_string(std::declval<Value>()))>
@@ -65,17 +47,17 @@ public:
 
 /**
  * @brief Retrieves the value of a command-line option.
- *
+ * 
  * @param begin The beginning of the command-line arguments.
  * @param end The end of the command-line arguments.
  * @param option The option to search for.
- * @return A pointer to the value of the option if found, nullptr otherwise.
+ * @return char* The value of the option if found, nullptr otherwise.
  */
 char* getCmdOption(char**, char**, const std::string&);
 
 /**
  * @brief Checks if a command-line option exists.
- *
+ * 
  * @param begin The beginning of the command-line arguments.
  * @param end The end of the command-line arguments.
  * @param option The option to search for.
@@ -85,81 +67,81 @@ bool cmdOptionExists(char**, char**, const std::string&);
 
 /**
  * @brief Retrieves the value of a required command-line argument.
- *
+ * 
  * @param argc The number of command-line arguments.
- * @param argv The array of command-line argument strings.
- * @param flag The flag corresponding to the argument.
+ * @param argv The array of command-line arguments.
+ * @param flag The flag for the required argument.
  * @param message The error message to display if the argument is missing.
- * @param usage The function pointer to the usage function to call in case of an error.
- * @return The value of the required argument.
+ * @param usage The function pointer to the usage function.
+ * @return std::string The value of the required argument.
  */
 std::string getRequiredArgValue(int argc, char** argv, const std::string& flag, const std::string& message, void (*usage)());
 
 /**
  * @brief Retrieves the value of an optional command-line argument.
- *
+ * 
  * @param argc The number of command-line arguments.
- * @param argv The array of command-line argument strings.
- * @param flag The flag corresponding to the argument.
- * @param defaultValue The default value to return if the argument is missing.
- * @return The value of the optional argument if present, or the default value otherwise.
+ * @param argv The array of command-line arguments.
+ * @param flag The flag for the optional argument.
+ * @param defaultValue The default value if the argument is missing.
+ * @return std::string The value of the optional argument.
  */
 std::string getOptionalArgValue(int argc, char** argv, const std::string& flag, const std::string& defaultValue);
 
 /**
  * @brief Checks if a command-line argument is set.
- *
+ * 
  * @param argc The number of command-line arguments.
- * @param argv The array of command-line argument strings.
- * @param flag The flag corresponding to the argument.
+ * @param argv The array of command-line arguments.
+ * @param flag The flag to check.
  * @return true if the argument is set, false otherwise.
  */
 bool isArgSet(int argc, char** argv, const std::string& flag);
 
 /**
  * @brief Checks if a file exists.
- *
+ * 
  * @param filename The name of the file.
  * @return true if the file exists, false otherwise.
  */
 bool fileExists(const std::string& filename);
 
 /**
- * @brief Checks if a file has a NetCDF extension.
- *
+ * @brief Checks if a file has the NetCDF extension.
+ * 
  * @param filename The name of the file.
- * @return true if the file has a NetCDF extension, false otherwise.
+ * @return true if the file has the NetCDF extension, false otherwise.
  */
 bool isNetCDFfile(const std::string& filename);
 
 /**
- * @brief Splits a string into a vector of substrings based on a delimiter.
- *
- * @param s The input string to be split.
+ * @brief Splits a string into substrings using a delimiter.
+ * 
+ * @param s The string to split.
  * @param delim The delimiter character.
- * @param elems The vector to store the resulting substrings.
- * @return A reference to the vector of substrings.
+ * @param elems The vector to store the substrings.
+ * @return std::vector<std::string>& Reference to the vector of substrings.
  */
 std::vector<std::string>& split(const std::string& s, char delim, std::vector<std::string>& elems);
 
 /**
- * @brief Splits a string into a vector of substrings based on a delimiter.
- *
- * @param s The input string to be split.
+ * @brief Splits a string into substrings using a delimiter.
+ * 
+ * @param s The string to split.
  * @param delim The delimiter character.
- * @return A vector of substrings.
+ * @return std::vector<std::string> The vector of substrings.
  */
 std::vector<std::string> split(const std::string& s, char delim);
 
 /**
- * @brief Calculates the elapsed time in seconds between two time points.
- *
- * @tparam Clock The clock type used for the time points.
- * @tparam Duration1 The duration type of the first time point.
- * @tparam Duration2 The duration type of the second time point.
- * @param start The starting time point.
- * @param end The ending time point.
- * @return The elapsed time in seconds as a floating-point value.
+ * @brief Computes the elapsed time in seconds between two time points.
+ * 
+ * @tparam Clock The clock type.
+ * @tparam Duration1 The duration type of the start time point.
+ * @tparam Duration2 The duration type of the end time point.
+ * @param start The start time point.
+ * @param end The end time point.
+ * @return double The elapsed time in seconds.
  */
 template <typename Clock, typename Duration1, typename Duration2>
 double elapsed_seconds(const std::chrono::time_point<Clock, Duration1>& start,
@@ -171,73 +153,55 @@ double elapsed_seconds(const std::chrono::time_point<Clock, Duration1>& start,
 
 /**
  * @brief Checks if a directory exists.
- *
- * @param dirname The directory name.
+ * 
+ * @param dirname The name of the directory.
  * @return true if the directory exists, false otherwise.
  */
-bool isDirectory(const std::string& dirname)
-{
-    return std::filesystem::is_directory(dirname);
-}
+bool isDirectory(const std::string& dirname);
 
 /**
  * @brief Checks if a file exists.
- *
- * @param filename The file name.
+ * 
+ * @param filename The name of the file.
  * @return true if the file exists, false otherwise.
  */
-bool isFile(const std::string& filename)
-{
-    return std::filesystem::is_regular_file(filename);
-}
+bool isFile(const std::string& filename);
 
 /**
  * @brief Lists files in a directory.
- *
- * @param dirname The directory name.
- * @param recursive Flag indicating whether to list files recursively in subdirectories.
- * @param files A vector to store the list of files.
- * @return An integer indicating the status of the operation (e.g., success or failure).
+ * 
+ * @param dirname The name of the directory.
+ * @param recursive Flag indicating whether to list files recursively.
+ * @param files The vector to store the file paths.
+ * @return int 0 if successful, 1 otherwise.
  */
-int listFiles(const std::string& dirname, const bool recursive, std::vector<std::string>& files)
-{
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(dirname))
-    {
-        if (!recursive && entry.is_directory())
-            continue;
-
-        files.push_back(entry.path().string());
-    }
-
-    std::sort(files.begin(), files.end());
-    return 0;
-}
+int listFiles(const std::string& dirname, const bool recursive, std::vector<std::string>& files);
 
 /**
- * @brief Sorts keys and values using an output array.
- *
- * @tparam Tkey The type of the keys.
- * @tparam Tval The type of the values.
- * @param keys The input array of keys.
- * @param vals The input array of values.
+ * @brief Sorts key-value pairs by key or value.
+ * 
+ * @tparam Tkey The type of the key.
+ * @tparam Tval The type of the value.
+ * @param keys The array of keys.
+ * @param vals The array of values.
  * @param size The size of the input arrays.
- * @param Outputkeys The output array to store the sorted keys.
- * @param Outputvals The output array to store the sorted values.
+ * @param Outputkeys The array to store the sorted keys.
+ * @param Outputvals The array to store the sorted values.
  * @param Output The size of the output arrays.
- * @param sortByKey Flag indicating whether to sort by key (default is true).
+ * @param sortByKey Flag indicating whether to sort by key (true) or value (false).
  */
 template<typename Tkey, typename Tval>
 void Outputsort(Tkey* keys, Tval* vals, const int size, Tkey* Outputkeys, Tval* Outputvals, const int Output, const bool sortByKey = true)
 {
-    // TODO Implementation for Outputsort function
+    // TODO: Implement the Outputsort function
 }
 
 /**
- * @brief Generates a random integer within the specified range.
- *
- * @param min The minimum value of the range (inclusive).
- * @param max The maximum value of the range (inclusive).
- * @return A random integer within the specified range.
+ * @brief Generates a random integer between the given min and max values.
+ * 
+ * @param min The minimum value.
+ * @param max The maximum value.
+ * @return int The generated random integer.
  */
 inline int rand(int min, int max)
 {
@@ -247,11 +211,11 @@ inline int rand(int min, int max)
 }
 
 /**
- * @brief Generates a random floating-point number within the specified range.
- *
- * @param min The minimum value of the range (inclusive).
- * @param max The maximum value of the range (inclusive).
- * @return A random floating-point number within the specified range.
+ * @brief Generates a random float between the given min and max values.
+ * 
+ * @param min The minimum value.
+ * @param max The maximum value.
+ * @return float The generated random float.
  */
 inline float rand(float min, float max)
 {
