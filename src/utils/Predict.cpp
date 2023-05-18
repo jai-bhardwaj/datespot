@@ -12,6 +12,13 @@
 #include <netcdf>
 #include <filesystem>
 
+#include "Generator.h"
+#include "CDFhelper.h"
+#include "Utils.h"
+#include "Filters.h"
+#include "GpuTypes.h"
+#include "Types.h"
+
 namespace fs = std::filesystem;
 using namespace netCDF;
 using namespace netCDF::exceptions;
