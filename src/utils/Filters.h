@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <string_view>
 
 /**
  * @brief Abstract base class for filters.
@@ -139,9 +140,9 @@ public:
      *
      * @param xSampleFilter The samples filter.
      */
-    void setSamplesFilter(SamplesFilter *xSampleFilter)
+    void setSamplesFilter(std::unique_ptr<SamplesFilter> xSampleFilter)
     {
-        sampleFilter.reset(xSampleFilter);
+        sampleFilter = std::move(xSampleFilter);
     }
 
     /**
@@ -171,9 +172,9 @@ public:
  *
  * @return The loaded filter configuration.
  */
-FilterConfig* loadFilters(const std::string &samplesFilterFileName,
-                          const std::string &outputFileName,
-                          std::unordered_map<std::string, unsigned int> &xMInput,
-                          std::unordered_map<std::string, unsigned int> &xMSamples);
+std::unique_ptr<FilterConfig> loadFilters(const std::string &samplesFilterFileName,
+                                          const std::string &outputFileName,
+                                          std::unordered_map<std::string, unsigned int> &xMInput,
+                                          std::unordered_map<std::string, unsigned int> &xMSamples);
 
 #endif
