@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <chrono>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <sstream>
 #include <stdexcept>
@@ -15,10 +15,13 @@
 #include "Types.h"
 #include "Utils.h"
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 using namespace netCDF;
 using namespace netCDF::exceptions;
 using namespace std::chrono;
-using namespace std::filesystem;
+using namespace std::string_literals;
 
 // Function to print the usage of the 'train' program
 void printUsageTrain() {
@@ -35,42 +38,42 @@ void printUsageTrain() {
 
 int main(int argc, char** argv) {
     // Constants with default values for training parameters
-    constexpr float alpha = std::stof(getOptionalArgValue(argc, argv, "-alpha", "0.025f"));
-    constexpr float lambda = std::stof(getOptionalArgValue(argc, argv, "-lambda", "0.0001f"));
-    constexpr float lambda1 = std::stof(getOptionalArgValue(argc, argv, "-lambda1", "0.0f"));
-    constexpr float mu = std::stof(getOptionalArgValue(argc, argv, "-mu", "0.5f"));
-    constexpr float mu1 = std::stof(getOptionalArgValue(argc, argv, "-mu1", "0.0f"));
+    const float alpha = std::stof(getOptionalArgValue(argc, argv, "-alpha"s, "0.025f"s));
+    const float lambda = std::stof(getOptionalArgValue(argc, argv, "-lambda"s, "0.0001f"s));
+    const float lambda1 = std::stof(getOptionalArgValue(argc, argv, "-lambda1"s, "0.0f"s));
+    const float mu = std::stof(getOptionalArgValue(argc, argv, "-mu"s, "0.5f"s));
+    const float mu1 = std::stof(getOptionalArgValue(argc, argv, "-mu1"s, "0.0f"s));
 
     // Check if the '-h' option is set, print usage and exit if true
-    if (isArgSet(argc, argv, "-h")) {
+    if (isArgSet(argc, argv, "-h"s)) {
         printUsageTrain();
         std::exit(1);
     }
 
     // Variables for storing command line arguments
-    path configFileName;
-    path inputDataFile;
-    path outputDataFile;
-    path networkFileName;
+    fs::path configFileName;
+    fs::path inputDataFile;
+    fs::path outputDataFile;
+    fs::path networkFileName;
     unsigned int batchSize = 1024;
     unsigned int epoch = 40;
 
     // Parse command line arguments
     for (int i = 1; i < argc; i += 2) {
-        std::string option = argv[i];
-        std::string value = argv[i + 1];
-        if (option == "-c") {
+        const std::string_view option = argv[i];
+        const std::string_view value = argv[i + 1];
+        if (option == "-c"s) {
             configFileName = value;
-        } else if (option == "-i") {
+        } else if (option == "-i"s) {
             inputDataFile = value;
-        } else if (option == "-o") {
+        } else if (option == "-o"s) {
             outputDataFile = value;
-        } else if (option == "-n") {
+        } else if (option == "-n"s) {
             networkFileName = value;
-        } else if (option == "-b") {
-            batchSize = std::stoi(value);
-        } else if (option == "-e") {
-            epoch = std::stoi(value);
+        } else if (option == "-b"s) {
+            batchSize = std::stoi(value.data());
+        } else if (option == "-e"s) {
+            epoch = std::stoi(value.data());
         }
     }
 
@@ -81,7 +84,7 @@ int main(int argc, char** argv) {
     }
 
     // Check if the config file exists, print error message and exit if not
-    if (!exists(configFileName)) {
+    if (!fs::exists(configFileName)) {
         std::cerr << "Error: Cannot read config file: " << configFileName << std::endl;
         return 1;
     } else {
@@ -89,7 +92,7 @@ int main(int argc, char** argv) {
     }
 
     // Check if the input data file exists, print error message and exit if not
-    if (!exists(inputDataFile)) {
+    if (!fs::exists(inputDataFile)) {
         std::cerr << "Error: Cannot read input feature index file: " << inputDataFile << std::endl;
         return 1;
     } else {
@@ -97,7 +100,7 @@ int main(int argc, char** argv) {
     }
 
     // Check if the output data file exists, print error message and exit if not
-    if (!exists(outputDataFile)) {
+    if (!fs::exists(outputDataFile)) {
         std::cerr << "Error: Cannot read output feature index file: " << outputDataFile << std::endl;
         return 1;
     } else {
@@ -105,7 +108,7 @@ int main(int argc, char** argv) {
     }
 
     // Check if the network file already exists, print error message and exit if true
-    if (exists(networkFileName)) {
+    if (fs::exists(networkFileName)) {
         std::cerr << "Error: Network file already exists: " << networkFileName << std::endl;
         return 1;
     } else {
@@ -129,14 +132,15 @@ int main(int argc, char** argv) {
     std::vector<DataSetBase*> vDataSetOutput = LoadNetCDF(outputDataFile);
 
     // Combine input and output datasets into a single vector
-    vDataSetInput.insert(vDataSetInput.end(), vDataSetOutput.begin(), vDataSetOutput.end());
+    std::vector<DataSetBase*> vDataSets;
+    std::ranges::move(vDataSetInput, std::back_inserter(vDataSets));
+    std::ranges::move(vDataSetOutput, std::back_inserter(vDataSets));
 
     // Load neural network from JSON config file with specified batch size and input datasets
-    Network* pNetwork = LoadNeuralNetworkJSON(configFileName, batchSize, vDataSetInput);
+    Network* pNetwork = LoadNeuralNetworkJSON(configFileName, batchSize, vDataSets);
 
     // Load input and output datasets into the neural network
-    pNetwork->LoadDataSets(vDataSetInput);
-    pNetwork->LoadDataSets(vDataSetOutput);
+    pNetwork->LoadDataSets(vDataSets);
 
     // Set the checkpoint file for saving the network periodically during training
     pNetwork->SetCheckpoint(networkFileName, 10);
@@ -171,7 +175,7 @@ int main(int argc, char** argv) {
     auto end = steady_clock::now();
 
     // Calculate the elapsed time in seconds
-    double elapsedTime = duration<double>(end - start).count();
+    double elapsedTime = duration_cast<duration<double>>(end - start).count();
 
     // Print the elapsed time
     std::cout << "Elapsed time: " << elapsedTime << " seconds" << std::endl;
