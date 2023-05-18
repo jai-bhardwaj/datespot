@@ -10,16 +10,16 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-focal-9
+      - llvm-toolchain-$(lsb_release -cs)-12
     packages:
-      - g++-9
-      - clang-9
+      - g++-12
+      - clang-12
       - libcppunit-dev
       - libnetcdf-dev
 
 before_install:
-  - if [[ "$CXX" == "g++" ]]; then export CXX=g++-9 CC=gcc-9; fi
-  - if [[ "$CXX" == "clang++" ]]; then export CXX=clang++-9 CC=clang-9; fi
+  - if [[ "$CXX" == "g++" ]]; then export CXX=g++-12 CC=gcc-12; fi
+  - if [[ "$CXX" == "clang++" ]]; then export CXX=clang++-12 CC=clang-12; fi
 
 before_script:
   - wget https://downloads.unidata.ucar.edu/netcdf-c/4.9.2/netcdf-c-4.9.2.tar.gz
