@@ -10,30 +10,26 @@ object Tensorhub {
     /**
      * Null pointer constant.
      */
-    const val NULLPTR: Long = 0x0
+    private const val NULLPTR: Long = 0x0
 
     /**
      * Loads the network from the given configuration.
      *
      * @param config The network configuration.
      * @return The loaded network.
-     * @throws RuntimeException if failed to load the network.
+     * @throws NetworkLoadException if failed to load the network.
      */
     fun load(config: NetworkConfig): Network {
-        val ptr = load(config.networkFilePath, config.batchSize, config.k)
+        val ptr = loadNetwork(config.networkFilePath, config.batchSize, config.k)
         if (ptr == NULLPTR) {
-            throw RuntimeException("Failed to load network from config: $config")
+            throw NetworkLoadException("Failed to load network from config: $config")
         }
 
-        val inputLayers = getLayers(ptr, Kind.Input.ordinal())
-        val outputLayers = getLayers(ptr, Kind.Output.ordinal())
+        val inputLayers = getLayers(ptr, Layer.Kind.Input.ordinal())
+        val outputLayers = getLayers(ptr, Layer.Kind.Output.ordinal())
 
-        if (inputLayers.isEmpty()) {
-            throw RuntimeException("No input layers found in: $config")
-        }
-        if (outputLayers.isEmpty()) {
-            throw RuntimeException("No output layers found in: $config")
-        }
+        require(inputLayers.isNotEmpty()) { "No input layers found in: $config" }
+        require(outputLayers.isNotEmpty()) { "No output layers found in: $config" }
 
         return Network(config, ptr, inputLayers, outputLayers)
     }
@@ -44,7 +40,7 @@ object Tensorhub {
      * @param ptr The network pointer.
      * @param datasets The datasets to load.
      */
-    external fun load_datasets(ptr: Long, datasets: Array<DataSet>)
+    external fun loadDatasets(ptr: Long, datasets: Array<DataSet>)
 
     /**
      * Shuts down the network.
@@ -80,5 +76,5 @@ object Tensorhub {
      * @param maxK The maximum value of k.
      * @return The network pointer.
      */
-    private external fun load(networkFilePath: String, batchSize: Int, maxK: Int): Long
+    private external fun loadNetwork(networkFilePath: String, batchSize: Int, maxK: Int): Long
 }
