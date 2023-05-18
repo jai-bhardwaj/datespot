@@ -6,575 +6,443 @@
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+
+namespace py = pybind11;
 
 class Utilities {
-    public:
-        /**
-         * @brief Startup the GPU.
-         *
-         * This function starts up the GPU by calling the `Startup` function of the GPU object with the provided command-line arguments.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating the successful startup of the GPU.
-         *         Returns nullptr if an error occurs during parsing or startup.
-         */
-        static inline PyObject* Startup(PyObject* self, PyObject* args);
+public:
+    /**
+     * Starts up the GPU.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments (not used in this method).
+     * @return None.
+     */
+    static inline py::object Startup(py::object self, py::object args);
 
-        /**
-         * @brief Shutdown the GPU.
-         *
-         * This function shuts down the GPU by calling the `Shutdown` function of the GPU object.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating the successful shutdown of the GPU.
-         */
-        static inline PyObject* Shutdown(PyObject* self, PyObject* args);
+    /**
+     * Shuts down the GPU.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments (not used in this method).
+     * @return None.
+     */
+    static inline py::object Shutdown(py::object self, py::object args);
 
-        /**
-         * @brief Create a CDL object from a JSON file.
-         *
-         * This function creates a CDL object and initializes it by loading the contents from a JSON file specified by `jsonFilename`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A PyCapsule object representing the created CDL object.
-         *         Returns nullptr if an error occurs during loading or initialization.
-         */
-        static inline PyObject* CreateCDLFromJSON(PyObject* self, PyObject* args);
+    /**
+     * Creates a CDL (Color Decision List) object from a JSON file.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the JSON filename.
+     * @return A Python capsule object containing the created CDL.
+     * @throws std::runtime_error if the JSON file parsing fails.
+     */
+    static inline py::object CreateCDLFromJSON(py::object self, py::object args);
 
-        /**
-         * @brief Create a CDL object with default values.
-         *
-         * This function creates a CDL object with default values and returns it as a PyCapsule object.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A PyCapsule object representing the created CDL object.
-         */
-        static inline PyObject* CreateCDLFromDefaults(PyObject* self, PyObject* args);
+    /**
+     * Creates a CDL (Color Decision List) object with default values.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments (not used in this method).
+     * @return A Python capsule object containing the created CDL.
+     */
+    static inline py::object CreateCDLFromDefaults(py::object self, py::object args);
 
-        /**
-         * @brief Delete a CDL object.
-         *
-         * This function deletes the CDL object represented by the given pointer `pCDL`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating successful deletion of the CDL object.
-         *         Returns nullptr if the CDL pointer is null.
-         */
-        static inline PyObject* DeleteCDL(PyObject* self, PyObject* args);
+    /**
+     * Deletes a CDL (Color Decision List) object.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the CDL to delete.
+     * @return None.
+     */
+    static inline py::object DeleteCDL(py::object self, py::object args);
 
-        /**
-         * @brief Load a data set from a NetCDF file.
-         *
-         * This function loads a data set from a NetCDF file specified by `dataFilename` and returns it as a list of DataSetBase objects.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A Python list object containing the loaded data set as DataSetBase objects.
-         *         Returns nullptr if an error occurs during loading or if there is insufficient memory.
-         */
-        static inline PyObject* LoadDataSetFromNetCDF(PyObject* self, PyObject* args);
+    /**
+     * Loads a dataset from a NetCDF file.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the NetCDF filename.
+     * @return A Python list containing the loaded dataset(s).
+     * @throws std::bad_alloc if memory allocation fails or if the dataset vector is empty.
+     */
+    static inline py::object LoadDataSetFromNetCDF(py::object self, py::object args);
 
-        /**
-         * @brief Delete a data set object.
-         *
-         * This function deletes the data set object represented by the given pointer `pDataSet`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating successful deletion of the data set object.
-         *         Returns nullptr if the data set pointer is null.
-         */
-        static inline PyObject* DeleteDataSet(PyObject* self, PyObject* args);
+    /**
+     * Deletes a dataset.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the dataset to delete.
+     * @return None.
+     */
+    static inline py::object DeleteDataSet(py::object self, py::object args);
 
-        /**
-         * @brief Load a neural network from a NetCDF file.
-         *
-         * This function loads a neural network from a NetCDF file specified by `networkFilename` and returns it as a PyCapsule object.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A PyCapsule object representing the loaded neural network.
-         *         Returns nullptr if an error occurs during loading or if the loaded network is nullptr.
-         */
-        static inline PyObject* LoadNeuralNetworkFromNetCDF(PyObject* self, PyObject* args);
+    /**
+     * Loads a neural network from a NetCDF file.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the NetCDF filename and batch size.
+     * @return A Python capsule object containing the loaded neural network.
+     * @throws std::runtime_error if loading the neural network fails.
+     */
+    static inline py::object LoadNeuralNetworkFromNetCDF(py::object self, py::object args);
 
-        /**
-         * @brief Load a neural network from a JSON file.
-         *
-         * This function loads a neural network from a JSON file specified by `jsonFilename` and returns it as a PyCapsule object.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A PyCapsule object representing the loaded neural network.
-         *         Returns nullptr if an error occurs during loading or if the loaded network is nullptr.
-         */
-        static inline PyObject* LoadNeuralNetworkFromJSON(PyObject* self, PyObject* args);
+    /**
+     * Loads a neural network from a JSON file.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the JSON filename, batch size, and dataset list.
+     * @return A Python capsule object containing the loaded neural network.
+     * @throws std::runtime_error if the dataset list is empty or if loading the neural network fails.
+     */
+    static inline py::object LoadNeuralNetworkFromJSON(py::object self, py::object args);
 
-        /**
-         * @brief Delete a neural network object.
-         *
-         * This function deletes the neural network object represented by the given pointer `pNetwork`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating successful deletion of the neural network object.
-         *         Returns nullptr if the neural network pointer is null.
-         */
-        static inline PyObject* DeleteNetwork(PyObject* self, PyObject* args);
+    /**
+     * Deletes a network.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the network to delete.
+     * @return None.
+     */
+    static inline py::object DeleteNetwork(py::object self, py::object args);
 
-        /**
-         * @brief Open a file.
-         *
-         * This function opens a file specified by `filename` with the given `mode` and returns a PyCapsule object representing the opened file.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A PyCapsule object representing the opened file.
-         *         Returns nullptr if an error occurs during opening or if the file pointer is null.
-         */
-        static inline PyObject* OpenFile(PyObject* self, PyObject* args);
+    /**
+     * Opens a file.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the filename and mode to open the file.
+     * @return A Python capsule object containing the opened file pointer.
+     * @throws std::runtime_error if an error occurs while opening the file.
+     */
+    static inline py::object OpenFile(py::object self, py::object args);
 
-        /**
-         * @brief Close a file.
-         *
-         * This function closes the file represented by the given pointer `pFILE`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating successful closing of the file.
-         *         Returns nullptr if the file pointer is null or if an error occurs during closing.
-         */
-        static inline PyObject* CloseFile(PyObject* self, PyObject* args);
+    /**
+     * Closes a file.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the file pointer to close.
+     * @return None.
+     * @throws std::runtime_error if an error occurs while closing the file.
+     */
+    static inline py::object CloseFile(py::object self, py::object args);
 
-        /**
-         * @brief Set the random seed for the GPU.
-         *
-         * This function sets the random seed for the GPU to ensure reproducible random number generation.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating successful setting of the random seed.
-         */
-        static inline PyObject* SetRandomSeed(PyObject* self, PyObject* args);
+    /**
+     * Sets the random seed for GPU operations.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the random seed value.
+     * @return None.
+     * @throws pybind11::error_already_set if an error occurs during casting or if the random seed is -1 and a Python error has occurred.
+     */
+    static inline py::object SetRandomSeed(py::object self, py::object args);
 
-        /**
-         * @brief Get the memory usage of the GPU and CPU.
-         *
-         * This function retrieves the memory usage of the GPU and CPU and returns it as a list of two integers: [gpuMemoryUsage, cpuMemoryUsage].
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A Python list object containing the GPU and CPU memory usage as two integers.
-         */
-        static inline PyObject* GetMemoryUsage(PyObject* self, PyObject* args);
+    /**
+     * Retrieves the memory usage information.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments (not used in this method).
+     * @return A tuple containing the GPU memory usage and CPU memory usage.
+     */
+    static inline py::object GetMemoryUsage(py::object self, py::object args);
 
-        /**
-         * @brief Normalize a numpy array.
-         *
-         * This function normalizes a numpy array specified by `inputArray` using the given `mean` and `stdDev`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A normalized numpy array.
-         *         Returns nullptr if an error occurs during normalization or if the input array is invalid.
-         */
-        static inline PyObject* Normalize(PyObject* self, PyObject* args);
+    /**
+     * Transposes the given arrays.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the arrays to transpose.
+     * @return The transposed array.
+     * @note The ownership of the returned object is transferred to the caller.
+     */
+    static inline py::object Transpose(py::object self, py::object args);
 
-        /**
-         * @brief Transpose a numpy array.
-         *
-         * This function transposes a numpy array specified by `ASINWeightArray` and `pEmbeddingArray`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return The transposed numpy array.
-         *         Returns nullptr if an error occurs during transposition or if the input arrays are invalid.
-         */
-        static inline PyObject* Transpose(PyObject* self, PyObject* args);
+    /**
+     * Creates a float GPU buffer.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the size of the GPU buffer to create.
+     * @return A Python capsule object containing the created float GPU buffer.
+     * @throws std::bad_alloc if memory allocation fails.
+     */
+    static inline py::object CreateFloatGpuBuffer(py::object self, py::object args);
 
-        /**
-         * @brief Create a float GPU buffer.
-         *
-         * This function creates a float GPU buffer of the specified `size` and returns it as a PyCapsule object.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A PyCapsule object representing the created float GPU buffer.
-         *         Returns nullptr if an error occurs during creation or if there is insufficient memory.
-         */
-        static inline PyObject* CreateFloatGpuBuffer(PyObject* self, PyObject* args);
+    /**
+     * Deletes a float GPU buffer.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the GPU buffer to delete.
+     * @return None.
+     */
+    static inline py::object DeleteFloatGpuBuffer(py::object self, py::object args);
 
-        /**
-         * @brief Delete a float GPU buffer.
-         *
-         * This function deletes the float GPU buffer represented by the given pointer `pGpuBuffer`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating successful deletion of the float GPU buffer.
-         *         Returns nullptr if the float GPU buffer pointer is null.
-         */
-        static inline PyObject* DeleteFloatGpuBuffer(PyObject* self, PyObject* args);
+    /**
+     * Creates an unsigned GPU buffer.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the size of the GPU buffer to create.
+     * @return A Python capsule object containing the created unsigned GPU buffer.
+     * @throws std::bad_alloc if memory allocation fails.
+     */
+    static inline py::object CreateUnsignedGpuBuffer(py::object self, py::object args);
 
-        /**
-         * @brief Create an unsigned GPU buffer.
-         *
-         * This function creates an unsigned GPU buffer of the specified `size` and returns it as a PyCapsule object.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return A PyCapsule object representing the created unsigned GPU buffer.
-         *         Returns nullptr if an error occurs during creation or if there is insufficient memory.
-         */
-        static inline PyObject* CreateUnsignedGpuBuffer(PyObject* self, PyObject* args);
-
-        /**
-         * @brief Delete an unsigned GPU buffer.
-         *
-         * This function deletes the unsigned GPU buffer represented by the given pointer `pGpuBuffer`.
-         *
-         * @param self The reference to the Utilities object.
-         * @param args The arguments passed to the function.
-         * @return Py_None indicating successful deletion of the unsigned GPU buffer.
-         *         Returns nullptr if the unsigned GPU buffer pointer is null.
-         */
-        static inline PyObject* DeleteUnsignedGpuBuffer(PyObject* self, PyObject* args);
+    /**
+     * Deletes an unsigned GPU buffer.
+     *
+     * @param self The instance of the Utilities class.
+     * @param args The arguments containing the GPU buffer to delete.
+     * @return None.
+     */
+    static inline py::object DeleteUnsignedGpuBuffer(py::object self, py::object args);
 
 };
-
 /**
- * @brief Startup the GPU.
+ * Starts up the GPU.
  *
- * This function starts up the GPU by calling the `Startup` function of the GPU object with the provided command-line arguments.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating the successful startup of the GPU.
- *         Returns nullptr if an error occurs during parsing or startup.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the command-line arguments as a list of strings.
+ * @return None.
+ * @throws pybind11::type_error if any item in the argument list is not a string.
  */
-PyObject* Utilities::Startup(PyObject* self, PyObject* args) {
-    PyObject* arglist = nullptr;
-    if (!PyArg_ParseTuple(args, "O", &arglist))
-        return nullptr;
-
-    int argc = PyList_Size(arglist);
+py::object Utilities::Startup(py::object self, py::object args) {
+    py::list arglist = args.cast<py::list>();
+    int argc = arglist.size();
     std::vector<std::string_view> argv;
     argv.reserve(argc);
-    for (PyObject* item : arglist) {
-        if (!PyUnicode_Check(item)) {
-            PyErr_SetString(PyExc_TypeError, "Argument list must contain string items");
-            return nullptr;
+    for (py::handle item : arglist) {
+        if (!py::isinstance<py::str>(item)) {
+            throw py::type_error("Argument list must contain string items");
         }
-        argv.emplace_back(PyUnicode_AsUTF8(item));
+        argv.emplace_back(py::str(item));
     }
 
     getGpu().Startup(argc, argv.data());
 
     Py_RETURN_NONE;
 }
-
 /**
- * @brief Shutdown the GPU.
+ * Shuts down the GPU.
  *
- * This function shuts down the GPU by calling the `Shutdown` function of the GPU object.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating the successful shutdown of the GPU.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments (not used in this method).
+ * @return None.
  */
-PyObject* Utilities::Shutdown(PyObject* self, PyObject* args) {
+py::object Utilities::Shutdown(py::object self, py::object args) {
     getGpu().Shutdown();
     Py_RETURN_NONE;
 }
-
 /**
- * @brief Create a CDL object from a JSON file.
+ * Creates a CDL (Color Decision List) object from a JSON file.
  *
- * This function creates a CDL object and initializes it by loading the contents from a JSON file specified by `jsonFilename`.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyCapsule object representing the created CDL object.
- *         Returns nullptr if an error occurs during loading or initialization.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the JSON filename.
+ * @return A Python capsule object containing the created CDL.
+ * @throws std::runtime_error if the JSON file parsing fails.
  */
-PyObject* Utilities::CreateCDLFromJSON(PyObject* self, PyObject* args) {
-    std::string_view jsonFilename;
-    if (!PyArg_ParseTuple(args, "s", &jsonFilename))
-        return nullptr;
+py::object Utilities::CreateCDLFromJSON(py::object self, py::object args) {
+    std::string_view jsonFilename = args.cast<std::string_view>();
 
     std::unique_ptr<CDL> pCDL = std::make_unique<CDL>();
     if (pCDL->Load_JSON(std::string(jsonFilename)) != 0) {
         std::string message = "Load_JSON could not parse JSON file: " + std::string(jsonFilename);
-        PyErr_SetString(PyExc_RuntimeError, message.c_str());
-        return nullptr;
+        throw std::runtime_error(message);
     }
 
-    return PyCapsule_New(pCDL.release(), "cdl", nullptr);
+    return py::capsule(pCDL.release(), "cdl");
 }
-
 /**
- * @brief Create a CDL object with default values.
+ * Creates a CDL (Color Decision List) object with default values.
  *
- * This function creates a CDL object with default values and returns it as a PyCapsule object.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyCapsule object representing the created CDL object.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments (not used in this method).
+ * @return A Python capsule object containing the created CDL.
  */
-PyObject* Utilities::CreateCDLFromDefaults(PyObject* self, PyObject* args) {
+py::object Utilities::CreateCDLFromDefaults(py::object self, py::object args) {
     std::unique_ptr<CDL> pCDL = std::make_unique<CDL>();
-    return PyCapsule_New(pCDL.release(), "cdl", nullptr);
+    return py::capsule(pCDL.release(), "cdl");
 }
-
 /**
- * @brief Delete a CDL object.
+ * Deletes a CDL (Color Decision List) object.
  *
- * This function deletes the CDL object represented by the given pointer `pCDL`.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating successful deletion of the CDL object.
- *         Returns nullptr if the CDL pointer is null.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the CDL to delete.
+ * @return None.
  */
-PyObject* Utilities::DeleteCDL(PyObject* self, PyObject* args) {
-    std::unique_ptr<CDL> pCDL = parsePtr<CDL*>(args, "cdl");
-    if (pCDL == nullptr)
-        return nullptr;
-
+py::object Utilities::DeleteCDL(py::object self, py::object args) {
+    std::unique_ptr<CDL> pCDL = args.cast<std::unique_ptr<CDL>>();
     return Py_None;
 }
-
 /**
- * @brief Load a data set from a NetCDF file.
+ * Loads a dataset from a NetCDF file.
  *
- * This function loads a data set from a NetCDF file specified by `dataFilename` and returns it as a list of DataSetBase objects.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A Python list object containing the loaded data set as DataSetBase objects.
- *         Returns nullptr if an error occurs during loading or if there is insufficient memory.
- */  
-PyObject* Utilities::LoadDataSetFromNetCDF(PyObject* self, PyObject* args) {
-    std::string_view dataFilename;
-    if (!PyArg_ParseTuple(args, "s", &dataFilename))
-        return nullptr;
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the NetCDF filename.
+ * @return A Python list containing the loaded dataset(s).
+ * @throws std::bad_alloc if memory allocation fails or if the dataset vector is empty.
+ */
+py::object Utilities::LoadDataSetFromNetCDF(py::object self, py::object args) {
+    std::string_view dataFilename = args.cast<std::string_view>();
 
     std::vector<DataSetBase*> vDataSetBase = LoadNetCDF(std::string(dataFilename));
     if (vDataSetBase.empty()) {
-        PyErr_NoMemory();
-        return nullptr;
+        throw std::bad_alloc();
     }
 
     return DataSetBaseVectorToPythonList(vDataSetBase);
 }
-
 /**
- * @brief Delete a data set.
+ * Deletes a dataset.
  *
- * This function deletes the data set object represented by the given pointer `pDataSet`.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating successful deletion of the data set.
- *         Returns nullptr if the data set pointer is null.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the dataset to delete.
+ * @return None.
  */
-PyObject* Utilities::DeleteDataSet(PyObject* self, PyObject* args) {
-    std::unique_ptr<DataSetBase> pDataSet = parsePtr<DataSetBase*>(args, "data set");
-    if (pDataSet == nullptr)
-        return nullptr;
-
+py::object Utilities::DeleteDataSet(py::object self, py::object args) {
+    std::unique_ptr<DataSetBase> pDataSet = args.cast<std::unique_ptr<DataSetBase>>();
     return Py_None;
 }
-
 /**
- * @brief Load a neural network from a NetCDF file.
+ * Loads a neural network from a NetCDF file.
  *
- * This function loads a neural network from a NetCDF file specified by `networkFilename` and initializes it with the given `batch` size.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyCapsule object representing the loaded neural network as a Network pointer.
- *         Returns nullptr if an error occurs during loading or initialization.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the NetCDF filename and batch size.
+ * @return A Python capsule object containing the loaded neural network.
+ * @throws std::runtime_error if loading the neural network fails.
  */
-PyObject* Utilities::LoadNeuralNetworkFromNetCDF(PyObject* self, PyObject* args) {
-    char const* networkFilename = nullptr;
-    uint32_t batch = 0;
-    if (!PyArg_ParseTuple(args, "sI", &networkFilename, &batch))
-        return nullptr;
+py::object Utilities::LoadNeuralNetworkFromNetCDF(py::object self, py::object args) {
+    std::string_view networkFilename;
+    uint32_t batch;
+    std::tie(networkFilename, batch) = args.cast<std::tuple<std::string_view, uint32_t>>();
 
     Network* pNetwork = LoadNeuralNetworkNetCDF(std::string(networkFilename), batch);
     if (pNetwork == nullptr) {
-        PyErr_SetString(PyExc_RuntimeError, "Utilities::LoadNeuralNetworkFromNetCDF received nullptr result from LoadNeuralNetworkNetCDF");
-        return nullptr;
+        throw std::runtime_error("Utilities::LoadNeuralNetworkFromNetCDF received nullptr result from LoadNeuralNetworkNetCDF");
     }
 
-    return PyCapsule_New(pNetwork, "neural network", nullptr);
+    return py::capsule(pNetwork, "neural network");
 }
 
 /**
- * @brief Load a neural network from JSON.
+ * Loads a neural network from a JSON file.
  *
- * This function loads a neural network from a JSON file specified by `jsonFilename` and initializes it with the given `batch` size and `vDataSetBase` vector.
- * The `vDataSetBase` vector contains a list of DataSetBase objects.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyCapsule object representing the loaded neural network as a Network pointer.
- *         Returns nullptr if an error occurs during loading or initialization.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the JSON filename, batch size, and dataset list.
+ * @return A Python capsule object containing the loaded neural network.
+ * @throws std::runtime_error if the dataset list is empty or if loading the neural network fails.
  */
-PyObject* Utilities::LoadNeuralNetworkFromJSON(PyObject* self, PyObject* args) {
+py::object Utilities::LoadNeuralNetworkFromJSON(py::object self, py::object args) {
     std::string_view jsonFilename;
     uint32_t batch;
-    PyObject* pDataSetBaseList = nullptr;
-    if (!PyArg_ParseTuple(args, "sIO", &jsonFilename, &batch, &pDataSetBaseList))
-        return nullptr;
-
+    py::object pDataSetBaseList;
+    std::tie(jsonFilename, batch, pDataSetBaseList) = args.cast<std::tuple<std::string_view, uint32_t, py::object>>();
     std::vector<DataSetBase*> vDataSetBase = PythonListToDataSetBaseVector(pDataSetBaseList);
     if (vDataSetBase.empty()) {
-        PyErr_SetString(PyExc_ValueError, "Utilities::LoadNeuralNetworkFromJSON received empty vDataSetBase");
-        return nullptr;
+        throw std::runtime_error("Utilities::LoadNeuralNetworkFromJSON received empty vDataSetBase");
     }
-
     Network* pNetwork = LoadNeuralNetworkJSON(std::string(jsonFilename), batch, vDataSetBase);
     if (pNetwork == nullptr) {
-        PyErr_SetString(PyExc_IOError, "Utilities::LoadNeuralNetworkFromJSON received nullptr result from LoadNeuralNetworkNetCDF");
-        return nullptr;
+        throw std::runtime_error("Utilities::LoadNeuralNetworkFromJSON received nullptr result from LoadNeuralNetworkNetCDF");
     }
-
-    return PyCapsule_New(pNetwork, "neural network", nullptr);
+    return py::capsule(pNetwork, "neural network");
 }
 
 /**
- * @brief Delete a neural network.
+ * Deletes a network.
  *
- * This function deletes the neural network object represented by the given pointer `pNetwork`.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating successful deletion of the neural network.
- *         Returns nullptr if the neural network pointer is null.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the network to delete.
+ * @return None.
  */
-PyObject* Utilities::DeleteNetwork(PyObject* self, PyObject* args) {
-    std::unique_ptr<Network> pNetwork = parsePtr<Network*>(args, "neural network");
-    if (pNetwork == nullptr)
-        return nullptr;
-
+py::object Utilities::DeleteNetwork(py::object self, py::object args) {
+    std::unique_ptr<Network> pNetwork = args.cast<std::unique_ptr<Network>>();
     return Py_None;
 }
-  
-/**
- * @brief Open a file.
- *
- * This function opens a file with the specified filename and mode.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyCapsule object representing the opened file as a FILE pointer.
- *         Returns nullptr if an error occurs during file open.
- */
-PyObject* Utilities::OpenFile(PyObject* self, PyObject* args) {
-    const char* filename = nullptr;
-    const char* mode = nullptr;
-    if (!PyArg_ParseTuple(args, "ss", &filename, &mode))
-        return nullptr;
 
+/**
+ * Opens a file.
+ *
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the filename and mode to open the file.
+ * @return A Python capsule object containing the opened file pointer.
+ * @throws std::runtime_error if an error occurs while opening the file.
+ */
+py::object Utilities::OpenFile(py::object self, py::object args) {
+    const char* filename;
+    const char* mode;
+    std::tie(filename, mode) = args.cast<std::tuple<const char*, const char*>>();
     FILE* pFILE = fopen(filename, mode);
     if (pFILE == nullptr) {
-        PyErr_SetFromErrno(PyExc_IOError);
-        return nullptr;
+        throw std::runtime_error("File open error");
     }
 
-    return PyCapsule_New(pFILE, "file", nullptr);
+    return py::capsule(pFILE, "file");
 }
 
 /**
- * @brief Close a file.
+ * Closes a file.
  *
- * This function closes a file represented by the given FILE pointer `pFILE`.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating successful file close.
- *         Returns nullptr if the FILE pointer is null or an error occurs during file close.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the file pointer to close.
+ * @return None.
+ * @throws std::runtime_error if an error occurs while closing the file.
  */
-PyObject* Utilities::CloseFile(PyObject* self, PyObject* args) {
-    FILE* pFILE = parsePtr<FILE*>(args, "file");
-    if (pFILE == nullptr)
-        return nullptr;
-
+py::object Utilities::CloseFile(py::object self, py::object args) {
+    FILE* pFILE = args.cast<FILE*>();
     if (fclose(pFILE) != 0) {
-        PyErr_SetString(PyExc_IOError, "File close error");
-        return nullptr;
+        throw std::runtime_error("File close error");
     }
 
     return Py_None;
 }
-  
-/**
- * @brief Set the random seed for the GPU.
- *
- * This function sets the random seed for the GPU by extracting the random seed value from the Python argument `randomSeedObj`
- * and calling `getGpu().SetRandomSeed()` with the converted unsigned long value.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating successful setting of the random seed.
- *         Returns nullptr if an error occurs during argument parsing or conversion.
- */
-PyObject* Utilities::SetRandomSeed(PyObject* self, PyObject* args) {
-    PyObject* randomSeedObj = nullptr;
-    if (!PyArg_ParseTuple(args, "O", &randomSeedObj))
-        return nullptr;
 
-    unsigned long randomSeed = PyLong_AsUnsignedLong(randomSeedObj);
-    if (randomSeed == static_cast<unsigned long>(-1) && PyErr_Occurred())
-        return nullptr;
+/**
+ * Sets the random seed for GPU operations.
+ *
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the random seed value.
+ * @return None.
+ * @throws pybind11::error_already_set if an error occurs during casting or if the random seed is -1 and a Python error has occurred.
+ */
+py::object Utilities::SetRandomSeed(py::object self, py::object args) {
+    py::object randomSeedObj = args.cast<py::object>();
+
+    unsigned long randomSeed = randomSeedObj.cast<unsigned long>();
+    if (randomSeed == static_cast<unsigned long>(-1) && PyErr_Occurred()) {
+        throw py::error_already_set();
+    }
 
     getGpu().SetRandomSeed(randomSeed);
     Py_RETURN_NONE;
 }
 
 /**
- * @brief Get the memory usage of the GPU and CPU.
+ * Retrieves the memory usage information.
  *
- * This function retrieves the memory usage of the GPU and CPU using the `getGpu().GetMemoryUsage()` function.
- * The memory usage values are returned as a Python list containing two long integers representing the GPU and CPU memory usage, respectively.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A Python list containing two long integers representing the GPU and CPU memory usage, respectively.
- *         Returns nullptr if an error occurs.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments (not used in this method).
+ * @return A tuple containing the GPU memory usage and CPU memory usage.
  */
-PyObject* Utilities::GetMemoryUsage(PyObject* self, PyObject* args) {
+py::object Utilities::GetMemoryUsage(py::object self, py::object args) {
     auto [gpuMemoryUsage, cpuMemoryUsage] = getGpu().GetMemoryUsage();
-    return Py_BuildValue("[NN]", PyLong_FromLong(gpuMemoryUsage), PyLong_FromLong(cpuMemoryUsage));
+    return py::make_tuple(gpuMemoryUsage, cpuMemoryUsage);
 }
 
 /**
- * @brief Transpose the given arrays.
+ * Transposes the given arrays.
  *
- * This function transposes the given arrays, `ASINWeightArray` and `pEmbeddingArray`, using the `tensorhubcalculate_Transpose` function.
- * The transposed result is returned as a PyObject.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyObject representing the transposed result.
- *         Returns nullptr if an error occurs during the transposition.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the arrays to transpose.
+ * @return The transposed array.
+ * @note The ownership of the returned object is transferred to the caller.
  */
-PyObject* Utilities::Transpose(PyObject* self, PyObject* args) {
-    PyArrayObject* ASINWeightArray = nullptr;
-    PyArrayObject* pEmbeddingArray = nullptr;
+py::object Utilities::Transpose(py::object self, py::object args) {
+    py::array_t<double> ASINWeightArray;
+    py::array_t<double> pEmbeddingArray;
 
-    if (!PyArg_ParseTuple(args, "OO", &ASINWeightArray, &pEmbeddingArray))
-        return nullptr;
+    std::tie(ASINWeightArray, pEmbeddingArray) = args.cast<std::tuple<py::array_t<double>, py::array_t<double>>>();
 
     try {
-        auto result = std::unique_ptr<PyObject, decltype(&Py_DECREF)>(tensorhubcalculate_Transpose(ASINWeightArray, pEmbeddingArray), &Py_DECREF);
+        auto result = std::unique_ptr<py::object>(tensorhubcalculate_Transpose(ASINWeightArray, pEmbeddingArray));
         return result.release();
     } catch (...) {
         return nullptr;
@@ -582,84 +450,67 @@ PyObject* Utilities::Transpose(PyObject* self, PyObject* args) {
 }
 
 /**
- * @brief Create a float GPU buffer.
+ * Creates a float GPU buffer.
  *
- * This function creates a float GPU buffer of the specified size using std::make_unique
- * and returns a PyCapsule object containing the buffer.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyCapsule object containing the float GPU buffer.
- *         Returns nullptr if an error occurs or memory allocation fails.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the size of the GPU buffer to create.
+ * @return A Python capsule object containing the created float GPU buffer.
+ * @throws std::bad_alloc if memory allocation fails.
  */
-PyObject* Utilities::CreateFloatGpuBuffer(PyObject* self, PyObject* args) {
-    uint32_t size = 0;
-    if (!PyArg_ParseTuple(args, "I", &size))
-        return nullptr;
+py::object Utilities::CreateFloatGpuBuffer(py::object self, py::object args) {
+    uint32_t size = args.cast<uint32_t>();
 
     try {
         auto pGpuBuffer = std::make_unique<GpuBuffer<NNFloat>>(size, true);
-        return PyCapsule_New(static_cast<void*>(pGpuBuffer.release()), "float gpu buffer", nullptr);
+        return py::capsule(pGpuBuffer.release(), "float gpu buffer");
     } catch (...) {
-        PyErr_SetNone(PyExc_MemoryError);
-        return nullptr;
+        throw std::bad_alloc();
     }
 }
-  
+
 /**
- * @brief Delete a float GPU buffer.
+ * Deletes a float GPU buffer.
  *
- * This function deletes a float GPU buffer by taking ownership of the buffer using std::unique_ptr
- * and then resetting the pointer to nullptr.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating successful deletion of the GPU buffer.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the GPU buffer to delete.
+ * @return None.
  */
-PyObject* Utilities::DeleteFloatGpuBuffer(PyObject* self, PyObject* args) {
-    std::unique_ptr<GpuBuffer<NNFloat>> pGpuBuffer = parsePtr<GpuBuffer<NNFloat>*>(args, "float gpu buffer");
+py::object Utilities::DeleteFloatGpuBuffer(py::object self, py::object args) {
+    std::unique_ptr<GpuBuffer<NNFloat>> pGpuBuffer = args.cast<std::unique_ptr<GpuBuffer<NNFloat>>>();
     pGpuBuffer.reset();
     return Py_None;
 }
-  
+
 /**
- * @brief Create an unsigned GPU buffer.
+ * Creates an unsigned GPU buffer.
  *
- * This function creates an unsigned GPU buffer of the specified size using std::make_unique
- * and returns a PyCapsule object containing the buffer.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return A PyCapsule object containing the unsigned GPU buffer.
- *         Returns nullptr if an error occurs or memory allocation fails.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the size of the GPU buffer to create.
+ * @return A Python capsule object containing the created unsigned GPU buffer.
+ * @throws std::bad_alloc if memory allocation fails.
  */
-PyObject* Utilities::CreateUnsignedGpuBuffer(PyObject* self, PyObject* args) {
-    uint32_t size = 0;
-    if (!PyArg_ParseTuple(args, "I", &size))
-        return nullptr;
+py::object Utilities::CreateUnsignedGpuBuffer(py::object self, py::object args) {
+    uint32_t size = args.cast<uint32_t>();
 
     try {
         auto pGpuBuffer = std::make_unique<GpuBuffer<uint32_t>>(size, true);
-        return PyObjectPtr(PyCapsule_New(pGpuBuffer.release(), "unsigned gpu buffer", nullptr));
+        return py::capsule(pGpuBuffer.release(), "unsigned gpu buffer");
     } catch (...) {
-        PyErr_SetNone(PyExc_MemoryError);
-        return nullptr;
+        throw std::bad_alloc();
     }
 }
-  
+
 /**
- * @brief Delete an unsigned GPU buffer.
+ * Deletes an unsigned GPU buffer.
  *
- * This function deletes an unsigned GPU buffer by taking ownership of the buffer using std::unique_ptr
- * and then resetting the pointer to nullptr.
- *
- * @param self The reference to the Utilities object.
- * @param args The arguments passed to the function.
- * @return Py_None indicating successful deletion of the GPU buffer.
+ * @param self The instance of the Utilities class.
+ * @param args The arguments containing the GPU buffer to delete.
+ * @return None.
  */
-PyObject* Utilities::DeleteUnsignedGpuBuffer(PyObject* self, PyObject* args) {
-    std::unique_ptr<GpuBuffer<uint32_t>> pGpuBuffer = parsePtr<GpuBuffer<uint32_t>*>(args, "unsigned gpu buffer");
+py::object Utilities::DeleteUnsignedGpuBuffer(py::object self, py::object args) {
+    std::unique_ptr<GpuBuffer<uint32_t>> pGpuBuffer = args.cast<std::unique_ptr<GpuBuffer<uint32_t>>>();
     pGpuBuffer.reset();
+
     return Py_None;
 }
 
