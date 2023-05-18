@@ -13,187 +13,187 @@
 namespace py = pybind11;
 
 class Utilities {
-public:
-    /**
-     * Starts up the GPU.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments (not used in this method).
-     * @return None.
-     */
-    static inline py::object Startup(py::object self, py::object args);
+    public:
+        /**
+         * Starts up the GPU.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments (not used in this method).
+         * @return None.
+         */
+        static inline py::object Startup(py::object self, py::object args);
 
-    /**
-     * Shuts down the GPU.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments (not used in this method).
-     * @return None.
-     */
-    static inline py::object Shutdown(py::object self, py::object args);
+        /**
+         * Shuts down the GPU.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments (not used in this method).
+         * @return None.
+         */
+        static inline py::object Shutdown(py::object self, py::object args);
 
-    /**
-     * Creates a CDL (Color Decision List) object from a JSON file.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the JSON filename.
-     * @return A Python capsule object containing the created CDL.
-     * @throws std::runtime_error if the JSON file parsing fails.
-     */
-    static inline py::object CreateCDLFromJSON(py::object self, py::object args);
+        /**
+         * Creates a CDL (Color Decision List) object from a JSON file.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the JSON filename.
+         * @return A Python capsule object containing the created CDL.
+         * @throws std::runtime_error if the JSON file parsing fails.
+         */
+        static inline py::object CreateCDLFromJSON(py::object self, py::object args);
 
-    /**
-     * Creates a CDL (Color Decision List) object with default values.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments (not used in this method).
-     * @return A Python capsule object containing the created CDL.
-     */
-    static inline py::object CreateCDLFromDefaults(py::object self, py::object args);
+        /**
+         * Creates a CDL (Color Decision List) object with default values.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments (not used in this method).
+         * @return A Python capsule object containing the created CDL.
+         */
+        static inline py::object CreateCDLFromDefaults(py::object self, py::object args);
 
-    /**
-     * Deletes a CDL (Color Decision List) object.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the CDL to delete.
-     * @return None.
-     */
-    static inline py::object DeleteCDL(py::object self, py::object args);
+        /**
+         * Deletes a CDL (Color Decision List) object.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the CDL to delete.
+         * @return None.
+         */
+        static inline py::object DeleteCDL(py::object self, py::object args);
 
-    /**
-     * Loads a dataset from a NetCDF file.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the NetCDF filename.
-     * @return A Python list containing the loaded dataset(s).
-     * @throws std::bad_alloc if memory allocation fails or if the dataset vector is empty.
-     */
-    static inline py::object LoadDataSetFromNetCDF(py::object self, py::object args);
+        /**
+         * Loads a dataset from a NetCDF file.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the NetCDF filename.
+         * @return A Python list containing the loaded dataset(s).
+         * @throws std::bad_alloc if memory allocation fails or if the dataset vector is empty.
+         */
+        static inline py::object LoadDataSetFromNetCDF(py::object self, py::object args);
 
-    /**
-     * Deletes a dataset.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the dataset to delete.
-     * @return None.
-     */
-    static inline py::object DeleteDataSet(py::object self, py::object args);
+        /**
+         * Deletes a dataset.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the dataset to delete.
+         * @return None.
+         */
+        static inline py::object DeleteDataSet(py::object self, py::object args);
 
-    /**
-     * Loads a neural network from a NetCDF file.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the NetCDF filename and batch size.
-     * @return A Python capsule object containing the loaded neural network.
-     * @throws std::runtime_error if loading the neural network fails.
-     */
-    static inline py::object LoadNeuralNetworkFromNetCDF(py::object self, py::object args);
+        /**
+         * Loads a neural network from a NetCDF file.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the NetCDF filename and batch size.
+         * @return A Python capsule object containing the loaded neural network.
+         * @throws std::runtime_error if loading the neural network fails.
+         */
+        static inline py::object LoadNeuralNetworkFromNetCDF(py::object self, py::object args);
 
-    /**
-     * Loads a neural network from a JSON file.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the JSON filename, batch size, and dataset list.
-     * @return A Python capsule object containing the loaded neural network.
-     * @throws std::runtime_error if the dataset list is empty or if loading the neural network fails.
-     */
-    static inline py::object LoadNeuralNetworkFromJSON(py::object self, py::object args);
+        /**
+         * Loads a neural network from a JSON file.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the JSON filename, batch size, and dataset list.
+         * @return A Python capsule object containing the loaded neural network.
+         * @throws std::runtime_error if the dataset list is empty or if loading the neural network fails.
+         */
+        static inline py::object LoadNeuralNetworkFromJSON(py::object self, py::object args);
 
-    /**
-     * Deletes a network.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the network to delete.
-     * @return None.
-     */
-    static inline py::object DeleteNetwork(py::object self, py::object args);
+        /**
+         * Deletes a network.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the network to delete.
+         * @return None.
+         */
+        static inline py::object DeleteNetwork(py::object self, py::object args);
 
-    /**
-     * Opens a file.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the filename and mode to open the file.
-     * @return A Python capsule object containing the opened file pointer.
-     * @throws std::runtime_error if an error occurs while opening the file.
-     */
-    static inline py::object OpenFile(py::object self, py::object args);
+        /**
+         * Opens a file.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the filename and mode to open the file.
+         * @return A Python capsule object containing the opened file pointer.
+         * @throws std::runtime_error if an error occurs while opening the file.
+         */
+        static inline py::object OpenFile(py::object self, py::object args);
 
-    /**
-     * Closes a file.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the file pointer to close.
-     * @return None.
-     * @throws std::runtime_error if an error occurs while closing the file.
-     */
-    static inline py::object CloseFile(py::object self, py::object args);
+        /**
+         * Closes a file.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the file pointer to close.
+         * @return None.
+         * @throws std::runtime_error if an error occurs while closing the file.
+         */
+        static inline py::object CloseFile(py::object self, py::object args);
 
-    /**
-     * Sets the random seed for GPU operations.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the random seed value.
-     * @return None.
-     * @throws pybind11::error_already_set if an error occurs during casting or if the random seed is -1 and a Python error has occurred.
-     */
-    static inline py::object SetRandomSeed(py::object self, py::object args);
+        /**
+         * Sets the random seed for GPU operations.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the random seed value.
+         * @return None.
+         * @throws pybind11::error_already_set if an error occurs during casting or if the random seed is -1 and a Python error has occurred.
+         */
+        static inline py::object SetRandomSeed(py::object self, py::object args);
 
-    /**
-     * Retrieves the memory usage information.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments (not used in this method).
-     * @return A tuple containing the GPU memory usage and CPU memory usage.
-     */
-    static inline py::object GetMemoryUsage(py::object self, py::object args);
+        /**
+         * Retrieves the memory usage information.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments (not used in this method).
+         * @return A tuple containing the GPU memory usage and CPU memory usage.
+         */
+        static inline py::object GetMemoryUsage(py::object self, py::object args);
 
-    /**
-     * Transposes the given arrays.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the arrays to transpose.
-     * @return The transposed array.
-     * @note The ownership of the returned object is transferred to the caller.
-     */
-    static inline py::object Transpose(py::object self, py::object args);
+        /**
+         * Transposes the given arrays.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the arrays to transpose.
+         * @return The transposed array.
+         * @note The ownership of the returned object is transferred to the caller.
+         */
+        static inline py::object Transpose(py::object self, py::object args);
 
-    /**
-     * Creates a float GPU buffer.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the size of the GPU buffer to create.
-     * @return A Python capsule object containing the created float GPU buffer.
-     * @throws std::bad_alloc if memory allocation fails.
-     */
-    static inline py::object CreateFloatGpuBuffer(py::object self, py::object args);
+        /**
+         * Creates a float GPU buffer.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the size of the GPU buffer to create.
+         * @return A Python capsule object containing the created float GPU buffer.
+         * @throws std::bad_alloc if memory allocation fails.
+         */
+        static inline py::object CreateFloatGpuBuffer(py::object self, py::object args);
 
-    /**
-     * Deletes a float GPU buffer.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the GPU buffer to delete.
-     * @return None.
-     */
-    static inline py::object DeleteFloatGpuBuffer(py::object self, py::object args);
+        /**
+         * Deletes a float GPU buffer.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the GPU buffer to delete.
+         * @return None.
+         */
+        static inline py::object DeleteFloatGpuBuffer(py::object self, py::object args);
 
-    /**
-     * Creates an unsigned GPU buffer.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the size of the GPU buffer to create.
-     * @return A Python capsule object containing the created unsigned GPU buffer.
-     * @throws std::bad_alloc if memory allocation fails.
-     */
-    static inline py::object CreateUnsignedGpuBuffer(py::object self, py::object args);
+        /**
+         * Creates an unsigned GPU buffer.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the size of the GPU buffer to create.
+         * @return A Python capsule object containing the created unsigned GPU buffer.
+         * @throws std::bad_alloc if memory allocation fails.
+         */
+        static inline py::object CreateUnsignedGpuBuffer(py::object self, py::object args);
 
-    /**
-     * Deletes an unsigned GPU buffer.
-     *
-     * @param self The instance of the Utilities class.
-     * @param args The arguments containing the GPU buffer to delete.
-     * @return None.
-     */
-    static inline py::object DeleteUnsignedGpuBuffer(py::object self, py::object args);
+        /**
+         * Deletes an unsigned GPU buffer.
+         *
+         * @param self The instance of the Utilities class.
+         * @param args The arguments containing the GPU buffer to delete.
+         * @return None.
+         */
+        static inline py::object DeleteUnsignedGpuBuffer(py::object self, py::object args);
 
 };
 /**
