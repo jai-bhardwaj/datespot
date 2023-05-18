@@ -14,12 +14,6 @@ enum class DataType {
      */
     FP16;
 
-    /**
-     * Converts a string representation of the data type to the corresponding enum value.
-     *
-     * @param dt The string representation of the data type.
-     * @return The corresponding [DataType] enum value.
-     */
     companion object {
         /**
          * Converts a string representation of the data type to the corresponding enum value.
@@ -27,8 +21,6 @@ enum class DataType {
          * @param dt The string representation of the data type.
          * @return The corresponding [DataType] enum value.
          */
-        fun fromString(dt: String): DataType {
-            return valueOf(dt.toUpperCase())
-        }
+        fun fromString(dt: String): DataType = valueOf(dt.toUpperCase())
     }
 }
