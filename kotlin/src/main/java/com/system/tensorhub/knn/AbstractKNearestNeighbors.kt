@@ -25,9 +25,7 @@ abstract class AbstractKNearestNeighbors(
      */
     protected fun validateFeatureSize(inputVector: Vector) {
         val size = inputVector.coordinates.size
-        if (size != featureSize) {
-            throw IllegalArgumentException("Feature size: $size should equal: $featureSize")
-        }
+        require(size == featureSize) { "Feature size: $size should equal: $featureSize" }
     }
 
     /**
@@ -47,9 +45,7 @@ abstract class AbstractKNearestNeighbors(
      * @throws IllegalArgumentException if the value of K is not within the valid range.
      */
     protected fun validateK(k: Int) {
-        if (k <= 0 || k > maxK) {
-            throw IllegalArgumentException("K should be > 0 and <= $maxK. Given: $k")
-        }
+        require(k in 1..maxK) { "K should be > 0 and <= $maxK. Given: $k" }
     }
 
     /**
@@ -57,16 +53,12 @@ abstract class AbstractKNearestNeighbors(
      *
      * @return The maximum value for K.
      */
-    override fun getMaxK(): Int {
-        return maxK
-    }
+    override fun getMaxK(): Int = maxK
 
     /**
      * Gets the size of the feature vector.
      *
      * @return The size of the feature vector.
      */
-    override fun getFeatureSize(): Int {
-        return featureSize
-    }
+    override fun getFeatureSize(): Int = featureSize
 }
