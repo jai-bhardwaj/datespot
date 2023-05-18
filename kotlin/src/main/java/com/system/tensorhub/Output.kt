@@ -1,34 +1,17 @@
 package com.system.tensorhub
 
-import lombok.Getter
-import lombok.Setter
-
 /**
  * Represents the output of a neural network.
  *
  * @property dim The dimensions of the output.
+ * @property name The name of the output.
+ * @property layerName The name of the layer associated with the output.
  */
-@Getter
-class Output(private val dim: Dim) {
-    /**
-     * The name of the output.
-     */
-    @Setter
+class Output(val dim: Dim) {
     var name = ""
-
-    /**
-     * The name of the layer associated with the output.
-     */
-    @Setter
     var layerName = ""
-
-    private val scores: FloatArray
-    private val indexes: LongArray
-
-    init {
-        scores = FloatArray(dim.x * dim.y * dim.z * dim.examples)
-        indexes = LongArray(dim.x * dim.y * dim.z * dim.examples)
-    }
+    private val scores: FloatArray = FloatArray(dim.totalSize)
+    private val indexes: LongArray = LongArray(dim.totalSize)
 
     companion object {
         /**
@@ -44,15 +27,14 @@ class Output(private val dim: Dim) {
             val batchSize = config.batchSize
             val outputLayerDim = outputLayer.dim
 
-            val outputDataset: Output
-            if (config.k == NetworkConfig.ALL) {
-                outputDataset = Output(Dim(outputLayerDim, batchSize))
-            } else {
-                if (outputLayerDim.dimensions > 1) {
-                    throw IllegalArgumentException("Top k outputs only supported on 1-D outputs")
-                }
-                outputDataset = Output(Dim._1d(k, batchSize))
+            if (k != NetworkConfig.ALL && outputLayerDim.dimensions > 1) {
+                throw IllegalArgumentException("Top k outputs only supported on 1-D outputs")
             }
+
+            val outputDataset = Output(
+                if (k == NetworkConfig.ALL) Dim(outputLayerDim, batchSize) else Dim._1d(k, batchSize)
+            )
+
             outputDataset.name = outputLayer.datasetName
             outputDataset.layerName = outputLayer.name
             return outputDataset
