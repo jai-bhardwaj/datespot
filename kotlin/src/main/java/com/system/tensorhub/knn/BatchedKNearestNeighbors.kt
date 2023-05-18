@@ -1,12 +1,8 @@
 package com.system.tensorhub.knn
 
-import java.util.ArrayList
-import java.util.Arrays
-import java.util.List
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import com.system.tensorhub.knn.TimedBatchExecutor.Work
-import lombok.Value
 
 /**
  * Represents a batched implementation of K-Nearest Neighbors using CUDA for acceleration.
@@ -30,7 +26,6 @@ class BatchedKNearestNeighbors(
      * @param k The number of nearest neighbors to find.
      * @param vector The input vector for which to find the nearest neighbors.
      */
-    @Value
     data class KnnInput(val k: Int, val vector: Vector)
 
     /**
@@ -50,14 +45,12 @@ class BatchedKNearestNeighbors(
      */
     constructor(label: String?, knnCuda: KNearestNeighborsCuda, timeout: Long) :
             super(label, knnCuda.getMaxK(), knnCuda.getFeatureSize(), knnCuda.getBatchSize()) {
-        this.knnCuda = knnCuda
-
         val batchSize = getBatchSize()
         val featureSize = getFeatureSize()
         val maxK = getMaxK()
-        this.batchInputs = FloatArray(batchSize * featureSize)
-        this.batchScores = FloatArray(batchSize * maxK)
-        this.batchIds = Array(batchSize * maxK) { "" }
+        batchInputs = FloatArray(batchSize * featureSize)
+        batchScores = FloatArray(batchSize * maxK)
+        batchIds = Array(batchSize * maxK) { "" }
 
         this.batchExecutor = TimedBatchExecutor(label, batchSize, timeout, FindKnnWork())
     }
@@ -80,8 +73,7 @@ class BatchedKNearestNeighbors(
             val activeBatchSize = inputs.size
 
             // Prepare batch input data
-            for (offset in 0 until inputs.size) {
-                val input = inputs[offset]
+            for ((offset, input) in inputs.withIndex()) {
                 val coordinates = input.vector.coordinates
                 for (i in coordinates.indices) {
                     batchInputs[offset * featureSize + i] = coordinates[i]
@@ -90,26 +82,24 @@ class BatchedKNearestNeighbors(
 
             // Fill remaining batch input slots with zeros if necessary
             if (inputs.size < getBatchSize()) {
-                Arrays.fill(batchInputs, inputs.size * featureSize, batchInputs.size, 0f)
+                batchInputs.fill(0f, inputs.size * featureSize, batchInputs.size)
             }
 
             // Invoke the CUDA method to find nearest neighbors
             knnCuda.findKnn(batchInputs, activeBatchSize, batchScores, batchIds)
 
             // Process the results and populate the outputs
-            for (offset in 0 until inputs.size) {
-                val k = inputs[offset].k
-                val inputIdx = inputs[offset].vector.index
+            outputs.addAll(inputs.mapIndexed { offset, knnInput ->
+                val k = knnInput.k
+                val inputIdx = knnInput.vector.index
 
-                val nearestNeighbors = ArrayList<Neighbor>(k)
-                for (i in 0 until k) {
+                val nearestNeighbors = (0 until k).map { i ->
                     val score = batchScores[maxK * offset + i]
                     val id = batchIds[maxK * offset + i]
-                    val neighbor = Neighbor.builder().withId(id).withScore(score).build()
-                    nearestNeighbors.add(neighbor)
+                    Neighbor.builder().withId(id).withScore(score).build()
                 }
-                outputs.add(NearestNeighbors.builder().withIndex(inputIdx).withNeighbors(nearestNeighbors).build())
-            }
+                NearestNeighbors.builder().withIndex(inputIdx).withNeighbors(nearestNeighbors).build()
+            })
         }
     }  
 
@@ -137,21 +127,18 @@ class BatchedKNearestNeighbors(
         validateK(k)
         validateFeatureSize(inputBatch)
 
-        val futures = ArrayList<CompletableFuture<NearestNeighbors>>(inputBatch.size)
-        for (vector in inputBatch) {
-            futures.add(batchExecutor.addAsync(KnnInput(k, vector)))
+        val futures = inputBatch.map { vector ->
+            batchExecutor.addAsync(KnnInput(k, vector))
         }
 
-        val results = ArrayList<NearestNeighbors>(inputBatch.size)
-        for (future in futures) {
+        return futures.map { future ->
             try {
-                results.add(future.get())
+                future.get()
             } catch (e: InterruptedException) {
                 throw RuntimeException("Error waiting for knn result", e)
             } catch (e: ExecutionException) {
                 throw RuntimeException("Error waiting for knn result", e)
             }
         }
-        return results
     }
 }
