@@ -9,18 +9,6 @@
  */
 struct CDL
 {
-    /**
-     * @brief Default constructor for CDL.
-     */
-    CDL();
-
-    /**
-     * @brief Load JSON configuration from file.
-     * @param fname The name of the JSON file to load.
-     * @return The status of the load operation.
-     */
-    int Load_JSON(const std::string& fname);
-
     std::string     _networkFileName;       /**< The file name of the network. */
     int             _randomSeed;            /**< The random seed value. */
     Mode            _mode;                  /**< The mode of operation. */
@@ -38,4 +26,16 @@ struct CDL
     int             _checkpointInterval;    /**< The interval for checkpointing. */
     bool            _shuffleIndexes;        /**< Flag indicating whether to shuffle indexes. */
     std::string     _resultsFileName;       /**< The file name for storing results. */
+
+    /**
+     * @brief Default constructor for CDL.
+     */
+    CDL() = default;
+
+    /**
+     * @brief Load JSON configuration from file.
+     * @param fname The name of the JSON file to load.
+     * @return The status of the load operation.
+     */
+    int Load_JSON(const std::string& fname);
 };
