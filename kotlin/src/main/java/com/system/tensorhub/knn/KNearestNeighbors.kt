@@ -24,15 +24,11 @@ interface KNearestNeighbors {
 
     /**
      * Gets the maximum value for K.
-     *
-     * @return The maximum value for K.
      */
-    fun getMaxK(): Int
+    val maxK: Int
 
     /**
      * Gets the size of the feature vector.
-     *
-     * @return The size of the feature vector.
      */
-    fun getFeatureSize(): Int
+    val featureSize: Int
 }
