@@ -55,12 +55,12 @@ def main():
         sys.exit()
 
     cdl_file = sys.argv[1]
-    CDL = load_dataset(cdl_file)
-    random_seed = tensorhub.GetCDLRandomSeed(CDL)
+    cdl = load_dataset(cdl_file)
+    random_seed = tensorhub.GetCDLRandomSeed(cdl)
     tensorhub.SetRandomSeed(random_seed)
 
-    dataset_list = tensorhub.LoadNetCDF(tensorhub.GetCDLDataFileName(CDL))
-    network = create_network(CDL, dataset_list)
+    dataset_list = tensorhub.LoadNetCDF(tensorhub.GetCDLDataFileName(cdl))
+    network = create_network(cdl, dataset_list)
 
     gpu_memory_usage, cpu_memory_usage = tensorhub.GetMemoryUsage()
     print(f"**** GPU memory usage: {gpu_memory_usage} KB")
@@ -68,13 +68,13 @@ def main():
 
     tensorhub.LoadDataSets(network, dataset_list)
 
-    cdl_mode = tensorhub.GetCDLMode(CDL)
+    cdl_mode = tensorhub.GetCDLMode(cdl)
     if cdl_mode == "Training":
-        train_network(network, CDL)
+        train_network(network, cdl)
     else:
-        predict_output(network, dataset_list, CDL)
+        predict_output(network, dataset_list, cdl)
 
-    tensorhub.DeleteCDL(CDL)
+    tensorhub.DeleteCDL(cdl)
     for dataset in dataset_list:
         tensorhub.DeleteDataSet(dataset)
     tensorhub.DeleteNetwork(network)
