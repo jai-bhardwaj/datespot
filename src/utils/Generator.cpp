@@ -58,9 +58,9 @@ public:
     void generateRecs(Network* xNetwork, unsigned int xK, const FilterConfig* xFilterSet, const vector<string>& xCustomerIndex, const vector<string>& xFeatureIndex);
 
 private:
-    unique_ptr<GpuBuffer<NNFloat>> pbKey;            ///< GpuBuffer for recommendation keys.
+    unique_ptr<GpuBuffer<Float>> pbKey;            ///< GpuBuffer for recommendation keys.
     unique_ptr<GpuBuffer<unsigned int>> pbUIValue;   ///< GpuBuffer for recommendation UI values.
-    unique_ptr<GpuBuffer<NNFloat>> pFilteredOutput;  ///< GpuBuffer for filtered output.
+    unique_ptr<GpuBuffer<Float>> pFilteredOutput;  ///< GpuBuffer for filtered output.
     string recsGenLayerLabel;                        ///< Layer label for recommendations generation.
     string scorePrecision;                            ///< Score precision for recommendations.
 
@@ -77,9 +77,9 @@ private:
  * @param precision The score precision for recommendations.
  */
 RecsGenerator::RecsGenerator(unsigned int xBatchSize, unsigned int xK, unsigned int xOutputBufferSize, const string& layer, const string& precision)
-    : pbKey(make_unique<GpuBuffer<NNFloat>>(xBatchSize * xK * Output_SCALAR, true)),
+    : pbKey(make_unique<GpuBuffer<Float>>(xBatchSize * xK * Output_SCALAR, true)),
       pbUIValue(make_unique<GpuBuffer<unsigned int>>(xBatchSize * xK * Output_SCALAR, true)),
-      pFilteredOutput(make_unique<GpuBuffer<NNFloat>>(xOutputBufferSize, true)),
+      pFilteredOutput(make_unique<GpuBuffer<Float>>(xOutputBufferSize, true)),
       recsGenLayerLabel(layer),
       scorePrecision(precision)
 {
@@ -104,16 +104,16 @@ void RecsGenerator::generateRecs(Network* xNetwork, unsigned int xK, const Filte
     }
 
     bool bMultiGPU = (getGpu()._numprocs > 1);
-    unique_ptr<GpuBuffer<NNFloat>> pbMultiKey;
+    unique_ptr<GpuBuffer<Float>> pbMultiKey;
     unique_ptr<GpuBuffer<unsigned int>> pbMultiUIValue;
     unique_ptr<GpuBuffer<unsigned int>> pbUIValueCache;
-    NNFloat* pMultiKey = nullptr;
+    Float* pMultiKey = nullptr;
     unsigned int* pMultiUIValue = nullptr;
     unsigned int* pUIValueCache = nullptr;
 
     cudaIpcMemHandle_t keyMemHandle;
     cudaIpcMemHandle_t valMemHandle;
-    const NNFloat* dOutput = xNetwork->GetUnitBuffer(recsGenLayerLabel);
+    const Float* dOutput = xNetwork->GetUnitBuffer(recsGenLayerLabel);
     const Layer* pLayer = xNetwork->GetLayer(recsGenLayerLabel);
     unsigned int lx, ly, lz, lw;
     tie(lx, ly, lz, lw) = pLayer->GetDimensions();
@@ -134,7 +134,7 @@ void RecsGenerator::generateRecs(Network* xNetwork, unsigned int xK, const Filte
         if (getGpu()._id == 0)
         {
             const size_t bufferSize = getGpu()._numprocs * lBatch * xK * Output_SCALAR;
-            pbMultiKey = make_unique<GpuBuffer<NNFloat>>(bufferSize, true);
+            pbMultiKey = make_unique<GpuBuffer<Float>>(bufferSize, true);
             pbMultiUIValue = make_unique<GpuBuffer<unsigned int>>(bufferSize, true);
             pMultiKey = pbMultiKey->_pDevData;
             pMultiUIValue = pbMultiUIValue->_pDevData;
@@ -156,7 +156,7 @@ void RecsGenerator::generateRecs(Network* xNetwork, unsigned int xK, const Filte
         }
     }
 
-    cudaMemcpy(hOutputBuffer.data(), dOutput, outputBufferSize * sizeof(NNFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hOutputBuffer.data(), dOutput, outputBufferSize * sizeof(Float), cudaMemcpyDeviceToHost);
 
     const auto start = steady_clock::now();
     for (int j = 0; j < lBatch; j++)
@@ -173,7 +173,7 @@ void RecsGenerator::generateRecs(Network* xNetwork, unsigned int xK, const Filte
     {
         uint32_t offset = xK * Output_SCALAR * getGpu()._id;
         uint32_t kstride = xK * Output_SCALAR * getGpu()._numprocs;
-        cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(NNFloat), pbKey->_pDevData, xK * Output_SCALAR * sizeof(NNFloat), xK * Output_SCALAR * sizeof(NNFloat), lBatch, cudaMemcpyDefault);
+        cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(Float), pbKey->_pDevData, xK * Output_SCALAR * sizeof(Float), xK * Output_SCALAR * sizeof(Float), lBatch, cudaMemcpyDefault);
         cudaMemcpy2D(pMultiUIValue + offset, kstride * sizeof(unsigned int), pbUIValue->_pDevData, xK * Output_SCALAR * sizeof(unsigned int), xK * Output_SCALAR * sizeof(unsigned int), lBatch, cudaMemcpyDefault);
         cudaDeviceSynchronize();
         MPI_Barrier(MPI_COMM_WORLD);
@@ -195,7 +195,7 @@ void RecsGenerator::generateRecs(Network* xNetwork, unsigned int xK, const Filte
         std::ofstream outputFile(fileName, std::ios::app);
         pbKey->Download();
         pbUIValue->Download();
-        NNFloat* pKey = pbKey->_pSysData;
+        Float* pKey = pbKey->_pSysData;
         unsigned int* pIndex = pbUIValue->_pSysData;
 
         if (bMultiGPU)
