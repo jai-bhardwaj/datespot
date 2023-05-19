@@ -113,7 +113,7 @@ namespace knn {
             data->elapsedSgemm[device] = elapsed;
 
             cudaEventRecord(start, 0);
-            kCalculateTopK((float*)dC, dScores, dIndexes, cRows, cColumns, paddedRows, maxK);
+            kCalculateOutput((float*)dC, dScores, dIndexes, cRows, cColumns, paddedRows, maxK);
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
             cudaEventElapsedTime(&elapsed, start, stop);
