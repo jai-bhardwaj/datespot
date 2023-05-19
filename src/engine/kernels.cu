@@ -2856,7 +2856,7 @@ void kRMSPropUpdateBiases(Float alpha, Float mu, uint32_t batch, uint32_t width,
 }
 #include "bitonic.h"
 
-__global__ void kCalculateTopK_32_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+__global__ void kCalculateOutput_32_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
 {
     uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
     uint32_t tgx = threadIdx.x & cData._warpMask;
@@ -2950,7 +2950,7 @@ __global__ void kCalculateTopK_32_kernel(Float* pOutputBuffer, Float* pKeyBuffer
 }
 #include "bitonic.h"
 
-__global__ void kCalculateTopK_64_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+__global__ void kCalculateOutput_64_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
 {
     uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
     uint32_t tgx = threadIdx.x & cData._warpMask;
@@ -3068,7 +3068,7 @@ __global__ void kCalculateTopK_64_kernel(Float* pOutputBuffer, Float* pKeyBuffer
         wpos += cData._warpSize;
     }
 }
-__global__ void kCalculateTopK_256_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+__global__ void kCalculateOutput_256_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
 {
     __shared__ Float sKey[288 * 4];
     __shared__ uint32_t sValue[288 * 4];
@@ -3148,33 +3148,33 @@ __global__ void kCalculateTopK_256_kernel(Float* pOutputBuffer, Float* pKeyBuffe
         }
     }
 }
-void kCalculateTopK(Float* pOutput, Float *pKey, uint32_t* pValue, uint32_t batch, uint32_t width, uint32_t k)
+void kCalculateOutput(Float* pOutput, Float *pKey, uint32_t* pValue, uint32_t batch, uint32_t width, uint32_t k)
 {
     uint32_t blocks = (batch + 3) / 4;
     int threadsPerBlock = 128;
 
     if (k > 32 && k <= 64)
     {
-        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 64);
-        LAUNCHERROR("kCalculateTopK_kernel (64)");
+        kCalculateOutput_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 64);
+        LAUNCHERROR("kCalculateOutput_kernel (64)");
     }
     else if (k > 64 && k <= 128)
     {
-        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 128);
-        LAUNCHERROR("kCalculateTopK_kernel (128)");
+        kCalculateOutput_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 128);
+        LAUNCHERROR("kCalculateOutput_kernel (128)");
     }
     else if (k > 128)
     {
-        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 256);
-        LAUNCHERROR("kCalculateTopK_kernel (256)");
+        kCalculateOutput_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 256);
+        LAUNCHERROR("kCalculateOutput_kernel (256)");
     }
     else
     {
-        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 32);
-        LAUNCHERROR("kCalculateTopK_kernel (32)");
+        kCalculateOutput_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 32);
+        LAUNCHERROR("kCalculateOutput_kernel (32)");
     }
 }
-__global__ void kCalculateTopK_kernel(Float* pOutputKey, Float* pOutputValue, Float* pKeyBuffer, Float* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+__global__ void kCalculateOutput_kernel(Float* pOutputKey, Float* pOutputValue, Float* pKeyBuffer, Float* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
 {
     __shared__ volatile Float sKey[160 * 4];
     __shared__ volatile Float sValue[160 * 4];
@@ -3315,14 +3315,14 @@ __global__ void kCalculateTopK_kernel(Float* pOutputKey, Float* pOutputValue, Fl
     }
 }
 
-void kCalculateTopK(Float* pOutputKey, Float* pOutputValue, Float* pKey, Float* pValue, uint32_t batch, uint32_t width, uint32_t k)
+void kCalculateOutput(Float* pOutputKey, Float* pOutputValue, Float* pKey, Float* pValue, uint32_t batch, uint32_t width, uint32_t k)
 {
     uint32_t threads = 128;
     uint32_t blocks = (batch + 3) / 4;
-    kCalculateTopK_kernel<<<blocks, threads>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
-    LAUNCHERROR("kCalculateTopK_kernel");
+    kCalculateOutput_kernel<<<blocks, threads>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
+    LAUNCHERROR("kCalculateOutput_kernel");
 }
-__global__ void kCalculateTopK_kernel(Float* pOutputKey, uint32_t* pOutputValue, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+__global__ void kCalculateOutput_kernel(Float* pOutputKey, uint32_t* pOutputValue, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
 {
     __shared__ volatile Float sKey[160 * 4];
     __shared__ volatile uint32_t sValue[160 * 4];
@@ -3491,12 +3491,12 @@ __global__ void kCalculateTopK_kernel(Float* pOutputKey, uint32_t* pOutputValue,
     }
 }
 
-void kCalculateTopK(Float* pOutputKey, uint32_t* pOutputValue, Float* pKey, uint32_t* pValue, uint32_t batch, uint32_t width, uint32_t k)
+void kCalculateOutput(Float* pOutputKey, uint32_t* pOutputValue, Float* pKey, uint32_t* pValue, uint32_t batch, uint32_t width, uint32_t k)
 {
     uint32_t threads = 128;
     uint32_t blocks = (batch + 3) / 4;
-    kCalculateTopK_kernel<<<blocks, threads>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
-    LAUNCHERROR("kCalculateTopK_kernel");
+    kCalculateOutput_kernel<<<blocks, threads>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
+    LAUNCHERROR("kCalculateOutput_kernel");
 }
 __global__ void kNormalizeWeights_kernel(Float norm, uint32_t outputStride, uint32_t inputStride, Float* pWeight)
 {
