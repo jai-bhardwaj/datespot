@@ -263,7 +263,7 @@ struct GpuData {
 
 template <typename T> struct GpuBuffer;
 template <typename T> struct MultiGpuBuffer;
-class NNNetwork;
+class Network;
 
 struct GpuContext {
     enum SM_VERSION
@@ -306,7 +306,7 @@ struct GpuContext {
 
     cudnnHandle_t                       _cuDNNHandle;
 
-    NNNetwork*                          _pNetwork;
+    Network*                          _pNetwork;
     std::unique_ptr<GpuBuffer<unsigned long long int>> _pbAccumulator;
     bool                                _bCPUValidate;
     float                               _acceptableError;
@@ -318,7 +318,7 @@ struct GpuContext {
     ~GpuContext();
     void GetMemoryUsage(int* gpuMemory, int* cpuMemory);
     void SetRandomSeed(unsigned long seed);
-    void SetNeuralNetwork(NNNetwork* pNetwork);
+    void SetNeuralNetwork(Network* pNetwork);
     void SetFastMath(bool flag);
     void Startup(int argc, char** argv);
     void Shutdown();
