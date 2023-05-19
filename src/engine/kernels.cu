@@ -1,6 +1,8 @@
 #include "GpuTypes.h"
 #include "Types.h"
 #include <limits>
+#include "cub/util_allocator.cuh"
+#include "cub/device/device_radix_sort.cuh"
 
 static __constant__ GpuData cData;
 
@@ -2571,3 +2573,1310 @@ void kAdaDeltaUpdateWeights(Float lambda, Float lambda1, Float mu, uint64_t size
     cudaDeviceSynchronize();
     LAUNCHERROR("kAdaDeltaUpdateWeights_kernel");
 }
+__global__ void kAdaDeltaUpdateBiases_kernel(Float mu, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBiasGradientVelocity, Float* pBias)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width)
+    {
+        Float sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++)
+        {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= static_cast<Float>(batch);
+
+        Float v = pBiasVelocity[pos];
+        Float vg = pBiasGradientVelocity[pos];
+        vg = mu * vg + (1.0f - mu) * sum * sum;
+        Float dw = sqrtf(fmaxf(v, 0.000000001f) / fmaxf(vg, 0.000000001f)) * sum;
+        v = mu * v + (1.0f - mu) * dw * dw;
+        pBiasVelocity[pos] = v;
+        pBiasGradientVelocity[pos] = vg;
+        pBias[pos] -= dw;
+    }
+}
+
+void kAdaDeltaUpdateBiases(Float mu, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBiasGradientVelocity, Float* pBias)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (width + threadsPerBlock - 1) / threadsPerBlock;
+    kAdaDeltaUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(mu, batch, width, pDelta, pBiasVelocity, pBiasGradientVelocity, pBias);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kAdaDeltaUpdateBiases: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kAdamUpdateWeights_kernel(Float alpha, Float lambda, Float lambda1, Float beta1, Float beta2, Float t, uint64_t size, Float* pWeightVelocity, Float* pWeightGradient, Float* pWeightGradientVelocity, Float* pWeight)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        Float dw = pWeightGradient[pos];
+        Float w = pWeight[pos];
+        Float vdw = pWeightVelocity[pos];
+        Float sdw = pWeightGradientVelocity[pos];
+        dw -= lambda * w + lambda1 * sgn(w);
+        vdw = beta1 * vdw + (1.0f - beta1) * dw;
+        sdw = beta2 * sdw + (1.0f - beta2) * dw * dw;
+        t += 1.0f;
+        pWeightVelocity[pos] = vdw;
+        pWeightGradientVelocity[pos] = sdw;
+        vdw /= 1.0f - powf(beta1, t);
+        sdw /= 1.0f - powf(beta2, t);
+        dw = alpha * vdw / (sqrtf(sdw) + 1.0e-8f);
+        pWeight[pos] = w + dw;
+    }
+}
+
+void kAdamUpdateWeights(Float alpha, Float lambda, Float lambda1, Float beta1, Float beta2, Float t, uint64_t size, Float* pWeightVelocity, Float* pWeightGradient, Float* pWeightGradientVelocity, Float* pWeight)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kAdamUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, beta1, beta2, t, size, pWeightVelocity, pWeightGradient, pWeightGradientVelocity, pWeight);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kAdamUpdateWeights: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kAdamUpdateBiases_kernel(Float alpha, Float beta1, Float beta2, Float t, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBiasGradientVelocity, Float* pBias)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width)
+    {
+        Float sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++)
+        {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= static_cast<Float>(batch);
+
+        Float vdw = pBiasVelocity[pos];
+        Float sdw = pBiasGradientVelocity[pos];
+        vdw = beta1 * vdw + (1.0f - beta1) * sum;
+        sdw = beta2 * sdw + (1.0f - beta2) * sum * sum;
+        t += 1.0f;
+        pBiasVelocity[pos] = vdw;
+        pBiasGradientVelocity[pos] = sdw;
+        vdw /= 1.0f - powf(beta1, t);
+        sdw /= 1.0f - powf(beta2, t);
+        Float dw = alpha * vdw / (sqrtf(sdw) + 1.0e-8f);
+        pBias[pos] -= dw;
+    }
+}
+
+void kAdamUpdateBiases(Float alpha, Float beta1, Float beta2, Float t, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBiasGradientVelocity, Float* pBias)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (width + threadsPerBlock - 1) / threadsPerBlock;
+    kAdamUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, beta1, beta2, t, batch, width, pDelta, pBiasVelocity, pBiasGradientVelocity, pBias);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kAdamUpdateBiases: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kNesterovUpdateWeights_kernel(Float alpha, Float lambda, Float lambda1, Float mu, uint64_t size, Float* pWeightVelocity, Float* pWeightGradient, Float* pWeight)
+{
+    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        Float g = pWeightGradient[pos];
+        Float w = pWeight[pos];
+        Float vOld = pWeightVelocity[pos];
+        Float vNew = mu * vOld + alpha * (g - lambda * w - lambda1 * sgn(w));
+        pWeightVelocity[pos] = vNew;
+        w = w + vNew + mu * (vNew - vOld);
+        pWeight[pos] = w;
+    }
+}
+
+void kNesterovUpdateWeights(Float alpha, Float lambda, Float lambda1, Float mu, uint64_t size, Float* pWeightVelocity, Float* pWeightGradient, Float* pWeight)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kNesterovUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, mu, size, pWeightVelocity, pWeightGradient, pWeight);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kNesterovUpdateWeights: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kNesterovUpdateBiases_kernel(Float alpha, Float mu, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBias)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width)
+    {
+        Float sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++)
+        {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= static_cast<Float>(batch);
+
+        Float vOld = pBiasVelocity[pos];
+        Float vNew = mu * vOld - alpha * sum;
+        pBiasVelocity[pos] = vNew;
+        pBias[pos] += vNew + mu * (vNew - vOld);
+    }
+}
+
+void kNesterovUpdateBiases(Float alpha, Float mu, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBias)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (width + threadsPerBlock - 1) / threadsPerBlock;
+    kNesterovUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, mu, batch, width, pDelta, pBiasVelocity, pBias);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kNesterovUpdateBiases: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kNesterovShiftWeights_kernel(Float mu, uint64_t size, Float* pWeightVelocity, Float* pWeight)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        Float w = pWeight[pos];
+        Float v = pWeightVelocity[pos];
+        pWeight[pos] = w + mu * v;
+    }
+}
+
+void kNesterovShiftWeights(Float mu, uint64_t size, Float* pWeightVelocity, Float* pWeight)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kNesterovShiftWeights_kernel<<<blocks, threadsPerBlock>>>(mu, size, pWeightVelocity, pWeight);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kNesterovShiftWeights: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kNesterovShiftBiases_kernel(Float mu, uint32_t width, Float* pBiasVelocity, Float* pBias)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width)
+    {
+        Float b = pBias[pos];
+        Float v = pBiasVelocity[pos];
+        pBias[pos] = b + mu * v;
+    }
+}
+
+void kNesterovShiftBiases(Float mu, uint32_t width, Float* pBiasVelocity, Float* pBias)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (width + threadsPerBlock - 1) / threadsPerBlock;
+    kNesterovShiftBiases_kernel<<<blocks, threadsPerBlock>>>(mu, width, pBiasVelocity, pBias);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kNesterovShiftBiases: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kRMSPropUpdateWeights_kernel(Float alpha, Float lambda, Float lambda1, Float mu, uint64_t size, Float* pWeightVelocity, Float* pWeightGradient, Float* pWeight)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        Float g = pWeightGradient[pos];
+        Float w = pWeight[pos];
+        Float v = pWeightVelocity[pos];
+        g -= lambda * w + lambda1 * sgn(w);
+        v = mu * v + (1.0f - mu) * g * g;
+        pWeightVelocity[pos] = v;
+        pWeight[pos] = w + alpha * g * rsqrtf(fmaxf(0.000000001f, v));
+    }
+}
+
+void kRMSPropUpdateWeights(Float alpha, Float lambda, Float lambda1, Float mu, uint64_t size, Float* pWeightVelocity, Float* pWeightGradient, Float* pWeight)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (size + threadsPerBlock - 1) / threadsPerBlock;
+    kRMSPropUpdateWeights_kernel<<<blocks, threadsPerBlock>>>(alpha, lambda, lambda1, mu, size, pWeightVelocity, pWeightGradient, pWeight);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kRMSPropUpdateWeights: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+__global__ void kRMSPropUpdateBiases_kernel(Float alpha, Float mu, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBias)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < width)
+    {
+        Float sum = 0.0f;
+        pDelta += pos;
+
+        for (uint32_t i = 0; i < batch; i++)
+        {
+            sum += *pDelta;
+            pDelta += width;
+        }
+        sum /= static_cast<Float>(batch);
+
+        Float v = pBiasVelocity[pos];
+        v = mu * v + (1.0f - mu) * sum * sum;
+        pBiasVelocity[pos] = v;
+        pBias[pos] -= alpha * sum * rsqrtf(fmaxf(0.000000001f, v));
+    }
+}
+
+void kRMSPropUpdateBiases(Float alpha, Float mu, uint32_t batch, uint32_t width, Float* pDelta, Float* pBiasVelocity, Float* pBias)
+{
+    uint32_t threadsPerBlock = 256;
+    uint32_t blocks = (width + threadsPerBlock - 1) / threadsPerBlock;
+    kRMSPropUpdateBiases_kernel<<<blocks, threadsPerBlock>>>(alpha, mu, batch, width, pDelta, pBiasVelocity, pBias);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        fprintf(stderr, "CUDA error in kRMSPropUpdateBiases: %s\n", cudaGetErrorString(error));
+        exit(-1);
+    }
+}
+#include "bitonic.h"
+
+__global__ void kCalculateTopK_32_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (pos < batch)
+    {
+        Float* pOutput = pOutputBuffer + pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        volatile Float* psKey = &sKey[64 * offset];
+        volatile uint32_t* psValue = &sValue[64 * offset];
+
+        Float k0 = -MAX_VALUE;
+        Float k1 = -MAX_VALUE;
+        uint32_t v0 = 0;
+        uint32_t v1 = 0;
+
+        uint32_t wpos = tgx;
+        if (wpos < width)
+        {
+            k0 = pOutput[wpos];
+            v0 = wpos;
+        }
+        wpos += cData._warpSize;
+
+        Float minValue = -MAX_VALUE;
+        uint32_t rpos = 32;
+        uint32_t bufferSize = 0;
+        while (rpos < width)
+        {
+            unsigned wpos = rpos + tgx;
+            Float key = -MAX_VALUE;
+            uint32_t value = wpos;
+            if (wpos < width)
+            {
+                key = pOutput[wpos];
+            }
+
+            uint32_t count = BALLOT(key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask);
+                offset += bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 32)
+            {
+                k1 = psKey[tgx];
+                v1 = psValue[tgx];
+                BITONICSORT64_64();
+
+                minValue = SHFL(k0, cData._warpSize - 1);
+
+                bufferSize -= 32;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 32];
+                    psValue[tgx] = psValue[tgx + 32];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if ((bufferSize > 0) || (width <= 32))
+        {
+            k1 = -MAX_VALUE;
+            v1 = 0;
+
+            if (tgx < bufferSize)
+            {
+                k1 = psKey[tgx];
+                v1 = psValue[tgx];
+            }
+            BITONICSORT64_64();
+        }
+
+        Float* pKey = pKeyBuffer + pos * k;
+        uint32_t* pValue = pValueBuffer + pos * k;
+        wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = k0;
+            pValue[wpos] = v0;
+        }
+        wpos += cData._warpSize;
+    }
+}
+#include "bitonic.h"
+
+__global__ void kCalculateTopK_64_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (pos < batch)
+    {
+        Float* pOutput = pOutputBuffer + pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        volatile Float* psKey = &sKey[96 * offset];
+        volatile uint32_t* psValue = &sValue[96 * offset];
+
+        Float k0 = -MAX_VALUE;
+        Float k1 = -MAX_VALUE;
+        Float k2 = -MAX_VALUE;
+        Float k3 = -MAX_VALUE;
+        uint32_t v0 = 0;
+        uint32_t v1 = 0;
+        uint32_t v2 = 0;
+        uint32_t v3 = 0;
+
+        uint32_t wpos = tgx;
+        if (wpos < width)
+        {
+            k0 = pOutput[wpos];
+            v0 = wpos;
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k1 = pOutput[wpos];
+            v1 = wpos;
+        }
+        wpos += cData._warpSize;
+
+        Float minValue = -MAX_VALUE;
+        uint32_t rpos = 64;
+        uint32_t bufferSize = 0;
+        while (rpos < width)
+        {
+            unsigned wpos = rpos + tgx;
+            Float key = -MAX_VALUE;
+            uint32_t value = wpos;
+            if (wpos < width)
+            {
+                key = pOutput[wpos];
+            }
+
+            uint32_t count = BALLOT(key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask);
+                offset += bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 64)
+            {
+                k2 = psKey[tgx];
+                v2 = psValue[tgx];
+                k3 = psKey[tgx + cData._warpSize];
+                v3 = psValue[tgx + cData._warpSize];
+                BITONICSORT128_128();
+
+                minValue = SHFL(k1, cData._warpSize - 1);
+
+                bufferSize -= 64;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 64];
+                    psValue[tgx] = psValue[tgx + 64];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if ((bufferSize > 0) || (width <= 64))
+        {
+            k2 = -MAX_VALUE;
+            k3 = -MAX_VALUE;
+            v2 = 0;
+            v3 = 0;
+
+            if (tgx < bufferSize)
+            {
+                k2 = psKey[tgx];
+                v2 = psValue[tgx];
+            }
+            if (tgx + cData._warpSize < bufferSize)
+            {
+                k3 = psKey[tgx + cData._warpSize];
+                v3 = psValue[tgx + cData._warpSize];
+            }
+
+            BITONICSORT128_128();
+        }
+
+        Float* pKey = pKeyBuffer + pos * k;
+        uint32_t* pValue = pValueBuffer + pos * k;
+        wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = k0;
+            pValue[wpos] = v0;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k1;
+            pValue[wpos] = v1;
+        }
+        wpos += cData._warpSize;
+    }
+}
+__global__ void kCalculateTopK_256_kernel(Float* pOutputBuffer, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+    __shared__ Float sKey[288 * 4];
+    __shared__ uint32_t sValue[288 * 4];
+
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (pos < batch)
+    {
+        Float *pOutput = pOutputBuffer + pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        Float* psKey = &sKey[288 * offset];
+        uint32_t* psValue = &sValue[288 * offset];
+
+        Float minValue = -MAX_VALUE;
+        uint32_t bufferSize = 0;
+        uint32_t rpos = 256;
+        while (rpos < width - cData._warpSize)
+        {
+            Float key = -MAX_VALUE;
+            uint32_t value = rpos + tgx;
+            if (value < width)
+            {
+                key = pOutput[value];
+            }
+
+            uint32_t count = BALLOT(key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask);
+                offset += bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 256)
+            {
+                Float tempKey, tempValue;
+                tempKey = psKey[tgx];
+                tempValue = psValue[tgx];
+                BITONICSORT512_512();
+                minValue = SHFL(k7, cData._warpSize - 1);
+                bufferSize -= 256;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 256];
+                    psValue[tgx] = psValue[tgx + 256];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if (bufferSize > 0 || width <= 256)
+        {
+            Float tempKey, tempValue;
+            tempKey = psKey[tgx];
+            tempValue = psValue[tgx];
+            BITONICSORT512_512();
+        }
+
+        Float* pKey = pKeyBuffer + pos * k;
+        uint32_t* pValue = pValueBuffer + pos * k;
+        uint32_t wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = psKey[wpos];
+            pValue[wpos] = psValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = psKey[wpos];
+            pValue[wpos] = psValue[wpos];
+        }
+    }
+}
+void kCalculateTopK(Float* pOutput, Float *pKey, uint32_t* pValue, uint32_t batch, uint32_t width, uint32_t k)
+{
+    uint32_t blocks = (batch + 3) / 4;
+    int threadsPerBlock = 128;
+
+    if (k > 32 && k <= 64)
+    {
+        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 64);
+        LAUNCHERROR("kCalculateTopK_kernel (64)");
+    }
+    else if (k > 64 && k <= 128)
+    {
+        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 128);
+        LAUNCHERROR("kCalculateTopK_kernel (128)");
+    }
+    else if (k > 128)
+    {
+        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 256);
+        LAUNCHERROR("kCalculateTopK_kernel (256)");
+    }
+    else
+    {
+        kCalculateTopK_kernel<<<blocks, threadsPerBlock>>>(pOutput, pKey, pValue, batch, width, k, 32);
+        LAUNCHERROR("kCalculateTopK_kernel (32)");
+    }
+}
+__global__ void kCalculateTopK_kernel(Float* pOutputKey, Float* pOutputValue, Float* pKeyBuffer, Float* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+    __shared__ volatile Float sKey[160 * 4];
+    __shared__ volatile Float sValue[160 * 4];
+
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (pos < batch)
+    {
+        pOutputKey += pos * width;
+        pOutputValue += pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        volatile Float* psKey = &sKey[160 * offset];
+        volatile Float* psValue = &sValue[160 * offset];
+
+        Float k0 = -MAX_VALUE;
+        Float k1 = -MAX_VALUE;
+        Float k2 = -MAX_VALUE;
+        Float k3 = -MAX_VALUE;
+        Float v0 = 0.0f;
+        Float v1 = 0.0f;
+        Float v2 = 0.0f;
+        Float v3 = 0.0f;
+
+        uint32_t wpos = tgx;
+        if (wpos < width)
+        {
+            k0 = pOutputKey[wpos];
+            v0 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k1 = pOutputKey[wpos];
+            v1 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k2 = pOutputKey[wpos];
+            v2 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k3 = pOutputKey[wpos];
+            v3 = pOutputValue[wpos];
+        }
+
+        Float minValue = -MAX_VALUE;
+        uint32_t rpos = 128;
+        uint32_t bufferSize = 0;
+        Float key1, key2;
+        Float value1, value2;
+        bool flag;
+        while (rpos < width)
+        {
+            uint32_t wpos = rpos + tgx;
+            Float key = -MAX_VALUE;
+            Float value = 0.0f;
+            if (wpos < width)
+            {
+                key = pOutputKey[wpos];
+                value = pOutputValue[wpos];
+            }
+
+            uint32_t count = BALLOT(key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask);
+                offset += bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 128)
+            {
+                if (tgx < bufferSize)
+                {
+                    k3 = psKey[tgx];
+                    v3 = psValue[tgx];
+                }
+                BITONICSORT256_256();
+                bufferSize -= 128;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 128];
+                    psValue[tgx] = psValue[tgx + 128];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if ((bufferSize > 0) || (width <= 128))
+        {
+            if (tgx + 2 * cData._warpSize < bufferSize)
+            {
+                k3 = psKey[tgx + 2 * cData._warpSize];
+                v3 = psValue[tgx + 2 * cData._warpSize];
+            }
+            if (tgx + 3 * cData._warpSize < bufferSize)
+            {
+                k3 = psKey[tgx + 3 * cData._warpSize];
+                v3 = psValue[tgx + 3 * cData._warpSize];
+            }
+            BITONICSORT256_256();
+        }
+
+        Float* pKey = pKeyBuffer + pos * k;
+        Float* pValue = pValueBuffer + pos * k;
+        wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = k0;
+            pValue[wpos] = v0;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k1;
+            pValue[wpos] = v1;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k2;
+            pValue[wpos] = v2;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k3;
+            pValue[wpos] = v3;
+        }
+    }
+}
+
+void kCalculateTopK(Float* pOutputKey, Float* pOutputValue, Float* pKey, Float* pValue, uint32_t batch, uint32_t width, uint32_t k)
+{
+    uint32_t threads = 128;
+    uint32_t blocks = (batch + 3) / 4;
+    kCalculateTopK_kernel<<<blocks, threads>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
+    LAUNCHERROR("kCalculateTopK_kernel");
+}
+__global__ void kCalculateTopK_kernel(Float* pOutputKey, uint32_t* pOutputValue, Float* pKeyBuffer, uint32_t* pValueBuffer, uint32_t batch, uint32_t width, uint32_t k)
+{
+    __shared__ volatile Float sKey[160 * 4];
+    __shared__ volatile uint32_t sValue[160 * 4];
+    uint32_t pos = (blockIdx.x * blockDim.x + threadIdx.x) >> cData._warpBits;
+    uint32_t tgx = threadIdx.x & cData._warpMask;
+
+    if (pos < batch)
+    {
+        pOutputKey += pos * width;
+        pOutputValue += pos * width;
+        uint32_t offset = threadIdx.x >> cData._warpBits;
+        volatile Float* psKey = &sKey[160 * offset];
+        volatile uint32_t* psValue = &sValue[160 * offset];
+
+        Float k0 = -MAX_VALUE;
+        Float k1 = -MAX_VALUE;
+        Float k2 = -MAX_VALUE;
+        Float k3 = -MAX_VALUE;
+        Float k4 = -MAX_VALUE;
+        Float k5 = -MAX_VALUE;
+        Float k6 = -MAX_VALUE;
+        Float k7 = -MAX_VALUE;
+        uint32_t v0 = 0;
+        uint32_t v1 = 0;
+        uint32_t v2 = 0;
+        uint32_t v3 = 0;
+        uint32_t v4 = 0;
+        uint32_t v5 = 0;
+        uint32_t v6 = 0;
+        uint32_t v7 = 0;
+
+        uint32_t wpos = tgx;
+        if (wpos < width)
+        {
+            k0 = pOutputKey[wpos];
+            v0 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k1 = pOutputKey[wpos];
+            v1 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k2 = pOutputKey[wpos];
+            v2 = pOutputValue[wpos];
+        }
+        wpos += cData._warpSize;
+        if (wpos < width)
+        {
+            k3 = pOutputKey[wpos];
+            v3 = pOutputValue[wpos];
+        }
+
+        Float minValue = -MAX_VALUE;
+        uint32_t rpos = 128;
+        uint32_t bufferSize = 0;
+        Float key1, key2;
+        uint32_t value1, value2;
+        uint32_t otgx;
+        bool flag;
+        while (rpos < width)
+        {
+            uint32_t wpos = rpos + tgx;
+            Float key = -MAX_VALUE;
+            uint32_t value = 0;
+            if (wpos < width)
+            {
+                key = pOutputKey[wpos];
+                value = pOutputValue[wpos];
+            }
+
+            uint32_t count = BALLOT(key > minValue);
+            if (key > minValue)
+            {
+                uint32_t mask = 0xffffffff >> (32 - tgx);
+                uint32_t offset = __popc(count & mask);
+                offset += bufferSize;
+                psKey[offset] = key;
+                psValue[offset] = value;
+            }
+            bufferSize += __popc(count);
+
+            if (bufferSize >= 128)
+            {
+                if (tgx < bufferSize)
+                {
+                    k4 = psKey[tgx];
+                    v4 = psValue[tgx];
+                }
+                BITONICSORT256_256();
+                bufferSize -= 128;
+                if (tgx < bufferSize)
+                {
+                    psKey[tgx] = psKey[tgx + 128];
+                    psValue[tgx] = psValue[tgx + 128];
+                }
+            }
+
+            rpos += cData._warpSize;
+        }
+
+        if ((bufferSize > 0) || (width <= 128))
+        {
+            k4 = -MAX_VALUE;
+            k5 = -MAX_VALUE;
+            k6 = -MAX_VALUE;
+            k7 = -MAX_VALUE;
+            v4 = 0;
+            v5 = 0;
+            v6 = 0;
+            v7 = 0;
+
+            if (tgx < bufferSize)
+            {
+                k4 = psKey[tgx];
+                v4 = psValue[tgx];
+            }
+            if (tgx + cData._warpSize < bufferSize)
+            {
+                k5 = psKey[tgx + cData._warpSize];
+                v5 = psValue[tgx + cData._warpSize];
+            }
+            if (tgx + 2 * cData._warpSize < bufferSize)
+            {
+                k6 = psKey[tgx + 2 * cData._warpSize];
+                v6 = psValue[tgx + 2 * cData._warpSize];
+            }
+            if (tgx + 3 * cData._warpSize < bufferSize)
+            {
+                k7 = psKey[tgx + 3 * cData._warpSize];
+                v7 = psValue[tgx + 3 * cData._warpSize];
+            }
+
+            BITONICSORT256_256();
+        }
+
+        Float* pKey = pKeyBuffer + pos * k;
+        uint32_t* pValue = pValueBuffer + pos * k;
+        wpos = tgx;
+        if (wpos < k)
+        {
+            pKey[wpos] = k0;
+            pValue[wpos] = v0;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k1;
+            pValue[wpos] = v1;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k2;
+            pValue[wpos] = v2;
+        }
+        wpos += cData._warpSize;
+        if (wpos < k)
+        {
+            pKey[wpos] = k3;
+            pValue[wpos] = v3;
+        }
+    }
+}
+
+void kCalculateTopK(Float* pOutputKey, uint32_t* pOutputValue, Float* pKey, uint32_t* pValue, uint32_t batch, uint32_t width, uint32_t k)
+{
+    uint32_t threads = 128;
+    uint32_t blocks = (batch + 3) / 4;
+    kCalculateTopK_kernel<<<blocks, threads>>>(pOutputKey, pOutputValue, pKey, pValue, batch, width, k);
+    LAUNCHERROR("kCalculateTopK_kernel");
+}
+__global__ void kNormalizeWeights_kernel(Float norm, uint32_t outputStride, uint32_t inputStride, Float* pWeight)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < outputStride)
+    {
+        Float r2 = 0.0f;
+        Float* pEnd = pWeight + pos + outputStride * inputStride;
+        Float* p = pWeight + pos;
+
+        while (p < pEnd)
+        {
+            Float x = *p;
+            r2 += x * x;
+            p += outputStride;
+        }
+
+        if (r2 > norm * norm)
+        {
+            norm *= rsqrt(r2);
+            p = pWeight + pos;
+            while (p < pEnd)
+            {
+                *p *= norm;
+                p += outputStride;
+            }
+        }
+    }
+}
+
+void kNormalizeWeights(Float norm, uint32_t outputStride, uint32_t inputStride, Float* pWeight)
+{
+    uint32_t threads = 128;
+    uint32_t blocks = (outputStride + threads - 1) / threads;
+    kNormalizeWeights_kernel<<<blocks, threads>>>(norm, outputStride, inputStride, pWeight);
+    LAUNCHERROR("kNormalizeWeights_kernel");
+}
+__global__ void kCalculateWeightMagnitudes_kernel(uint32_t outputStride, uint32_t inputStride, Float* pWeight, Float* pMagnitude)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < outputStride)
+    {
+        Float r2 = 0.0f;
+        Float* pEnd = pWeight + pos + outputStride * inputStride;
+        Float* p = pWeight + pos;
+
+        while (p < pEnd)
+        {
+            Float x = *p;
+            r2 += x * x;
+            p += outputStride;
+        }
+
+        pMagnitude[pos] = r2;
+    }
+}
+
+void kCalculateWeightMagnitudes(uint32_t outputStride, uint32_t inputStride, Float* pWeight, Float* pMagnitude)
+{
+    uint32_t threads = 128;
+    uint32_t blocks = (outputStride + threads - 1) / threads;
+    kCalculateWeightMagnitudes_kernel<<<blocks, threads>>>(outputStride, inputStride, pWeight, pMagnitude);
+    LAUNCHERROR("kCalculateWeightMagnitudes_kernel");
+}
+__global__ void kNormalizeWeightMagnitudes_kernel(Float norm, uint32_t outputStride, uint32_t inputStride, Float* pWeight, Float* pMagnitude)
+{
+    uint32_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < outputStride)
+    {
+        Float r2 = pMagnitude[pos];
+        Float* pEnd = pWeight + pos + outputStride * inputStride;
+        Float* p = pWeight + pos;
+
+        if (r2 > norm * norm)
+        {
+            norm *= rsqrt(r2);
+            while (p < pEnd)
+            {
+                *p *= norm;
+                p += outputStride;
+            }
+        }
+    }
+}
+
+void kNormalizeWeightMagnitudes(Float norm, uint32_t outputStride, uint32_t inputStride, Float* pWeight, Float* pMagnitude)
+{
+    uint32_t threads = 128;
+    uint32_t blocks = (outputStride + threads - 1) / threads;
+    kNormalizeWeightMagnitudes_kernel<<<blocks, threads>>>(norm, outputStride, inputStride, pWeight, pMagnitude);
+    LAUNCHERROR("kNormalizeWeightMagnitudes_kernel");
+}
+__global__ void kCalculateScaledBiasedDropout_kernel(Float* pUnit, Float* pRandom, Float p, Float target, Float a, Float b, size_t size)
+{
+    size_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        Float r = pRandom[pos];
+        pUnit[pos] = (r < p) ? target : a * pUnit[pos] + b;
+    }
+}
+
+void kCalculateScaledBiasedDropout(Float* pUnit, Float* pRandom, uint32_t batch, uint32_t stride, Float p, Float target, Float a, Float b)
+{
+    curandGenerateUniform(getGpu()._RNG, pRandom, batch * stride);
+    size_t threads = getGpu()._threadsPerBlock;
+    size_t blocks = (batch * stride + threads - 1) / threads;
+    kCalculateScaledBiasedDropout_kernel<<<blocks, threads>>>(pUnit, pRandom, p, target, a, b, batch * stride);
+    LAUNCHERROR("kCalculateScaledBiasedDropout_kernel");
+}
+__global__ void kCalculateDropout_kernel(Float* pUnit, Float* pRandom, Float p, Float scale, Float target, size_t size)
+{
+    size_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        Float r = pRandom[pos];
+        pUnit[pos] = (r < p) ? target : scale * pUnit[pos];
+    }
+}
+
+void kCalculateDropout(Float* pUnit, Float* pRandom, uint32_t batch, uint32_t stride, Float p, Float target)
+{
+    curandGenerateUniform(getGpu()._RNG, pRandom, batch * stride);
+    size_t threads = getGpu()._threadsPerBlock;
+    size_t blocks = (batch * stride + threads - 1) / threads;
+    Float scale = (target == 0.0f) ? 1.0f / (1.0f - p) : 1.0f;
+    kCalculateDropout_kernel<<<blocks, threads>>>(pUnit, pRandom, p, scale, target, batch * stride);
+    LAUNCHERROR("kCalculateDropout_kernel");
+}
+__global__ void kCalculateMaxout_kernel(Float* pSrc, size_t size, Float* pDst)
+{
+    size_t pos = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pos < size)
+    {
+        Float s = pSrc[pos];
+        Float d = pDst[pos];
+        pDst[pos] = (s > d) ? s : d;
+    }
+}
+
+void kCalculateMaxout(Float* pSrc, size_t size, Float* pDst)
+{
+    size_t threads = getGpu()._threadsPerBlock;
+    size_t blocks = (size + threads - 1) / threads;
+    kCalculateMaxout_kernel<<<blocks, threads>>>(pSrc, size, pDst);
+    LAUNCHERROR("kCalculateMaxout_kernel");
+}
+__global__ void kCalculateCosine_kernel(Float* pVector1, Float* pVector2, uint32_t stride, Float* pDPOut, Float* pAOut, Float* pBOut, uint32_t outStride)
+{
+    extern __shared__ Float sData[];
+    Float* sDP = sData;
+    Float* sA = sData + blockDim.x;
+    Float* sB = sData + 2 * blockDim.x;
+
+    uint32_t pos = blockIdx.x * stride + threadIdx.x;
+    Float dp = 0.0f;
+    Float al = 0.0f;
+    Float bl = 0.0f;
+
+    while (pos < blockIdx.x * stride + stride)
+    {
+        Float a = pVector1[pos];
+        Float b = pVector2[pos];
+        dp += a * b;
+        al += a * a;
+        bl += b * b;
+        pos += blockDim.x;
+    }
+
+    sDP[threadIdx.x] = dp;
+    sA[threadIdx.x] = al;
+    sB[threadIdx.x] = bl;
+
+    __syncthreads();
+
+    uint32_t limit = min(blockDim.x, stride);
+    for (uint32_t s = limit / 2; s > 0; s >>= 1)
+    {
+        if (threadIdx.x < s && threadIdx.x + s < limit)
+        {
+            sDP[threadIdx.x] += sDP[threadIdx.x + s];
+            sA[threadIdx.x] += sA[threadIdx.x + s];
+            sB[threadIdx.x] += sB[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+
+    if (threadIdx.x == 0)
+    {
+        al = sqrtf(sA[0]) + 1.0e-08f;
+        bl = sqrtf(sB[0]) + 1.0e-08f;
+        dp = sDP[0] / (al * bl);
+        pAOut[blockIdx.x * outStride] = al;
+        pBOut[blockIdx.x * outStride] = bl;
+        pDPOut[blockIdx.x * outStride] = dp;
+    }
+}
+
+void kCalculateCosine(Float* pVector1, Float* pVector2, uint32_t batch, uint32_t stride, Float* pDPOut, Float* pAOut, Float* pBOut, uint32_t outStride)
+{
+    uint32_t threads = min(stride, getGpu()._threadsPerBlock);
+    kCalculateCosine_kernel<<<batch, threads, 3 * threads * sizeof(Float)>>>(pVector1, pVector2, stride, pDPOut, pAOut, pBOut, outStride);
+    LAUNCHERROR("kCalculateCosine_kernel");
+}
+__global__ void kCalculateDotProduct_kernel(const float* pVector1In, const float* pVector2In, uint32_t strideIn, float* pDPOut, uint32_t strideOut)
+{
+    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t threadStride = gridDim.x * blockDim.x;
+
+    float dp = 0.0f;
+
+    for (uint32_t pos = idx; pos < strideIn; pos += threadStride)
+    {
+        float a = pVector1In[pos];
+        float b = pVector2In[pos];
+        dp += a * b;
+    }
+
+    dp = warpReduceSum(dp);
+
+    if (threadIdx.x % warpSize == 0)
+    {
+        uint32_t warpIdx = threadIdx.x / warpSize;
+        __shared__ float sDP[32];
+        sDP[warpIdx] = dp;
+        __syncthreads();
+
+        if (warpIdx == 0)
+        {
+            float blockSum = warpReduceSum(sDP[threadIdx.x]);
+            if (threadIdx.x == 0)
+            {
+                pDPOut[blockIdx.x * strideOut] = blockSum;
+            }
+        }
+    }
+}
+
+void kCalculateDotProduct(const float* pVector1In, const float* pVector2In, uint32_t batch, uint32_t strideIn, float* pDPOut, uint32_t strideOut)
+{
+    const unsigned int threads = max(32, min(strideIn, getGpu()._threadsPerBlock));
+    const unsigned int blocks = batch;
+    kCalculateDotProduct_kernel<<<blocks, threads>>>(pVector1In, pVector2In, strideIn, pDPOut, strideOut);
+    LAUNCHERROR("kCalculateDotProduct_kernel");
+}
+
+template<typename KeyType, typename ValueType>
+size_t kInitSort(uint32_t items, GpuBuffer<KeyType>* pbKey, GpuBuffer<ValueType>* pbValue)
+{
+    uint32_t itemStride = ((items + 511) >> 9) << 9;
+    size_t tempBytes;
+    cub::DoubleBuffer<KeyType> d_keys(pbKey->_pDevData, pbKey->_pDevData + itemStride);
+    cub::DoubleBuffer<ValueType> d_values(pbValue->_pDevData, pbValue->_pDevData + itemStride);
+    cub::DeviceRadixSort::SortPairs(nullptr, tempBytes, d_keys, d_values, items);
+    return tempBytes;
+}
+
+template<typename KeyType, typename ValueType>
+bool kSort(uint32_t items, KeyType* pKey0, KeyType* pKey1, ValueType* pValue0, ValueType* pValue1, char* pTemp, size_t tempBytes)
+{
+    cub::DoubleBuffer<KeyType> d_keys(pKey0, pKey1);
+    cub::DoubleBuffer<ValueType> d_values(pValue0, pValue1);
+    cub::DeviceRadixSort::SortPairs(pTemp, tempBytes, d_keys, d_values, items);
+    return true;
+}
+__global__ void kAddScaleBuffers_kernel(Float* pDst, Float* pSrc, Float scale, unsigned int size)
+{
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size)
+    {
+        pDst[idx] += pSrc[idx] * scale;
+    }
+}
+
+void kAddScaleBuffers(Float* pDst, Float* pSrc, Float scale, unsigned int size)
+{
+    unsigned int threads = getGpu()._threadsPerBlock;
+    unsigned int blocks = (size + threads - 1) / threads;
+    kAddScaleBuffers_kernel<<<blocks, threads>>>(pDst, pSrc, scale, size);
+    LAUNCHERROR("kAddScaleBuffers_kernel");
+}
+__global__ void kAddBuffers_kernel(Float* pDst, Float* pSrc, unsigned int size)
+{
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size)
+    {
+        pDst[idx] += pSrc[idx];
+    }
+}
+
+void kAddBuffers(Float* pDst, Float* pSrc, unsigned int size, cudaStream_t stream)
+{
+    if (size == 0)
+        return;
+
+    unsigned int threads = getGpu()._threadsPerBlock;
+    unsigned int blocks = (size + threads - 1) / threads;
+    kAddBuffers_kernel<<<blocks, threads, 0, stream>>>(pDst, pSrc, size);
+    LAUNCHERROR("kAddBuffers_kernel");
+}
+
+__global__ void kAddBuffers2D_kernel(Float* pDst, uint32_t dpitch, Float* pSrc, uint32_t spitch, uint32_t width)
+{
+    unsigned int yOffset = blockIdx.y * blockDim.x + threadIdx.x;
+    if (yOffset < width)
+    {
+        uint64_t dpos = blockIdx.x * dpitch + yOffset;
+        uint64_t spos = blockIdx.x * spitch + yOffset;
+        pDst[dpos] += pSrc[spos];
+    }
+}
+
+void kAddBuffers2D(Float* pDst, uint32_t dpitch, Float* pSrc, uint32_t spitch, uint32_t width, uint32_t height, cudaStream_t stream)
+{
+    if ((height == 0) || (width == 0))
+        return;
+
+    unsigned int threads = getGpu()._threadsPerBlock;
+    dim3 grid(height, (width + threads - 1) / threads);
+    kAddBuffers2D_kernel<<<grid, threads, 0, stream>>>(pDst, dpitch, pSrc, spitch, width);
+    LAUNCHERROR("kAddBuffers2D_kernel");
+}
+
+__global__ void kCopy2D_kernel(Float* pDst, uint32_t dpitch, Float* pSrc, uint32_t spitch, uint32_t width)
+{
+    unsigned int yOffset = blockIdx.y * blockDim.x + threadIdx.x;
+    if (yOffset < width)
+    {
+        uint64_t dpos = blockIdx.x * dpitch + yOffset;
+        uint64_t spos = blockIdx.x * spitch + yOffset;
+        pDst[dpos] = pSrc[spos];
+    }
+}
+
+void kCopy2D(Float* pDst, uint32_t dpitch, Float* pSrc, uint32_t spitch, uint32_t width, uint32_t height, cudaStream_t stream)
+{
+    if ((height == 0) || (width == 0))
+        return;
+
+    unsigned int threads = getGpu()._threadsPerBlock;
+    dim3 grid(height, (width + threads - 1) / threads);
+    kCopy2D_kernel<<<grid, threads, 0, stream>>>(pDst, dpitch, pSrc, spitch, width);
+    LAUNCHERROR("kCopy2D_kernel");
+}
+template size_t kInitSort<Float, Float>  (uint32_t, GpuBuffer<Float>*, GpuBuffer<Float>*);
+template size_t kInitSort<uint32_t, Float> (uint32_t, GpuBuffer<uint32_t>*, GpuBuffer<Float>*);
+template size_t kInitSort<Float, uint32_t> (uint32_t, GpuBuffer<Float>*, GpuBuffer<uint32_t>*);
+template size_t kInitSort<uint32_t, uint32_t>(uint32_t, GpuBuffer<uint32_t>*, GpuBuffer<uint32_t>*);
+
+template bool kSort<Float, Float>(uint32_t, Float*, Float*, Float*, Float*, char*, size_t);
+template bool kSort<Float, uint32_t>(uint32_t, Float*, Float*, uint32_t*, uint32_t*, char*, size_t);
+template bool kSort<uint32_t, Float>(uint32_t, uint32_t*, uint32_t*, Float*, Float*, char*, size_t);
+template bool kSort<uint32_t, uint32_t>(uint32_t, uint32_t*, uint32_t*, uint32_t*, uint32_t*, char*, size_t);
+
+#define EXPLICITLY_INSTANTIATE_KERNELS(T)                                                                                                                                                       \
+template void kLoadSparseAnalogDenoisedInputUnit<T>(uint32_t, uint32_t, uint32_t, Float*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*);                                           \
+template void kLoadIndexedSparseAnalogDenoisedInputUnit<T>(uint32_t, uint32_t, uint32_t, Float*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*);                         \
+template void kLoadSparseAnalogInputUnit<T>(uint32_t, uint32_t, uint32_t, Float*, uint64_t*, uint64_t*, uint32_t*, Float*, T*);                                                             \
+template void kLoadIndexedSparseAnalogInputUnit<T>(uint32_t, uint32_t, uint32_t, Float*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, Float*, T*);                                           \
+template void kCalculateSparseAnalogZ<T>(uint32_t, uint32_t, uint32_t, Float*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*, Float);                                             \
+template void kCalculateIndexedSparseAnalogZ<T>(uint32_t, uint32_t, uint32_t, Float*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*, Float);                           \
+template void kCalculateSparseAnalogDenoisedZ<T>(uint32_t, uint32_t, uint32_t, Float*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*, Float*, Float);                           \
+template void kCalculateIndexedSparseAnalogDenoisedZ<T>(uint32_t, uint32_t, uint32_t, Float*, uint32_t*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*, Float*, Float);         \
+template void kCalculateSparseTransposedAnalogMatrix<T>(uint32_t, uint32_t, uint64_t*, uint64_t*, uint32_t*, Float*, T*, uint32_t*, uint32_t*, Float*);                                     \
+template void kCalculateIndexedSparseTransposedAnalogMatrix<T>(uint32_t, uint32_t, uint32_t*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, uint32_t*, uint32_t*, Float*);                   \
+template void kCalculateSparseTransposedAnalogDenoisedMatrix<T>(uint32_t, uint32_t, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*, uint32_t*, uint32_t*, Float*);                   \
+template void kCalculateIndexedSparseTransposedAnalogDenoisedMatrix<T>(uint32_t, uint32_t, uint32_t*, uint64_t*, uint64_t*, uint32_t*, Float*, T*, Float*, uint32_t*, uint32_t*, Float*); \
+template void kLoadInputUnit<T>(uint32_t, uint32_t, uint32_t, Float*, T*);                                                                                                                    \
+template void kLoadIndexedInputUnit<T>(uint32_t, uint32_t, uint32_t, Float*, uint32_t*, T*);
+
+
+
+
+                                                                                 \
+
+EXPLICITLY_INSTANTIATE_KERNELS(Float)
+EXPLICITLY_INSTANTIATE_KERNELS(double)
+EXPLICITLY_INSTANTIATE_KERNELS(unsigned char)
+EXPLICITLY_INSTANTIATE_KERNELS(char)
+EXPLICITLY_INSTANTIATE_KERNELS(uint32_t)
+EXPLICITLY_INSTANTIATE_KERNELS(uint64_t)
+EXPLICITLY_INSTANTIATE_KERNELS(int32_t)
+EXPLICITLY_INSTANTIATE_KERNELS(int64_t)
