@@ -15,10 +15,10 @@ class Network;
  */
 class RecsGenerator
 {
-    std::unique_ptr<GpuBuffer<NNFloat>> pbKey;
+    std::unique_ptr<GpuBuffer<Float>> pbKey;
     std::unique_ptr<GpuBuffer<unsigned int>> pbUIValue;
-    std::unique_ptr<GpuBuffer<NNFloat>> pFilteredOutput;
-    std::vector<GpuBuffer<NNFloat>*> vNodeFilters;
+    std::unique_ptr<GpuBuffer<Float>> pFilteredOutput;
+    std::vector<GpuBuffer<Float>*> vNodeFilters;
     std::string recsGenLayerLabel;
     std::string scorePrecision;
 
