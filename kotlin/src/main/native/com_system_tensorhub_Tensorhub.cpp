@@ -342,7 +342,7 @@ JNIEXPORT void JNICALL Java_com_system_tensorhub_tensorhub_predict(JNIEnv *env, 
 
             uint32_t *hIndexes = (uint32_t*) calloc(k * stride, sizeof(uint32_t));
 
-            kCalculateTopK(outputUnitBuffer, dScores, dIndexes, stride, k);
+            kCalculateOutput(outputUnitBuffer, dScores, dIndexes, stride, k);
 
             cudaMemcpy(scores, dScores, k * stride * sizeof(Float), cudaMemcpyDeviceToHost);
             cudaMemcpy(hIndexes, dIndexes, k * stride * sizeof(uint32_t), cudaMemcpyDeviceToHost);
