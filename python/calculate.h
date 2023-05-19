@@ -46,23 +46,23 @@ static PyObject* tensorhubcalculate_PredictOutput(Network* pNetwork, std::vector
 
     int cdlBatch = cdl._batch;
 
-    std::vector<NNFloat> vPrecision(K);
-    std::vector<NNFloat> vRecall(K);
-    std::vector<NNFloat> vNDCG(K);
+    std::vector<Float> vPrecision(K);
+    std::vector<Float> vRecall(K);
+    std::vector<Float> vNDCG(K);
     std::vector<uint32_t> vDataPoints(cdlBatch);
-    auto pbTarget = std::make_unique<GpuBuffer<NNFloat>>(cdlBatch * STRIDE, true);
-    auto pbOutput = std::make_unique<GpuBuffer<NNFloat>>(cdlBatch * STRIDE, true);
-    auto pInputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[inputIndex]);
-    auto pOutputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[outputIndex]);
-    auto pbKey = std::make_unique<GpuBuffer<NNFloat>>(cdlBatch * K, true);
+    auto pbTarget = std::make_unique<GpuBuffer<Float>>(cdlBatch * STRIDE, true);
+    auto pbOutput = std::make_unique<GpuBuffer<Float>>(cdlBatch * STRIDE, true);
+    auto pInputDataSet = dynamic_cast<DataSet<Float>*>(vDataSet[inputIndex]);
+    auto pOutputDataSet = dynamic_cast<DataSet<Float>*>(vDataSet[outputIndex]);
+    auto pbKey = std::make_unique<GpuBuffer<Float>>(cdlBatch * K, true);
     auto pbUIValue = std::make_unique<GpuBuffer<unsigned int>>(cdlBatch * K, true);
-    auto pbFValue = std::make_unique<GpuBuffer<NNFloat>>(cdlBatch * K, true);
-    NNFloat* pOutputValue = pbOutput->_pSysData;
+    auto pbFValue = std::make_unique<GpuBuffer<Float>>(cdlBatch * K, true);
+    Float* pOutputValue = pbOutput->_pSysData;
     bool bMultiGPU = (getGpu()._numprocs > 1);
-    std::optional<std::unique_ptr<GpuBuffer<NNFloat>>> pbMultiKey;
-    std::optional<std::unique_ptr<GpuBuffer<NNFloat>>> pbMultiFValue;
-    NNFloat* pMultiKey = nullptr;
-    NNFloat* pMultiFValue = nullptr;
+    std::optional<std::unique_ptr<GpuBuffer<Float>>> pbMultiKey;
+    std::optional<std::unique_ptr<GpuBuffer<Float>>> pbMultiFValue;
+    Float* pMultiKey = nullptr;
+    Float* pMultiFValue = nullptr;
     cudaIpcMemHandle_t keyMemHandle;
     cudaIpcMemHandle_t valMemHandle;
 
@@ -70,8 +70,8 @@ static PyObject* tensorhubcalculate_PredictOutput(Network* pNetwork, std::vector
     {
         if (getGpu()._id == 0)
         {
-            pbMultiKey = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * cdlBatch * K, true);
-            pbMultiFValue = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * cdlBatch * K, true);
+            pbMultiKey = std::make_unique<GpuBuffer<Float>>(getGpu()._numprocs * cdlBatch * K, true);
+            pbMultiFValue = std::make_unique<GpuBuffer<Float>>(getGpu()._numprocs * cdlBatch * K, true);
             pMultiKey = pbMultiKey->_pDevData;
             pMultiFValue = pbMultiFValue->_pDevData;
 
@@ -110,7 +110,7 @@ static PyObject* tensorhubcalculate_PredictOutput(Network* pNetwork, std::vector
         const auto pOutputKey = pNetwork->GetUnitBuffer("Output");
         auto pOut = pOutputValue;
         
-        cudaError_t status = cudaMemcpy(pOut, pOutputKey, batch * STRIDE * sizeof(NNFloat), cudaMemcpyDeviceToHost);
+        cudaError_t status = cudaMemcpy(pOut, pOutputKey, batch * STRIDE * sizeof(Float), cudaMemcpyDeviceToHost);
         RTERROR(status, "cudaMemcpy GpuBuffer::Download failed");
             
         for (unsigned int i = 0; i < batch; ++i)
@@ -147,10 +147,10 @@ static PyObject* tensorhubcalculate_PredictOutput(Network* pNetwork, std::vector
             
             const auto offset = K * getGpu()._id;
             const auto kstride = K * getGpu()._numprocs;
-            const auto copy_size = K * sizeof(NNFloat);
+            const auto copy_size = K * sizeof(Float);
 
-            cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(NNFloat), pbKey->_pDevData, copy_size, copy_size, batch, cudaMemcpyDefault);
-            cudaMemcpy2D(pMultiFValue + offset, kstride * sizeof(NNFloat), pbFValue->_pDevData, copy_size, copy_size, batch, cudaMemcpyDefault);
+            cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(Float), pbKey->_pDevData, copy_size, copy_size, batch, cudaMemcpyDefault);
+            cudaMemcpy2D(pMultiFValue + offset, kstride * sizeof(Float), pbFValue->_pDevData, copy_size, copy_size, batch, cudaMemcpyDefault);
             
             cudaDeviceSynchronize();
             MPI_Barrier(MPI_COMM_WORLD);
@@ -169,7 +169,7 @@ static PyObject* tensorhubcalculate_PredictOutput(Network* pNetwork, std::vector
             auto* pValue = pbFValue->_pSysData;
             for (unsigned int i = 0; i < batch; i++)
             {
-                const auto p = static_cast<NNFloat>(vDataPoints[i]);
+                const auto p = static_cast<Float>(vDataPoints[i]);
                 auto tp = 0.0f;
                 auto fp = 0.0f;
                 auto idcg = 0.0f;
@@ -198,7 +198,7 @@ static PyObject* tensorhubcalculate_PredictOutput(Network* pNetwork, std::vector
             }
         }
 
-    std::vector<GpuBuffer<NNFloat>*> gpuBuffers = {pbKey, pbFValue, pbUIValue, pbTarget, pbOutput};
+    std::vector<GpuBuffer<Float>*> gpuBuffers = {pbKey, pbFValue, pbUIValue, pbTarget, pbOutput};
     for (auto* buffer : gpuBuffers) {
         delete buffer;
     }
@@ -216,7 +216,7 @@ static PyObject* tensorhubcalculate_PredictOutput(Network* pNetwork, std::vector
             closeMemHandle(pMultiFValue, "cudaIpcCloseMemHandle: Error closing MultiFValue IpcMemHandle");
         }
 
-        std::vector<GpuBuffer<NNFloat>*> gpuBuffers = {pbMultiKey, pbMultiFValue};
+        std::vector<GpuBuffer<Float>*> gpuBuffers = {pbMultiKey, pbMultiFValue};
         for (auto* buffer : gpuBuffers) {
             delete buffer;
         }
@@ -273,8 +273,8 @@ static PyObject* tensorhubcalculate_Transpose(PyArrayObject* vASINWeight, PyArra
         return nullptr;
     }
 
-    auto* pASINWeight = reinterpret_cast<NNFloat*>(PyArray_DATA(vASINWeight));
-    auto* pEmbedding = reinterpret_cast<NNFloat*>(PyArray_DATA(vEmbedding));
+    auto* pASINWeight = reinterpret_cast<Float*>(PyArray_DATA(vASINWeight));
+    auto* pEmbedding = reinterpret_cast<Float*>(PyArray_DATA(vEmbedding));
     const npy_intp STRIDE = vASINWeightDims[0];
     const npy_intp EmbeddingExamples = vASINWeightDims[1];
 
