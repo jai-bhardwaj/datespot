@@ -1785,9 +1785,9 @@ bool DataSet<T>::CalculateSparseTransposedDenoisedMatrix(uint32_t position, uint
     return true;
 }
 template<typename T>
-bool NNDataSet<T>::CalculateSparseTransposedWeightGradient(NNFloat alpha, NNFloat beta, uint32_t m, uint32_t n, NNFloat* pDelta, NNFloat* pWeightGradient)
+bool DataSet<T>::CalculateSparseTransposedWeightGradient(Float alpha, Float beta, uint32_t m, uint32_t n, Float* pDelta, Float* pWeightGradient)
 {
-    if ((_attributes & NNDataSetEnums::Boolean) && !(_attributes & NNDataSetEnums::Weighted))
+    if ((_attributes & DataSetEnums::Boolean) && !(_attributes & DataSetEnums::Weighted))
         kCalculateSparseTransposedWeightGradient(alpha, beta, m, n, _pbSparseTransposedStart->_pDevData, _pbSparseTransposedEnd->_pDevData, _pbSparseTransposedIndex->_pDevData, pDelta, pWeightGradient);
     else
         kCalculateSparseTransposedAnalogWeightGradient(alpha, beta, m, n, _pbSparseTransposedStart->_pDevData, _pbSparseTransposedEnd->_pDevData, _pbSparseTransposedIndex->_pDevData, _pbSparseTransposedData->_pDevData, pDelta, pWeightGradient);
@@ -1795,15 +1795,15 @@ bool NNDataSet<T>::CalculateSparseTransposedWeightGradient(NNFloat alpha, NNFloa
 }
 
 template<typename T>
-float NNDataSet<T>::CalculateL1Error(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateL1Error(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Boolean)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Boolean)
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseL1Error(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -1825,7 +1825,7 @@ float NNDataSet<T>::CalculateL1Error(uint32_t position, uint32_t batch, uint32_t
         }
         else
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseAnalogL1Error(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -1850,22 +1850,22 @@ float NNDataSet<T>::CalculateL1Error(uint32_t position, uint32_t batch, uint32_t
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             return kCalculateIndexedL1Error(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             return kCalculateL1Error(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateL2Error(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateL2Error(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Boolean)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Boolean)
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseL2Error(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -1887,7 +1887,7 @@ float NNDataSet<T>::CalculateL2Error(uint32_t position, uint32_t batch, uint32_t
         }
         else
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseAnalogL2Error(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -1912,22 +1912,22 @@ float NNDataSet<T>::CalculateL2Error(uint32_t position, uint32_t batch, uint32_t
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             return kCalculateIndexedL2Error(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             return kCalculateL2Error(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateL2HingeError(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateL2HingeError(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Boolean)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Boolean)
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseL2HingeError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -1949,7 +1949,7 @@ float NNDataSet<T>::CalculateL2HingeError(uint32_t position, uint32_t batch, uin
         }
         else
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseAnalogL2HingeError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -1974,20 +1974,20 @@ float NNDataSet<T>::CalculateL2HingeError(uint32_t position, uint32_t batch, uin
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             return kCalculateIndexedL2HingeError(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             return kCalculateL2HingeError(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Indexed)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Indexed)
         {
             return kCalculateIndexedSparseCrossEntropyError(position, batch, stride, pUnit,
                 _pbIndex->_pDevData,
@@ -2009,20 +2009,20 @@ float NNDataSet<T>::CalculateCrossEntropyError(uint32_t position, uint32_t batch
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             return kCalculateIndexedCrossEntropyError(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             return kCalculateCrossEntropyError(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateScaledMarginalCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateScaledMarginalCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Indexed)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Indexed)
         {
             return kCalculateIndexedSparseScaledMarginalCrossEntropyError(position, batch, stride, pUnit,
                 _pbIndex->_pDevData,
@@ -2044,21 +2044,21 @@ float NNDataSet<T>::CalculateScaledMarginalCrossEntropyError(uint32_t position, 
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             return kCalculateIndexedScaledMarginalCrossEntropyError(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             return kCalculateScaledMarginalCrossEntropyError(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateMultinomialCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateMultinomialCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        if (_attributes & NNDataSetEnums::Boolean)
+        if (_attributes & DataSetEnums::Boolean)
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseMultinomialCrossEntropyError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -2078,7 +2078,7 @@ float NNDataSet<T>::CalculateMultinomialCrossEntropyError(uint32_t position, uin
         }
         else
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseAnalogMultinomialCrossEntropyError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -2101,21 +2101,21 @@ float NNDataSet<T>::CalculateMultinomialCrossEntropyError(uint32_t position, uin
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             return kCalculateIndexedMultinomialCrossEntropyError(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             return kCalculateMultinomialCrossEntropyError(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateMultinomialScaledMarginalCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateMultinomialScaledMarginalCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        if (_attributes & NNDataSetEnums::Boolean)
+        if (_attributes & DataSetEnums::Boolean)
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseMultinomialScaledMarginalCrossEntropyError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -2135,7 +2135,7 @@ float NNDataSet<T>::CalculateMultinomialScaledMarginalCrossEntropyError(uint32_t
         }
         else
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseAnalogMultinomialScaledMarginalCrossEntropyError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -2158,22 +2158,22 @@ float NNDataSet<T>::CalculateMultinomialScaledMarginalCrossEntropyError(uint32_t
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             return kCalculateIndexedMultinomialScaledMarginalCrossEntropyError(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             return kCalculateMultinomialScaledMarginalCrossEntropyError(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateDataScaledMarginalCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateDataScaledMarginalCrossEntropyError(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Boolean)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Boolean)
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseScaledMarginalCrossEntropyError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -2195,7 +2195,7 @@ float NNDataSet<T>::CalculateDataScaledMarginalCrossEntropyError(uint32_t positi
         }
         else
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
             {
                 return kCalculateIndexedSparseDataScaledMarginalCrossEntropyError(position, batch, stride, pUnit,
                     _pbIndex->_pDevData,
@@ -2224,30 +2224,30 @@ float NNDataSet<T>::CalculateDataScaledMarginalCrossEntropyError(uint32_t positi
     }
 }
 template<typename T>
-float NNDataSet<T>::CalculateHingeError(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit)
+float DataSet<T>::CalculateHingeError(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Indexed)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Indexed)
         return kCalculateIndexedHingeError(position, batch, stride, pUnit, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
     else
         return kCalculateHingeError(position, batch, stride, pUnit, _pbData->_pDevData, pDataWeight);
 }
 
 template<typename T>
-bool NNDataSet<T>::CalculateL1OutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, NNFloat slope, NNFloat alpha, NNFloat lambda)
+bool DataSet<T>::CalculateL1OutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, Float slope, Float alpha, Float lambda)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Indexed)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedSparseL1OutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero, slope, alpha, lambda);
         else
             kCalculateSparseL1OutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero, slope, alpha, lambda);
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedL1OutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight, slope, alpha, lambda);
         else
             kCalculateL1OutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbData->_pDevData, pDataWeight, slope, alpha, lambda);
@@ -2255,13 +2255,13 @@ bool NNDataSet<T>::CalculateL1OutputDelta(Activation activation, uint32_t positi
     return true;
 }
 template<typename T>
-bool NNDataSet<T>::CalculateCrossEntropyOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta)
+bool DataSet<T>::CalculateCrossEntropyOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Indexed)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedSparseCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero);
         else
             kCalculateSparseCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero);
@@ -2269,7 +2269,7 @@ bool NNDataSet<T>::CalculateCrossEntropyOutputDelta(Activation activation, uint3
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             kCalculateCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbData->_pDevData, pDataWeight);
@@ -2278,20 +2278,20 @@ bool NNDataSet<T>::CalculateCrossEntropyOutputDelta(Activation activation, uint3
 }
 
 template<typename T>
-bool NNDataSet<T>::CalculateScaledMarginalCrossEntropyOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta)
+bool DataSet<T>::CalculateScaledMarginalCrossEntropyOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Indexed)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedSparseScaledMarginalCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero);
         else
             kCalculateSparseScaledMarginalCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero);
     }
     else
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedScaledMarginalCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
         else
             kCalculateScaledMarginalCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbData->_pDevData, pDataWeight);
@@ -2299,21 +2299,21 @@ bool NNDataSet<T>::CalculateScaledMarginalCrossEntropyOutputDelta(Activation act
     return true;
 }
 template<typename T>
-bool NNDataSet<T>::CalculateOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, NNFloat slope, NNFloat alpha, NNFloat lambda)
+bool DataSet<T>::CalculateOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, Float slope, Float alpha, Float lambda)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse) {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Boolean) 
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse) {
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Boolean) 
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
                 kCalculateIndexedSparseOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero, slope, alpha, lambda);
             else
                 kCalculateSparseOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero, slope, alpha, lambda);
         } 
         else 
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
                 kCalculateIndexedSparseAnalogOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, _pbSparseData->_pDevData, bSparseIgnoreZero, slope, alpha, lambda);
             else
                 kCalculateSparseAnalogOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, _pbSparseData->_pDevData, bSparseIgnoreZero, slope, alpha, lambda);
@@ -2321,7 +2321,7 @@ bool NNDataSet<T>::CalculateOutputDelta(Activation activation, uint32_t position
     } 
     else 
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight, slope, alpha, lambda);
         else
             kCalculateOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbData->_pDevData, pDataWeight, slope, alpha, lambda);
@@ -2331,21 +2331,21 @@ bool NNDataSet<T>::CalculateOutputDelta(Activation activation, uint32_t position
 
 
 template<typename T>
-bool NNDataSet<T>::CalculateL2HingeOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, NNFloat slope, NNFloat alpha, NNFloat lambda)
+bool DataSet<T>::CalculateL2HingeOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, Float slope, Float alpha, Float lambda)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Sparse) {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Boolean) 
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Sparse) {
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Boolean) 
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
                 kCalculateIndexedSparseL2HingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero, slope, alpha, lambda);
             else
                 kCalculateSparseL2HingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, bSparseIgnoreZero, slope, alpha, lambda);
         } 
         else 
         {
-            if (_attributes & NNDataSetEnums::Indexed)
+            if (_attributes & DataSetEnums::Indexed)
                 kCalculateIndexedSparseAnalogL2HingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, _pbSparseData->_pDevData, bSparseIgnoreZero, slope, alpha, lambda);
             else
                 kCalculateSparseAnalogL2HingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData, pDataWeight, _pbSparseData->_pDevData, bSparseIgnoreZero, slope, alpha, lambda);
@@ -2353,7 +2353,7 @@ bool NNDataSet<T>::CalculateL2HingeOutputDelta(Activation activation, uint32_t p
     } 
     else 
     {
-        if (_attributes & NNDataSetEnums::Indexed)
+        if (_attributes & DataSetEnums::Indexed)
             kCalculateIndexedL2HingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight, slope, alpha, lambda);
         else
             kCalculateL2HingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbData->_pDevData, pDataWeight, slope, alpha, lambda);
@@ -2361,12 +2361,12 @@ bool NNDataSet<T>::CalculateL2HingeOutputDelta(Activation activation, uint32_t p
     return true;
 }
 template<typename T>
-bool NNDataSet<T>::CalculateDataScaledMarginalCrossEntropyOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta)
+bool DataSet<T>::CalculateDataScaledMarginalCrossEntropyOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta)
 {
-    if (_attributes & NNDataSetEnums::Sparse)
+    if (_attributes & DataSetEnums::Sparse)
     {
-        bool bSparseIgnoreZero = _attributes & NNDataSetEnums::SparseIgnoreZero;
-        if (_attributes & NNDataSetEnums::Indexed)
+        bool bSparseIgnoreZero = _attributes & DataSetEnums::SparseIgnoreZero;
+        if (_attributes & DataSetEnums::Indexed)
         {
             kCalculateIndexedSparseDataScaledMarginalCrossEntropyOutputDelta(activation, position, batch, stride, pUnit, pDelta,
                              _pbIndex->_pDevData, _pbSparseStart->_pDevData, _pbSparseEnd->_pDevData, _pbSparseIndex->_pDevData,
@@ -2389,21 +2389,21 @@ bool NNDataSet<T>::CalculateDataScaledMarginalCrossEntropyOutputDelta(Activation
 }
 
 template<typename T>
-bool NNDataSet<T>::CalculateHingeOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta)
+bool DataSet<T>::CalculateHingeOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta)
 {
-    NNFloat* pDataWeight = (_attributes & NNDataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
-    if (_attributes & NNDataSetEnums::Indexed)
+    Float* pDataWeight = (_attributes & DataSetEnums::Weighted) ? _pbDataWeight->_pDevData : nullptr;
+    if (_attributes & DataSetEnums::Indexed)
         kCalculateIndexedHingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbIndex->_pDevData, _pbData->_pDevData, pDataWeight);
     else
         kCalculateHingeOutputDelta(activation, position, batch, stride, pUnit, pDelta, _pbData->_pDevData, pDataWeight);
     return true;
 }
 
-std::vector<NNDataSetBase*> LoadNetCDF(const std::string& fname);
-bool SaveNetCDF(const std::string& fname, std::vector<NNDataSetBase*> vDataset);
-std::vector<NNDataSetBase*> LoadImageData(const std::string& fname);
-std::vector<NNDataSetBase*> LoadCSVData(const std::string& fname);
-std::vector<NNDataSetBase*> LoadJSONData(const std::string& fname);
-std::vector<NNDataSetBase*> LoadAudioData(const std::string& name);
+std::vector<DataSetBase*> LoadNetCDF(const std::string& fname);
+bool SaveNetCDF(const std::string& fname, std::vector<DataSetBase*> vDataset);
+std::vector<DataSetBase*> LoadImageData(const std::string& fname);
+std::vector<DataSetBase*> LoadCSVData(const std::string& fname);
+std::vector<DataSetBase*> LoadJSONData(const std::string& fname);
+std::vector<DataSetBase*> LoadAudioData(const std::string& name);
 
 #endif
