@@ -314,6 +314,9 @@
     BITONICWARPEXCHANGE_256(2) /**< Perform bitonic warp exchange with mask 2 */ \
     BITONICWARPEXCHANGE_256(1) /**< Perform bitonic warp exchange with mask 1 */
 
+/**
+ * Perform a bitonic merge operation on a 128-element array, resulting in a partially sorted array.
+ */
 #define BITONICMERGE128_256() \
     for (int i = 0; i < 4; i++) { \
         int idx1 = i; \
@@ -337,6 +340,9 @@
         v[idx2] = SHFL(value1, otgx); \
     }
 
+/**
+ * Perform a bitonic merge operation on a 256-element array, resulting in a partially sorted array.
+ */
 #define BITONICMERGE256_256() \
     for (int i = 0; i < 4; i++) { \
         int idx1 = i; \
@@ -360,6 +366,10 @@
         v[idx2] = SHFL(value1, otgx); \
     }
 
+
+/**
+ * Perform a bitonic exchange operation on a 32-element array, resulting in a partially sorted array.
+ */
 #define BITONICEXCHANGE32_256() \
     for (int i = 0; i < 4; i++) { \
         int idx1 = i * 2; \
@@ -377,6 +387,9 @@
         } \
     }
 
+/**
+ * Perform a bitonic exchange operation on a 64-element array, resulting in a partially sorted array.
+ */
 #define BITONICEXCHANGE64_256() \
     for (int i = 0; i < 4; i++) { \
         int idx1 = i * 2; \
@@ -395,6 +408,10 @@
     }
 
 
+
+/**
+ * Perform a bitonic sort operation on a 128-element array, resulting in a sorted 256-element array.
+ */
 #define BITONICSORT128_256() \
     BITONICSORT64_256() \
     BITONICMERGE128_256() \
@@ -405,6 +422,9 @@
     BITONICWARPEXCHANGE_256(2) \
     BITONICWARPEXCHANGE_256(1)
 
+/**
+ * Perform a bitonic sort operation on a 256-element array, resulting in a sorted 256-element array.
+ */
 #define BITONICSORT256_256() \
     BITONICSORT128_256() \
     BITONICMERGE256_256() \
@@ -416,6 +436,11 @@
     BITONICWARPEXCHANGE_256(2) \
     BITONICWARPEXCHANGE_256(1)
 
+/**
+ * Perform a bitonic warp exchange operation on a 512-element array using the specified mask, resulting in a partially sorted array.
+ * 
+ * @param mask The mask used for the warp exchange operation.
+ */
 #define BITONICWARPEXCHANGE_512(mask) \
     for (int i = 0; i < 16; i++) { \
         int idx = i; \
@@ -432,6 +457,9 @@
         v[idx] = flag ? value1 : value2; \
     }  
 
+/**
+ * Perform a bitonic sort operation on a 32-element array, resulting in a sorted 512-element array.
+ */
 #define BITONICSORT32_512() \
     BITONICWARPEXCHANGE_512(1) \
     BITONICWARPEXCHANGE_512(3) \
@@ -451,6 +479,9 @@
 
 
 
+/**
+ * Perform a bitonic merge operation on a 64-element array, resulting in a sorted 512-element array.
+ */
 #define BITONICMERGE64_512() \
     for (int i = 0; i < 2; i++) { \
         int idx = i * 32 + tgx; \
@@ -586,6 +617,9 @@
     }       
 
     
+/**
+ * Perform a bitonic sort operation on a 64-element array, resulting in a sorted 512-element array.
+ */
 #define BITONICSORT64_512() \
     BITONICSORT32_512() \
     BITONICMERGE64_512() \
@@ -595,6 +629,9 @@
     BITONICWARPEXCHANGE_512(2) \
     BITONICWARPEXCHANGE_512(1)
 
+/**
+ * Perform a bitonic merge operation on a 128-element array, resulting in a 512-element array.
+ */
 #define BITONICMERGE128_512() \
     for (int i = 0; i < 4; i++) { \
         int idx = i * 32 + tgx; \
@@ -729,6 +766,9 @@
         v[i + 14] = SHFL(value1, otgx); \
     }
 
+/**
+ * Perform a bitonic merge operation on a 256-element array, resulting in a 512-element array.
+ */
 #define BITONICMERGE256_512() \
     for (int i = 0; i < 8; i++) { \
         int idx = i * 32 + tgx; \
@@ -799,6 +839,9 @@
         v[i + 4] = SHFL(value1, otgx); \
     }
 
+/**
+ * Perform a bitonic merge operation on a 512-element array, resulting in a sorted 512-element array.
+ */
 #define BITONICMERGE512_512() \
     otgx = 31 - tgx; \
     \
@@ -817,6 +860,9 @@
         v[idx2] = flag ? value2 : value1; \
     } 
 
+/**
+ * Perform a bitonic exchange operation on a 32-element array, resulting in a partially sorted 512-element array.
+ */
 #define BITONICEXCHANGE32_512() \
     for (int i = 0; i < 16; i += 2) { \
         int idx1 = i; \
@@ -832,6 +878,9 @@
         } \
     }    
 
+/**
+ * Perform a bitonic exchange operation on a 64-element array, resulting in a partially sorted 512-element array.
+ */
 #define BITONICEXCHANGE64_512() \
     for (int i = 0; i < 8; i++) { \
         int idx1 = i * 2; \
@@ -848,6 +897,9 @@
     }
 
 
+/**
+ * Perform a bitonic exchange operation on a 128-element array, resulting in a partially sorted 512-element array.
+ */
 #define BITONICEXCHANGE128_512() \
     for (int i = 0; i < 8; i++) { \
         int idx1 = i * 2; \
@@ -863,6 +915,9 @@
         } \
     }
 
+/**
+ * Perform a bitonic sort operation on a 128-element array, resulting in a sorted 512-element array.
+ */
 #define BITONICSORT128_512() \
     BITONICSORT64_512() \
     BITONICMERGE128_512() \
@@ -873,6 +928,9 @@
     BITONICWARPEXCHANGE_512(2) \
     BITONICWARPEXCHANGE_512(1)
 
+/**
+ * Perform a bitonic sort operation on a 256-element array, resulting in a sorted 512-element array.
+ */
 #define BITONICSORT256_512() \
     BITONICSORT128_512() \
     BITONICMERGE256_512() \
@@ -884,6 +942,9 @@
     BITONICWARPEXCHANGE_512(2) \
     BITONICWARPEXCHANGE_512(1)
 
+/**
+ * Perform a bitonic sort operation on a 512-element array, resulting in a sorted 512-element array.
+ */
 #define BITONICSORT512_512() \
     BITONICSORT256_512() \
     BITONICMERGE512_512() \
