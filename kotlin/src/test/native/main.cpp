@@ -160,7 +160,7 @@ int main(int argc, char** argv)
 
         size_t width = x * y * z;
 
-        kCalculateTopK(dUnitBuffer, outputScores, outputIndexes, batchSize, width, k);
+        kCalculateOutput(dUnitBuffer, outputScores, outputIndexes, batchSize, width, k);
         cudaDeviceSynchronize();
 
         for (size_t i = 0; i < batchSize; ++i)
