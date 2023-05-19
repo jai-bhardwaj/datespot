@@ -263,12 +263,12 @@ inline PyObject* NetworkFunctions::Validate(PyObject* self, PyObject* args)
 inline PyObject* NetworkFunctions::Train(PyObject* self, PyObject* args)
 {
     uint32_t epochs = 0;
-    NNFloat alpha = 0.0;
-    NNFloat lambda = 0.0;
-    NNFloat lambda1 = 0.0;
-    NNFloat mu = 0.0;
-    NNFloat mu1 = 0.0;
-    auto pNetwork = parsePtrAndSixValues<Network, uint32_t, NNFloat, NNFloat, NNFloat, NNFloat, NNFloat>(
+    Float alpha = 0.0;
+    Float lambda = 0.0;
+    Float lambda1 = 0.0;
+    Float mu = 0.0;
+    Float mu1 = 0.0;
+    auto pNetwork = parsePtrAndSixValues<Network, uint32_t, Float, Float, Float, Float, Float>(
         args, epochs, alpha, lambda, lambda1, mu, mu1, "neural network", "OIfffff");
     if (!pNetwork)
         return nullptr;
@@ -310,7 +310,7 @@ inline PyObject* NetworkFunctions::CalculateOutput(PyObject* self, PyObject* arg
     if (!pNetwork)
         return nullptr;
 
-    GpuBuffer<NNFloat>* pbKey = reinterpret_cast<GpuBuffer<NNFloat>*>(PyCapsule_GetPointer(pbKeyCapsule, "float gpu buffer"));
+    GpuBuffer<Float>* pbKey = reinterpret_cast<GpuBuffer<Float>*>(PyCapsule_GetPointer(pbKeyCapsule, "float gpu buffer"));
     GpuBuffer<uint32_t>* pbValue = reinterpret_cast<GpuBuffer<uint32_t>*>(PyCapsule_GetPointer(pbValueCapsule, "unsigned gpu buffer"));
     if (!pbKey || !pbValue)
         return nullptr;
@@ -581,7 +581,7 @@ inline PyObject* NetworkFunctions::P2P_Allreduce(PyObject* self, PyObject* args)
     if (!pNetwork)
         return nullptr;
 
-    NNFloat* pBuffer = reinterpret_cast<NNFloat*>(PyCapsule_GetPointer(capsule, "float"));
+    Float* pBuffer = reinterpret_cast<Float*>(PyCapsule_GetPointer(capsule, "float"));
     if (!pBuffer)
         return nullptr;
 
