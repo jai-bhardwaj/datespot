@@ -2796,9 +2796,14 @@ void kCalculateDotProductDelta(Float* pDPDelta, Float* p0Vector, Float* pVector,
  */
 void kCalculateCosineDelta(Float* pDPDelta, Float* pDP, Float* pA, Float* pB, Float* p0Vector, Float* pVector, uint32_t batch, uint32_t stride, Float* pDelta0, Float beta0, Float* pDelta, Float beta, uint32_t inputStride);
 
-
-
 #ifdef __NVCC__
+
+/**
+ * @brief Convert a signed 64-bit integer to an unsigned 64-bit integer.
+ * 
+ * @param l The signed 64-bit integer to be converted.
+ * @return The converted unsigned 64-bit integer.
+ */
 __device__ inline uint64_t llitoulli(int64_t l)
 {
     uint64_t u;
@@ -2806,6 +2811,12 @@ __device__ inline uint64_t llitoulli(int64_t l)
     return u;
 }
 
+/**
+ * @brief Convert an unsigned 64-bit integer to a signed 64-bit integer.
+ * 
+ * @param u The unsigned 64-bit integer to be converted.
+ * @return The converted signed 64-bit integer.
+ */
 __device__ inline int64_t ullitolli(uint64_t u)
 {
     int64_t l;
@@ -2814,16 +2825,66 @@ __device__ inline int64_t ullitolli(uint64_t u)
 }
 
 #if (CUDA_VERSION >= 9000)
+
+/**
+ * @brief Shuffle the value of x within a warp, based on the specified lane.
+ * 
+ * @param x The value to be shuffled.
+ * @param lane The lane index within the warp.
+ * @return The shuffled value of x.
+ */
 #define SHFL(x, lane) __shfl_sync(0xffffffff, (x), (lane))
+
+/**
+ * @brief Perform a ballot operation across the threads within a warp based on the specified predicate.
+ * 
+ * @param predicate The predicate used for the ballot operation.
+ * @return The result of the ballot operation.
+ */
 #define BALLOT(predicate) __ballot_sync(0xffffffff, (predicate))
+
+/**
+ * @brief Check if any thread within a warp satisfies the specified predicate.
+ * 
+ * @param predicate The predicate to be checked.
+ * @return True if any thread within the warp satisfies the predicate, false otherwise.
+ */
 #define ANY(predicate) __any_sync(0xffffffff, (predicate))
+
 #else
+
+/**
+ * @brief Shuffle the value of x within a warp, based on the specified lane.
+ * 
+ * @param x The value to be shuffled.
+ * @param lane The lane index within the warp.
+ * @return The shuffled value of x.
+ */
 #define SHFL(x, lane) __shfl((x), (lane))
+
+/**
+ * @brief Perform a ballot operation across the threads within a warp based on the specified predicate.
+ * 
+ * @param predicate The predicate used for the ballot operation.
+ * @return The result of the ballot operation.
+ */
 #define BALLOT(predicate) __ballot(predicate)
+
+/**
+ * @brief Check if any thread within a warp satisfies the specified predicate.
+ * 
+ * @param predicate The predicate to be checked.
+ * @return True if any thread within the warp satisfies the predicate, false otherwise.
+ */
 #define ANY(predicate) __any(predicate)
+
 #endif
 
-
+/**
+ * @brief Reduce the error value by performing parallel reduction within a warp.
+ * 
+ * @param error The error value to be reduced.
+ */
 #define REDUCEERROR(error) \
     if (ANY(error != (Float)0.0)) \
     { \
@@ -2839,7 +2900,11 @@ __device__ inline int64_t ullitolli(uint64_t u)
         } \
     } 
 
-
+/**
+ * @brief Reduce the value 'a' by performing parallel reduction within a warp.
+ * 
+ * @param a The value 'a' to be reduced.
+ */
 #define REDUCE(a) \
     if (ANY((a) != (Float)0.0)) \
     { \
@@ -2849,9 +2914,7 @@ __device__ inline int64_t ullitolli(uint64_t u)
         a                      += SHFL((a), tgx ^ 4); \
         a                      += SHFL((a), tgx ^ 8); \
         a                      += SHFL((a), tgx ^ 16); \
-    } 
-
+    }
 
 #endif
-
 #endif
