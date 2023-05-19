@@ -1702,7 +1702,7 @@ void Network::CalculateTopK(const std::string& layer, uint32_t k, GpuBuffer<Floa
         if (_position + batch > _examples)
             batch = _examples - _position;
 
-        kCalculateTopK(pLayer->_pbUnit->_pDevData, pbKey->_pDevData, pbValue->_pDevData, batch, pLayer->_localStride, k);
+        kCalculateOutput(pLayer->_pbUnit->_pDevData, pbKey->_pDevData, pbValue->_pDevData, batch, pLayer->_localStride, k);
     }
     else
     {
