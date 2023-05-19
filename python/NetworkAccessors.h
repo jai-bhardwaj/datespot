@@ -508,7 +508,7 @@ PyObject* NetworkAccessors::GetSparsenessPenalty(PyObject* self, PyObject* args)
     std::optional<Network*> pNetwork = parsePtr<Network*>(args, "neural network");
     if (!pNetwork) return nullptr;
 
-    NNFloat p, beta;
+    Float p, beta;
     std::tie(p, beta) = pNetwork->GetSparsenessPenalty();
 
     return Py_BuildValue("[ff]", p, beta);
@@ -523,8 +523,8 @@ PyObject* NetworkAccessors::GetSparsenessPenalty(PyObject* self, PyObject* args)
  *         Returns nullptr if the neural network pointer is null.
  */
 PyObject* NetworkAccessors::SetSparsenessPenalty(PyObject* self, PyObject* args) {
-    NNFloat p = 0.0, beta = 0.0;
-    std::optional<Network*> pNetwork = parsePtrAndTwoValues<Network*, NNFloat, NNFloat>(args, p, beta, "neural network", "Off");
+    Float p = 0.0, beta = 0.0;
+    std::optional<Network*> pNetwork = parsePtrAndTwoValues<Network*, Float, Float>(args, p, beta, "neural network", "Off");
     if (!pNetwork) return nullptr;
     return Py_BuildValue("i", pNetwork->SetSparsenessPenalty(p, beta));
 }
@@ -541,7 +541,7 @@ PyObject* NetworkAccessors::GetDenoising(PyObject* self, PyObject* args) {
     std::optional<Network*> pNetwork = parsePtr<Network*>(args, "neural network");
     if (!pNetwork) return nullptr;
 
-    NNFloat denoisingP;
+    Float denoisingP;
     std::tie(denoisingP) = pNetwork->GetDenoising();
 
     return Py_BuildValue("f", denoisingP);
@@ -556,8 +556,8 @@ PyObject* NetworkAccessors::GetDenoising(PyObject* self, PyObject* args) {
  *         Returns nullptr if the neural network pointer is null.
  */
 PyObject* NetworkAccessors::SetDenoising(PyObject* self, PyObject* args) {
-    NNFloat denoisingP = 0.0;
-    std::optional<Network*> pNetwork = parsePtrAndOneValue<Network*, NNFloat>(args, denoisingP, "neural network", "Of");
+    Float denoisingP = 0.0;
+    std::optional<Network*> pNetwork = parsePtrAndOneValue<Network*, Float>(args, denoisingP, "neural network", "Of");
     if (!pNetwork) return nullptr;
     return Py_BuildValue("i", pNetwork->SetDenoising(denoisingP));
 }
@@ -574,7 +574,7 @@ PyObject* NetworkAccessors::GetDeltaBoost(PyObject* self, PyObject* args) {
     std::optional<Network*> pNetwork = parsePtr<Network*>(args, "neural network");
     if (!pNetwork) return nullptr;
 
-    NNFloat one, zero;
+    Float one, zero;
     std::tie(one, zero) = pNetwork->GetDeltaBoost();
 
     return Py_BuildValue("[ff]", one, zero);
@@ -589,8 +589,8 @@ PyObject* NetworkAccessors::GetDeltaBoost(PyObject* self, PyObject* args) {
  *         Returns nullptr if the neural network pointer is null.
  */
 PyObject* NetworkAccessors::SetDeltaBoost(PyObject* self, PyObject* args) {
-    NNFloat one = 0.0, zero = 0.0;
-    std::optional<Network*> pNetwork = parsePtrAndTwoValues<Network*, NNFloat, NNFloat>(args, one, zero, "neural network", "Off");
+    Float one = 0.0, zero = 0.0;
+    std::optional<Network*> pNetwork = parsePtrAndTwoValues<Network*, Float, Float>(args, one, zero, "neural network", "Off");
     if (!pNetwork) return nullptr;
     return Py_BuildValue("i", pNetwork->SetDeltaBoost(one, zero));
 }
@@ -673,7 +673,7 @@ PyObject* NetworkAccessors::GetLRN(PyObject* self, PyObject* args) {
     std::optional<Network*> pNetwork = parsePtr<Network*>(args, "neural network");
     if (!pNetwork) return nullptr;
 
-    NNFloat k, alpha, beta;
+    Float k, alpha, beta;
     uint32_t n;
     std::tie(k, n, alpha, beta) = pNetwork->GetLRN();
 
@@ -690,8 +690,8 @@ PyObject* NetworkAccessors::GetLRN(PyObject* self, PyObject* args) {
  */
 PyObject* NetworkAccessors::SetLRN(PyObject* self, PyObject* args) {
     uint32_t n = 0;
-    NNFloat k = 0.0, alpha = 0.0, beta = 0.0;
-    std::optional<Network*> pNetwork = parsePtrAndFourValues<Network*, NNFloat, uint32_t, NNFloat, NNFloat>(
+    Float k = 0.0, alpha = 0.0, beta = 0.0;
+    std::optional<Network*> pNetwork = parsePtrAndFourValues<Network*, Float, uint32_t, Float, Float>(
         args, k, n, alpha, beta, "neural network", "OfIff");
     if (!pNetwork) return nullptr;
     return Py_BuildValue("i", pNetwork->SetLRN(k, n, alpha, beta));
@@ -709,7 +709,7 @@ PyObject* NetworkAccessors::GetSMCE(PyObject* self, PyObject* args) {
     std::optional<Network*> pNetwork = parsePtr<Network*>(args, "neural network");
     if (!pNetwork) return nullptr;
 
-    NNFloat oneTarget, zeroTarget, oneScale, zeroScale;
+    Float oneTarget, zeroTarget, oneScale, zeroScale;
     std::tie(oneTarget, zeroTarget, oneScale, zeroScale) = pNetwork->GetSMCE();
 
     return Py_BuildValue("[ffff]", oneTarget, zeroTarget, oneScale, zeroScale);
@@ -724,8 +724,8 @@ PyObject* NetworkAccessors::GetSMCE(PyObject* self, PyObject* args) {
  *         Returns nullptr if the neural network pointer is null.
  */
 PyObject* NetworkAccessors::SetSMCE(PyObject* self, PyObject* args) {
-    NNFloat oneTarget = 0.0, zeroTarget = 0.0, oneScale = 0.0, zeroScale = 0.0;
-    std::optional<Network*> pNetwork = parsePtrAndFourValues<Network*, NNFloat, NNFloat, NNFloat, NNFloat>(
+    Float oneTarget = 0.0, zeroTarget = 0.0, oneScale = 0.0, zeroScale = 0.0;
+    std::optional<Network*> pNetwork = parsePtrAndFourValues<Network*, Float, Float, Float, Float>(
         args, oneTarget, zeroTarget, oneScale, zeroScale, "neural network", "Offff");
 
     if (!pNetwork) return nullptr;
