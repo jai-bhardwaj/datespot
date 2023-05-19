@@ -6,74 +6,104 @@
 #include <iostream>
 #include <vector>
 #include <cudnn.h>
+#include <string>
+#include <netcdf>
+#include <mpi.h>
 
 using namespace netCDF;
 using namespace netCDF::exceptions;
 
 class WeightDescriptor {
 private:
-    int _width;
-    int _height;
-    int _length;
-    int _breadth;
-    int _depth;
-    bool _bShared;
-    bool _bTransposed;
-    bool _bLocked;
-    Float _norm;
+    int _width; /**< The width of the object. */
+    int _height; /**< The height of the object. */
+    int _length; /**< The length of the object. */
+    int _breadth; /**< The breadth of the object. */
+    int _depth; /**< The depth of the object. */
+    bool _bShared; /**< Flag indicating whether the object is shared. */
+    bool _bTransposed; /**< Flag indicating whether the object is transposed. */
+    bool _bLocked; /**< Flag indicating whether the object is locked. */
+    Float _norm; /**< The norm of the object. */
 
 public:
     WeightDescriptor() :
-        _width(1),
-        _height(1),
-        _length(1),
-        _breadth(1),
-        _depth(1),
-        _bShared(false),
-        _bTransposed(false),
-        _bLocked(false),
-        _norm((Float)0.0)
+        _width(1), /**< The width of the object. Initialized to 1. */
+        _height(1), /**< The height of the object. Initialized to 1. */
+        _length(1), /**< The length of the object. Initialized to 1. */
+        _breadth(1), /**< The breadth of the object. Initialized to 1. */
+        _depth(1), /**< The depth of the object. Initialized to 1. */
+        _bShared(false), /**< Flag indicating whether the object is shared. Initialized to false. */
+        _bTransposed(false), /**< Flag indicating whether the object is transposed. Initialized to false. */
+        _bLocked(false), /**< Flag indicating whether the object is locked. Initialized to false. */
+        _norm((Float)0.0) /**< The norm of the object. Initialized to 0.0. */
     {
 
     }
 };
 
+/**
+ * @brief Dumps information about a cudnnTensorDescriptor_t.
+ *
+ * This function retrieves and prints information about the given cudnnTensorDescriptor_t,
+ * such as the data type, number of dimensions, dimensions, and strides.
+ *
+ * @param t The cudnnTensorDescriptor_t to dump.
+ */
 static void DumpTensor(cudnnTensorDescriptor_t t)
 {
     cudnnDataType_t dataType;
     int ndims;
     std::vector<int> vDim(16);
     std::vector<int> vStride(16);
+
     cudnnStatus_t cudnnStatus = cudnnGetTensorNdDescriptor(t, 8, &dataType, &ndims, vDim.data(), vStride.data());
     CUDNNERROR(cudnnStatus, "cudnnGetTensorNdDescriptor error");
+
     std::cout << "Tensor:   " << ndims << " dimensions" << std::endl;
     std::cout << "DataType: " << dataType << std::endl;
+
     for (int i = 0; i < ndims; i++)
         std::cout << i << " " << vDim[i] << " " << vStride[i] << std::endl;
+
     std::cout << std::endl;
 }
 
-
-#include <iostream>
-#include <vector>
-#include <cudnn.h>
-
+/**
+ * @brief Dumps information about a cudnnFilterDescriptor_t.
+ *
+ * This function retrieves and prints information about the given cudnnFilterDescriptor_t,
+ * such as the data type, format, number of dimensions, and dimensions.
+ *
+ * @param f The cudnnFilterDescriptor_t to dump.
+ */
 static void DumpFilter(cudnnFilterDescriptor_t f)
 {
     cudnnDataType_t dataType;
     cudnnTensorFormat_t format;
     int ndims;
     std::vector<int> vDim(16);
+
     cudnnStatus_t cudnnStatus = cudnnGetFilterNdDescriptor(f, 5, &dataType, &format, &ndims, vDim.data());
     CUDNNERROR(cudnnStatus, "cudnnGetFilterNdDescriptor error");
+
     std::cout << "Filter:   " << ndims << " dimensions" << std::endl;
     std::cout << "DataType: " << dataType << std::endl;
     std::cout << "Format:   " << format << std::endl;
+
     for (int i = 0; i < ndims; i++)
         std::cout << i << " " << vDim[i] << " " << std::endl;
+
     std::cout << std::endl;
 }
 
+/**
+ * @brief Dumps information about a cudnnConvolutionDescriptor_t.
+ *
+ * This function retrieves and prints information about the given cudnnConvolutionDescriptor_t,
+ * such as the data type, mode, number of dimensions, padding, strides, and upscaling factors.
+ *
+ * @param c The cudnnConvolutionDescriptor_t to dump.
+ */
 static void DumpConvolution(cudnnConvolutionDescriptor_t c)
 {
     cudnnDataType_t dataType;
@@ -82,23 +112,33 @@ static void DumpConvolution(cudnnConvolutionDescriptor_t c)
     std::vector<int> vPad(16);
     std::vector<int> vStride(16);
     std::vector<int> vUpscale(16);
+
     cudnnStatus_t cudnnStatus = cudnnGetConvolutionNdDescriptor(c, 5, &ndims, vPad.data(), vStride.data(), vUpscale.data(), &mode, &dataType);
     CUDNNERROR(cudnnStatus, "cudnnGetConvolutionNdDescriptor error");
+
     std::cout << "Convolution:   " << ndims << " dimensions" << std::endl;
     std::cout << "DataType:      " << dataType << std::endl;
     std::cout << "Mode:          " << mode << std::endl;
+
     for (int i = 0; i < ndims; i++)
         std::cout << i << " " << vPad[i] << " " << vStride[i] << " " << vUpscale[i] << std::endl;
+
     std::cout << std::endl;
 }
-
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <netcdf>
-#include <cstdint>
-
+/**
+ * @brief Loads weight descriptor from a NetCDF file.
+ *
+ * This function loads the weight descriptor from a NetCDF file specified by `fname`.
+ * It retrieves and populates the `WeightDescriptor` object `wd` with information such as
+ * input layer, output layer, normalization value, shared flag, transposed flag, locked flag,
+ * width, height, length, depth, breadth, bias values, and weight values (if not shared).
+ *
+ * @param fname The filename of the NetCDF file.
+ * @param nc The netCDF::NcFile object representing the NetCDF file.
+ * @param index The index of the weight to load.
+ * @param wd The WeightDescriptor object to populate with the loaded information.
+ * @return Returns `true` if the weight descriptor is loaded successfully, `false` otherwise.
+ */
 bool LoadWeightDescriptorNetCDF(const std::string& fname, netCDF::NcFile& nc, uint32_t index, WeightDescriptor& wd)
 {
     bool bResult = true;
@@ -237,11 +277,16 @@ bool LoadWeightDescriptorNetCDF(const std::string& fname, netCDF::NcFile& nc, ui
 
     return bResult;
 }
-
-#include <iostream>
-#include <cstdint>
-#include <mpi.h>
-
+/**
+ * @brief Broadcasts weight and bias data using MPI communication.
+ *
+ * This function broadcasts the weight and bias data of the WeightDescriptor `d`
+ * using MPI communication. The size of the weight vector and bias vector is first
+ * broadcasted, and then the actual data is broadcasted to all MPI processes.
+ *
+ * @param d The WeightDescriptor object containing the weight and bias data to broadcast.
+ * @return Returns 0 upon successful broadcast.
+ */
 uint64_t weights = d._vWeight.size();
 MPI_Bcast(&weights, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
 d._vWeight.resize(weights);
@@ -253,17 +298,28 @@ MPI_Bcast(d._vBias.data(), biases, MPI_FLOAT, 0, MPI_COMM_WORLD);
 return 0;
 }
 
+/**
+ * @brief Overloaded output stream operator for printing WeightDescriptor.
+ *
+ * This overloaded operator<< allows printing the WeightDescriptor `d` to an output stream.
+ * The information such as input layer, output layer, width, height, length, depth, breadth,
+ * shared flag, transposed flag, locked flag, and normalization value are printed.
+ *
+ * @param out The output stream to write the WeightDescriptor to.
+ * @param d The WeightDescriptor object to be printed.
+ * @return Returns the reference to the output stream after writing the WeightDescriptor.
+ */
 std::ostream& operator<< (std::ostream& out, WeightDescriptor& d)
 {
     if (getGpu()._id == 0)
     {
         out << "Input Layer:        " << d._inputLayer << std::endl;
         out << "Output Layer:       " << d._outputLayer << std::endl;
-        out << "Width               " << d._width << std::endl;
-        out << "Height              " << d._height << std::endl;
-        out << "Length              " << d._length << std::endl;
-        out << "Depth               " << d._depth << std::endl;
-        out << "Breadth             " << d._breadth << std::endl;
+        out << "Width:              " << d._width << std::endl;
+        out << "Height:             " << d._height << std::endl;
+        out << "Length:             " << d._length << std::endl;
+        out << "Depth:              " << d._depth << std::endl;
+        out << "Breadth:            " << d._breadth << std::endl;
         out << "bShared:            " << std::boolalpha << d._bShared << std::endl;
         out << "bTransposed:        " << std::boolalpha << d._bTransposed << std::endl;
         if (d._bShared)
@@ -277,7 +333,22 @@ std::ostream& operator<< (std::ostream& out, WeightDescriptor& d)
     return out;
 }
 
-
+/**
+ * @brief Weight constructor.
+ *
+ * This constructor initializes a Weight object with the specified input layer, output layer,
+ * shared flag, transposed flag, locked flag, and normalization value. It sets up the necessary
+ * descriptors and buffers based on the layer types and dimensions. For convolutional layers,
+ * it creates and sets cudnn descriptors for convolution and filter. For linear layers,
+ * it determines the appropriate dimensions and sizes for weight and bias buffers.
+ *
+ * @param inputLayer The input Layer object.
+ * @param outputLayer The output Layer object.
+ * @param bShared Flag indicating whether the weight is shared.
+ * @param bTransposed Flag indicating whether the weight is transposed.
+ * @param bLocked Flag indicating whether the weight is locked.
+ * @param norm The normalization value.
+ */
 Weight::Weight(Layer& inputLayer, Layer& outputLayer, bool bShared, bool bTransposed, bool bLocked, Float norm) :
     _inputLayer(inputLayer),
     _outputLayer(outputLayer),
@@ -450,11 +521,21 @@ Weight::Weight(Layer& inputLayer, Layer& outputLayer, bool bShared, bool bTransp
         _pbBiasGradient.reset(new GpuBuffer<Float>(_localBiasSize));
     }
 }
-
+/**
+ * @brief Weight destructor.
+ *
+ * This destructor is responsible for cleaning up the resources used by the Weight object.
+ * Currently, it does not perform any specific cleanup operations.
+ */
 Weight::~Weight()
 {
 }
-
+/**
+ * @brief Clear the velocity buffers.
+ *
+ * This function clears the velocity buffers used for weight and bias updates.
+ * It sets all the elements in the buffers to zero.
+ */
 void Weight::ClearVelocity()
 {
     std::memset(_pbWeightVelocity->_pDevData, 0, _localSize * sizeof(Float));
@@ -464,12 +545,24 @@ void Weight::ClearVelocity()
     if (_pbBiasGradientVelocity)
         std::memset(_pbBiasGradientVelocity->_pDevData, 0, _localBiasSize * sizeof(Float));
 }
-
+/**
+ * @brief Clear the gradient buffer.
+ *
+ * This function clears the gradient buffer used for weight updates.
+ * It sets all the elements in the buffer to zero.
+ */
 void Weight::ClearGradient()
 {
     std::memset(_pbWeightGradient->_pDevData, 0, _localSize * sizeof(Float));
 }
-
+/**
+ * @brief Randomize the weight values.
+ *
+ * This function randomizes the weight values based on the specified weight initialization method.
+ * If the weight is not shared, it generates random values using a random number generator and applies
+ * the appropriate scaling and biasing based on the selected weight initialization method.
+ * It also sets the bias values to zero and applies the bias initialization value.
+ */
 void Weight::Randomize()
 {
     if (!_bShared)
@@ -522,17 +615,36 @@ void Weight::Randomize()
     std::memset(_pbBias->_pDevData, 0, _localBiasSize * sizeof(Float));
     kScaleAndBias(_pbBias->_pDevData, _localBiasSize, (Float)0.0, -_outputLayer._biasInit);
 }
-
+/**
+ * @brief Lock the weight.
+ *
+ * This function locks the weight by setting the _bLocked member variable to true.
+ * When a weight is locked, its value is not updated during training.
+ */
 void Weight::Lock()
 {
     _bLocked = true;
 }
-
+/**
+ * @brief Unlock the weight.
+ *
+ * This function unlocks the weight by setting the _bLocked member variable to false.
+ * When a weight is unlocked, its value can be updated during training.
+ */
 void Weight::Unlock()
 {
     _bLocked = false;
 }
-
+/**
+ * @brief Refresh the state of the weight.
+ *
+ * This function refreshes the state of the weight based on the specified network and training mode.
+ * It initializes or resets the velocity buffers and gradient buffers based on the training mode.
+ * If the weight is convolutional, it retrieves and sets the convolutional algorithms and workspace size.
+ *
+ * @param pNetwork Pointer to the network containing the weight.
+ * @param mode Training mode.
+ */
 void Weight::RefreshState(Network* pNetwork, TrainingMode mode)
 {
     if (mode != TrainingMode::SGD)
@@ -659,7 +771,16 @@ void Weight::RefreshState(Network* pNetwork, TrainingMode mode)
         }
     }
 }
-
+/**
+ * @brief Calculate the regularization error of the weight.
+ *
+ * This function calculates the regularization error of the weight using the specified lambda and lambda1 values.
+ * If the weight is shared, the regularization error is 0.
+ *
+ * @param lambda Regularization parameter lambda.
+ * @param lambda1 Regularization parameter lambda1.
+ * @return Regularization error of the weight.
+ */
 Float Weight::CalculateRegularizationError(Float lambda, Float lambda1)
 {
     if (_bShared)
@@ -667,7 +788,21 @@ Float Weight::CalculateRegularizationError(Float lambda, Float lambda1)
     else
         return kCalculateRegularizationError(lambda, lambda1, _pbWeight->_pDevData, _localSize);
 }
-
+/**
+ * @brief Update the weights of the weight.
+ *
+ * This function updates the weights of the weight based on the specified training mode, batch index, and learning parameters.
+ * It performs different update operations based on the training mode and weight type (linear or convolutional).
+ *
+ * @param trainingMode Training mode.
+ * @param batch Batch index.
+ * @param alpha Learning rate.
+ * @param lambda Regularization parameter lambda.
+ * @param lambda1 Regularization parameter lambda1.
+ * @param mu Momentum parameter mu.
+ * @param mu1 Adam parameter mu1.
+ * @param t Adam parameter t.
+ */
 void Weight::UpdateWeights(TrainingMode trainingMode, uint32_t batch, Float alpha, Float lambda, Float lambda1, Float mu, Float mu1, Float t)
 {
     cublasStatus_t cstatus;
@@ -798,7 +933,18 @@ void Weight::UpdateWeights(TrainingMode trainingMode, uint32_t batch, Float alph
         }
     }
 }
-
+/**
+ * @brief Write the weight to a NetCDF file.
+ *
+ * This function writes the weight information to a NetCDF file, including its attributes, dimensions, and values.
+ * It also writes the bias information if available. The weight data is written as a variable named "weights" and the bias data is written as a variable named "bias".
+ *
+ * @param nc NetCDF file object.
+ * @param index Index of the weight.
+ * @param pWeight Pointer to the weight data. If nullptr, the weight data from the weight object will be used.
+ * @param pBias Pointer to the bias data. If nullptr, the bias data from the weight object will be used.
+ * @return True if writing to the NetCDF file is successful, false otherwise.
+ */
 bool Weight::WriteNetCDF(netCDF::NcFile& nc, uint32_t index, Float* pWeight, Float* pBias)
 {
     bool bResult = true;
@@ -847,7 +993,15 @@ bool Weight::WriteNetCDF(netCDF::NcFile& nc, uint32_t index, Float* pWeight, Flo
 
     return bResult;
 }
-
+/**
+ * @brief Copy weights from another weight object.
+ *
+ * This function copies the weights and biases from another weight object to this weight object.
+ * If the weight object is shared, the weights are copied to the shared weight object.
+ *
+ * @param pSrcWeight Pointer to the source weight object.
+ * @return True if the weights are successfully copied, false otherwise.
+ */
 bool Weight::CopyWeights(const Weight* pSrcWeight)
 {
     bool bValid = true;
@@ -880,7 +1034,15 @@ bool Weight::CopyWeights(const Weight* pSrcWeight)
     }
     return bValid;
 }
-
+/**
+ * @brief Set the weights using a vector of values.
+ *
+ * This function sets the weights of the weight object using the provided vector of values.
+ * If the weight object is shared, the weights are set in the shared weight object.
+ *
+ * @param vWeight The vector of weight values.
+ * @return True if the weights are successfully set, false otherwise.
+ */
 bool Weight::SetWeights(const std::vector<Float>& vWeight)
 {
     bool bValid = true;
@@ -912,7 +1074,14 @@ bool Weight::SetWeights(const std::vector<Float>& vWeight)
     }
     return bValid;
 }
-
+/**
+ * @brief Set the biases using a vector of values.
+ *
+ * This function sets the biases of the weight object using the provided vector of values.
+ *
+ * @param vBias The vector of bias values.
+ * @return True if the biases are successfully set, false otherwise.
+ */
 bool Weight::SetBiases(const std::vector<Float>& vBias)
 {
     bool bValid = true;
@@ -936,7 +1105,14 @@ bool Weight::SetBiases(const std::vector<Float>& vBias)
     }
     return bValid;
 }
-
+/**
+ * @brief Get the weights as a vector of values.
+ *
+ * This function retrieves the weights of the weight object and stores them in the provided vector.
+ *
+ * @param vWeight The vector to store the weight values.
+ * @return True if the weights are successfully retrieved, false otherwise.
+ */
 bool Weight::GetWeights(std::vector<Float>& vWeight)
 {
     bool bValid = true;
@@ -956,7 +1132,14 @@ bool Weight::GetWeights(std::vector<Float>& vWeight)
     }
     return bValid;
 }
-
+/**
+ * @brief Get the biases as a vector of values.
+ *
+ * This function retrieves the biases of the weight object and stores them in the provided vector.
+ *
+ * @param vBias The vector to store the bias values.
+ * @return True if the biases are successfully retrieved, false otherwise.
+ */
 bool Weight::GetBiases(std::vector<Float>& vBias)
 {
     bool bValid = true;
@@ -984,7 +1167,14 @@ bool Weight::GetBiases(std::vector<Float>& vBias)
     }
     return bValid;
 }
-
+/**
+ * @brief Get the dimensions of the weight.
+ *
+ * This function retrieves the dimensions of the weight object and stores them in the provided vector.
+ *
+ * @param dimensions The vector to store the dimensions of the weight.
+ * @return True if the dimensions are successfully retrieved, false otherwise.
+ */
 bool Weight::GetDimensions(std::vector<uint64_t>& dimensions)
 {
     if (_dimensionality < 2 || _dimensionality > 5) {
@@ -998,7 +1188,14 @@ bool Weight::GetDimensions(std::vector<uint64_t>& dimensions)
     if (_dimensionality == 5) dimensions.push_back(_breadth);
     return true;
 }
-
+/**
+ * @brief Dump the weight data to a file.
+ *
+ * This function dumps the weight data to a file specified by the provided filename.
+ *
+ * @param fname The name of the file to dump the weight data to.
+ * @param pBuffer A pointer to the buffer containing the weight data.
+ */
 void Weight::Dump(std::string fname, Float* pBuffer)
 {
     std::vector<Float> vWeight;
