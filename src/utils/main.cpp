@@ -133,29 +133,29 @@ int main(int argc, char** argv)
 
         int batch = cdl._batch;
 
-        std::vector<NNFloat> vPrecision(K);
-        std::vector<NNFloat> vRecall(K);
-        std::vector<NNFloat> vNDCG(K);
+        std::vector<Float> vPrecision(K);
+        std::vector<Float> vRecall(K);
+        std::vector<Float> vNDCG(K);
 
         std::vector<uint32_t> vDataPoints(batch);
 
-        auto pbTarget = std::make_unique<GpuBuffer<NNFloat>>(batch * STRIDE, true);
-        auto pbOutput = std::make_unique<GpuBuffer<NNFloat>>(batch * STRIDE, true);
+        auto pbTarget = std::make_unique<GpuBuffer<Float>>(batch * STRIDE, true);
+        auto pbOutput = std::make_unique<GpuBuffer<Float>>(batch * STRIDE, true);
 
-        auto pInputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[inputIndex].get());
-        auto pOutputDataSet = dynamic_cast<DataSet<NNFloat>*>(vDataSet[outputIndex].get());
-        auto pbKey = std::make_unique<GpuBuffer<NNFloat>>(batch * K, true);
+        auto pInputDataSet = dynamic_cast<DataSet<Float>*>(vDataSet[inputIndex].get());
+        auto pOutputDataSet = dynamic_cast<DataSet<Float>*>(vDataSet[outputIndex].get());
+        auto pbKey = std::make_unique<GpuBuffer<Float>>(batch * K, true);
         auto pbUIValue = std::make_unique<GpuBuffer<unsigned int>>(batch * K, true);
-        auto pbFValue = std::make_unique<GpuBuffer<NNFloat>>(batch * K, true);
+        auto pbFValue = std::make_unique<GpuBuffer<Float>>(batch * K, true);
 
-        NNFloat* pOutputValue = pbOutput->_pSysData;
+        Float* pOutputValue = pbOutput->_pSysData;
 
         bool bMultiGPU = (getGpu()._numprocs > 1);
 
-        std::unique_ptr<GpuBuffer<NNFloat>> pbMultiKey = nullptr;
-        std::unique_ptr<GpuBuffer<NNFloat>> pbMultiFValue = nullptr;
-        NNFloat* pMultiKey = nullptr;
-        NNFloat* pMultiFValue = nullptr;
+        std::unique_ptr<GpuBuffer<Float>> pbMultiKey = nullptr;
+        std::unique_ptr<GpuBuffer<Float>> pbMultiFValue = nullptr;
+        Float* pMultiKey = nullptr;
+        Float* pMultiFValue = nullptr;
 
         cudaIpcMemHandle_t keyMemHandle;
         cudaIpcMemHandle_t valMemHandle;
@@ -164,8 +164,8 @@ int main(int argc, char** argv)
         {
             if (getGpu()._id == 0)
             {
-                pbMultiKey = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * batch * K, true);
-                pbMultiFValue = std::make_unique<GpuBuffer<NNFloat>>(getGpu()._numprocs * batch * K, true);
+                pbMultiKey = std::make_unique<GpuBuffer<Float>>(getGpu()._numprocs * batch * K, true);
+                pbMultiFValue = std::make_unique<GpuBuffer<Float>>(getGpu()._numprocs * batch * K, true);
                 pMultiKey = pbMultiKey->_pDevData;
                 pMultiFValue = pbMultiFValue->_pDevData;
 
@@ -200,12 +200,12 @@ int main(int argc, char** argv)
             if (pos + batch > pNetwork->GetExamples())
                 batch = pNetwork->GetExamples() - pos;
 
-            NNFloat* pTarget = pbTarget->_pSysData;
-            memset(pTarget, 0, STRIDE * batch * sizeof(NNFloat));
+            Float* pTarget = pbTarget->_pSysData;
+            memset(pTarget, 0, STRIDE * batch * sizeof(Float));
 
-            const NNFloat* pOutputKey = pNetwork->GetUnitBuffer("Output");
-            NNFloat* pOut = pOutputValue;
-            cudaError_t status = cudaMemcpy(pOut, pOutputKey, batch * STRIDE * sizeof(NNFloat), cudaMemcpyDeviceToHost);
+            const Float* pOutputKey = pNetwork->GetUnitBuffer("Output");
+            Float* pOut = pOutputValue;
+            cudaError_t status = cudaMemcpy(pOut, pOutputKey, batch * STRIDE * sizeof(Float), cudaMemcpyDeviceToHost);
             RTERROR(status, "cudaMemcpy GpuBuffer::Download failed");
 
             for (int i = 0; i < batch; i++)
@@ -247,8 +247,8 @@ int main(int argc, char** argv)
                 uint32_t offset = K * getGpu()._id;
                 uint32_t kstride = K * getGpu()._numprocs;
 
-                cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(NNFloat), pbKey->_pDevData, K * sizeof(NNFloat), K * sizeof(NNFloat), batch, cudaMemcpyDefault);
-                cudaMemcpy2D(pMultiFValue + offset, kstride * sizeof(NNFloat), pbFValue->_pDevData, K * sizeof(NNFloat), K * sizeof(NNFloat), batch, cudaMemcpyDefault);
+                cudaMemcpy2D(pMultiKey + offset, kstride * sizeof(Float), pbKey->_pDevData, K * sizeof(Float), K * sizeof(Float), batch, cudaMemcpyDefault);
+                cudaMemcpy2D(pMultiFValue + offset, kstride * sizeof(Float), pbFValue->_pDevData, K * sizeof(Float), K * sizeof(Float), batch, cudaMemcpyDefault);
 
                 cudaDeviceSynchronize();
 
@@ -265,19 +265,19 @@ int main(int argc, char** argv)
                 pbKey->Download();
                 pbFValue->Download();
 
-                NNFloat* pKey = pbKey->_pSysData;
-                NNFloat* pValue = pbFValue->_pSysData;
+                Float* pKey = pbKey->_pSysData;
+                Float* pValue = pbFValue->_pSysData;
 
                 for (int i = 0; i < batch; i++)
                 {
-                    NNFloat p = vDataPoints[i];
+                    Float p = vDataPoints[i];
 
-                    NNFloat tp = 0.0f;
-                    NNFloat fp = 0.0f;
-                    NNFloat idcg = 0.0f;
-                    NNFloat dcg = 0.0f;
+                    Float tp = 0.0f;
+                    Float fp = 0.0f;
+                    Float idcg = 0.0f;
+                    Float dcg = 0.0f;
 
-                    for (NNFloat pp = 0.0f; pp < p; pp++)
+                    for (Float pp = 0.0f; pp < p; pp++)
                     {
                         idcg += 1.0f / log2(pp + 2.0f);
                     }
