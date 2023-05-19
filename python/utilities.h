@@ -461,7 +461,7 @@ py::object Utilities::CreateFloatGpuBuffer(py::object self, py::object args) {
     uint32_t size = args.cast<uint32_t>();
 
     try {
-        auto pGpuBuffer = std::make_unique<GpuBuffer<NNFloat>>(size, true);
+        auto pGpuBuffer = std::make_unique<GpuBuffer<Float>>(size, true);
         return py::capsule(pGpuBuffer.release(), "float gpu buffer");
     } catch (...) {
         throw std::bad_alloc();
@@ -476,7 +476,7 @@ py::object Utilities::CreateFloatGpuBuffer(py::object self, py::object args) {
  * @return None.
  */
 py::object Utilities::DeleteFloatGpuBuffer(py::object self, py::object args) {
-    std::unique_ptr<GpuBuffer<NNFloat>> pGpuBuffer = args.cast<std::unique_ptr<GpuBuffer<NNFloat>>>();
+    std::unique_ptr<GpuBuffer<Float>> pGpuBuffer = args.cast<std::unique_ptr<GpuBuffer<Float>>>();
     pGpuBuffer.reset();
     return Py_None;
 }
