@@ -17,7 +17,7 @@ public:
     void CopyConstants();
     void SetFastMath(bool flag);
     void Shutdown();
-    void SetNeuralNetwork(NNNetwork* pNetwork);
+    void SetNeuralNetwork(Network* pNetwork);
     void SetRandomSeed(unsigned long seed);
     void GetMemoryUsage(int* gpuMemory, int* cpuMemory);
 
@@ -45,7 +45,7 @@ private:
     cudaStream_t _cuDNNHandle;
     std::unique_ptr<GpuBuffer<unsigned long long int>> _pbAccumulator;
     GpuBuffer<unsigned long long int>* _pAccumulator;
-    NNNetwork* _pNetwork;
+    Network* _pNetwork;
     cudaDeviceProp _deviceProp;
     int _device;
     int _threadsPerBlock;
@@ -159,7 +159,7 @@ public:
         std::cout("GpuContext::Shutdown: Process %d out of %d finalized.\n", _id, _numprocs);
     }
 
-    void GpuContext::SetNeuralNetwork(NNNetwork* pNetwork) {
+    void GpuContext::SetNeuralNetwork(Network* pNetwork) {
         _pNetwork = pNetwork;
         _data._LRN_k = pNetwork->_LRN_k;
         _data._LRN_n = pNetwork->_LRN_n;
