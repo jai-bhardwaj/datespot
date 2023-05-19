@@ -186,7 +186,7 @@ PyObject* DataSetAccessors::CreateDenseDataSet(PyObject* self, PyObject* args) {
     descriptor._attributes = 0;
     descriptor._dim = dimensions;
     descriptor._examples = examples;
-    descriptor._sparseDensity = NNFloat(1.0);
+    descriptor._sparseDensity = Float(1.0);
 
     auto pDataSet = createDataSet(descriptor);
     pDataSet->CopyDenseData(numpyArray);
@@ -235,7 +235,7 @@ PyObject* DataSetAccessors::CreateSparseDataSet(PyObject* self, PyObject* args) 
     descriptor._attributes = DataSetEnums::Attributes::Sparse;
     descriptor._dim = dimensions;
     descriptor._examples = rows;
-    descriptor._sparseDensity = NNFloat(PyArray_SIZE(data)) / NNFloat(rows * cols);
+    descriptor._sparseDensity = Float(PyArray_SIZE(data)) / Float(rows * cols);
 
     int* indicesData = static_cast<int*>(PyArray_DATA(indices));
     npy_intp indicesSize = PyArray_SIZE(indices);
