@@ -483,23 +483,23 @@ static PyMethodDef tensorhubMethods[] = {
     
     {"CreateFloatGpuBuffer", Utilities::CreateFloatGpuBuffer, METH_VARARGS,
     /**
-     * @brief Create a GPU Buffer of type NNFloat and of the specified size.
+     * @brief Create a GPU Buffer of type Float and of the specified size.
      *
      * @param self The module object.
      * @param args The Python tuple containing the arguments.
      * @return PyObject* The result of the operation.
      */
-    "Create a GPU Buffer of type NNFloat and of the specified size"},
+    "Create a GPU Buffer of type Float and of the specified size"},
 
     {"DeleteFloatGpuBuffer", Utilities::DeleteFloatGpuBuffer, METH_VARARGS,
     /**
-     * @brief Delete a GPU Buffer of type NNFloat.
+     * @brief Delete a GPU Buffer of type Float.
      *
      * @param self The module object.
      * @param args The Python tuple containing the arguments.
      * @return PyObject* The result of the operation.
      */
-    "Delete a GPU Buffer of type NNFloat"},
+    "Delete a GPU Buffer of type Float"},
 
     {"CreateUnsignedGpuBuffer", Utilities::CreateUnsignedGpuBuffer, METH_VARARGS,
     /**
