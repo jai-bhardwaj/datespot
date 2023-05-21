@@ -10,112 +10,279 @@ constexpr int kFeedForwardSize = 2048;
 
 class TransformerModel {
 private:
-    class TransformerEncoderLayer {
+    class MultiHeadAttention {
+    private:
+        std::vector<std::vector<float>> weightQueries_;
+        std::vector<std::vector<float>> weightKeys_;
+        std::vector<std::vector<float>> weightValues_;
+        std::vector<float> biasQueries_;
+        std::vector<float> biasKeys_;
+        std::vector<float> biasValues_;
+
     public:
+        MultiHeadAttention() {
+            weightQueries_ = initializeWeights(kHiddenSize, kNumHeads, true);
+            weightKeys_ = initializeWeights(kHiddenSize, kNumHeads, true);
+            weightValues_ = initializeWeights(kHiddenSize, kNumHeads, true);
+            biasQueries_ = initializeBias(kNumHeads, true);
+            biasKeys_ = initializeBias(kNumHeads, true);
+            biasValues_ = initializeBias(kNumHeads, true);
+        }
+
         std::vector<float> operator()(const std::vector<float>& input, const std::vector<std::vector<float>>& attentionMask) {
-            std::vector<float> self_attention_output = selfAttention(input, attentionMask);
-            std::vector<float> add_norm_output = addAndNormalize(input, self_attention_output);
-            std::vector<float> feed_forward_output = feedForward(add_norm_output);
-            std::vector<float> encoder_output = addAndNormalize(add_norm_output, feed_forward_output);
-            return encoder_output;
+            const int inputSize = input.size();
+            const int numHeads = kNumHeads;
+
+            const int headSize = kHiddenSize / numHeads;
+
+            std::vector<float> attentionOutput(inputSize);
+            std::vector<float> output;
+
+            for (int head = 0; head < numHeads; ++head) {
+                std::vector<float> queries = linearTransform(input, weightQueries_[head], biasQueries_[head]);
+                std::vector<float> keys = linearTransform(input, weightKeys_[head], biasKeys_[head]);
+                std::vector<float> values = linearTransform(input, weightValues_[head], biasValues_[head]);
+
+                std::vector<float> attentionScores = computeAttentionScores(queries, keys, headSize, attentionMask);
+                std::vector<float> attentionWeights = softmax(attentionScores);
+                std::vector<float> weightedSum = weightedSumValues(attentionWeights, values, headSize);
+
+                attentionOutput = combineAttentionOutput(attentionOutput, weightedSum, head, numHeads);
+            }
+
+            output = linearTransform(attentionOutput, transpose(weightQueries_), transpose(biasQueries_));
+            return output;
         }
 
     private:
-        std::vector<float> selfAttention(const std::vector<float>& input, const std::vector<std::vector<float>>& attentionMask) {
-            std::vector<float> attention_output;
-            const int input_size = input.size();
-
-            std::vector<float> attention_scores(input_size);
-            for (int i = 0; i < input_size; i++) {
-                for (int j = 0; j < input_size; j++) {
-                    attention_scores[i] += input[i] * input[j] * attentionMask[i][j];
+        std::vector<std::vector<float>> initializeWeights(int inputSize, int numHeads, bool random) {
+            std::vector<std::vector<float>> weights(numHeads, std::vector<float>(inputSize, 0.0f));
+            if (random) {
+                for (int i = 0; i < numHeads; ++i) {
+                    for (int j = 0; j < inputSize; ++j) {
+                        weights[i][j] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                    }
                 }
             }
+            return weights;
+        }
 
-            std::vector<float> attention_weights(input_size);
+        std::vector<float> initializeBias(int numHeads, bool random) {
+            std::vector<float> bias(numHeads, 0.0f);
+            if (random) {
+                for (int i = 0; i < numHeads; ++i) {
+                    bias[i] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                }
+            }
+            return bias;
+        }
+
+        std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<float>& weight, float bias) {
+            const int inputSize = input.size();
+            std::vector<float> output(inputSize, 0.0f);
+            for (int i = 0; i < inputSize; ++i) {
+                output[i] = input[i] * weight[i] + bias;
+            }
+            return output;
+        }
+
+        std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<std::vector<float>>& weights, const std::vector<float>& biases) {
+            const int inputSize = input.size();
+            const int numHeads = weights.size();
+
+            std::vector<float> output(inputSize, 0.0f);
+            for (int i = 0; i < inputSize; ++i) {
+                for (int head = 0; head < numHeads; ++head) {
+                    output[i] += input[i] * weights[head][i] + biases[head];
+                }
+            }
+            return output;
+        }
+
+        std::vector<float> transpose(const std::vector<std::vector<float>>& matrix) {
+            const int numRows = matrix.size();
+            const int numCols = matrix[0].size();
+
+            std::vector<float> transposed(numCols * numRows);
+            for (int i = 0; i < numRows; ++i) {
+                for (int j = 0; j < numCols; ++j) {
+                    transposed[j * numRows + i] = matrix[i][j];
+                }
+            }
+            return transposed;
+        }
+
+        std::vector<float> computeAttentionScores(const std::vector<float>& queries, const std::vector<float>& keys, int headSize, const std::vector<std::vector<float>>& attentionMask) {
+            const int inputSize = queries.size();
+            std::vector<float> attentionScores(inputSize, 0.0f);
+
+            for (int i = 0; i < inputSize; ++i) {
+                for (int j = 0; j < inputSize; ++j) {
+                    float dotProduct = 0.0f;
+                    for (int k = 0; k < headSize; ++k) {
+                        dotProduct += queries[i * headSize + k] * keys[j * headSize + k];
+                    }
+                    attentionScores[i] += dotProduct * attentionMask[i][j];
+                }
+            }
+            return attentionScores;
+        }
+
+        std::vector<float> softmax(const std::vector<float>& input) {
+            std::vector<float> output = input;
+            const int size = input.size();
+
+            float maxVal = *std::max_element(input.begin(), input.end());
             float sum = 0.0f;
-            for (int i = 0; i < input_size; i++) {
-                attention_weights[i] = std::exp(attention_scores[i]);
-                sum += attention_weights[i];
-            }
-            for (int i = 0; i < input_size; i++) {
-                attention_weights[i] /= sum;
+            for (int i = 0; i < size; ++i) {
+                output[i] = std::exp(output[i] - maxVal);
+                sum += output[i];
             }
 
-            attention_output.reserve(input_size);
-            for (int i = 0; i < input_size; i++) {
-                float weighted_sum = 0.0f;
-                for (int j = 0; j < input_size; j++) {
-                    weighted_sum += attention_weights[j] * input[j];
-                }
-                attention_output.push_back(weighted_sum);
+            for (int i = 0; i < size; ++i) {
+                output[i] /= sum;
             }
-
-            return attention_output;
+            return output;
         }
 
-        std::vector<float> addAndNormalize(const std::vector<float>& input, const std::vector<float>& output) {
-            std::vector<float> normalized_output;
-            const int input_size = input.size();
+        std::vector<float> weightedSumValues(const std::vector<float>& attentionWeights, const std::vector<float>& values, int headSize) {
+            const int inputSize = values.size();
+            std::vector<float> output(inputSize, 0.0f);
 
-            normalized_output.reserve(input_size);
-            for (int i = 0; i < input_size; ++i) {
-                normalized_output.push_back((input[i] + output[i]) / std::sqrt(kHiddenSize));
+            for (int i = 0; i < inputSize; ++i) {
+                for (int j = 0; j < inputSize; ++j) {
+                    for (int k = 0; k < headSize; ++k) {
+                        output[i] += attentionWeights[j] * values[j * headSize + k];
+                    }
+                }
             }
-            return normalized_output;
+            return output;
         }
 
-        std::vector<float> feedForward(const std::vector<float>& input) {
-            std::vector<float> ff_output;
-            const int input_size = input.size();
+        std::vector<float> combineAttentionOutput(const std::vector<float>& attentionOutput, const std::vector<float>& weightedSum, int head, int numHeads) {
+            const int inputSize = attentionOutput.size();
+            const int headSize = kHiddenSize / numHeads;
+            std::vector<float> output(inputSize, 0.0f);
 
-            std::vector<std::vector<float>> weight1(input_size, std::vector<float>(kFeedForwardSize));
-            std::vector<float> bias1(kFeedForwardSize);
-            std::vector<std::vector<float>> weight2(kFeedForwardSize, std::vector<float>(input_size));
-            std::vector<float> bias2(input_size);
+            for (int i = 0; i < inputSize; ++i) {
+                output[i] = attentionOutput[i] + weightedSum[i] / std::sqrt(headSize);
+            }
+            return output;
+        }
+    };
 
-            std::vector<float> linear1_output(input_size);
-            for (int i = 0; i < input_size; i++) {
-                float weighted_sum = 0.0f;
-                for (int j = 0; j < input_size; j++) {
-                    weighted_sum += weight1[i][j] * input[j];
+    class PositionalEncoding {
+    private:
+        std::vector<std::vector<float>> encoding_;
+
+    public:
+        PositionalEncoding(int maxSeqLength, int hiddenSize) {
+            encoding_ = generatePositionalEncoding(maxSeqLength, hiddenSize);
+        }
+
+        std::vector<float> operator()(int position) const {
+            return encoding_[position];
+        }
+
+    private:
+        std::vector<std::vector<float>> generatePositionalEncoding(int maxSeqLength, int hiddenSize) {
+            std::vector<std::vector<float>> encoding(maxSeqLength, std::vector<float>(hiddenSize));
+            for (int pos = 0; pos < maxSeqLength; ++pos) {
+                for (int i = 0; i < hiddenSize; ++i) {
+                    float angle = pos / std::pow(10000.0f, (2.0f * i) / hiddenSize);
+                    encoding[pos][i] = (pos % 2 == 0) ? std::sin(angle) : std::cos(angle);
                 }
-                linear1_output[i] = weighted_sum + bias1[i];
             }
+            return encoding;
+        }
+    };
 
-            std::vector<float> activation_output(input_size);
-            for (int i = 0; i < input_size; i++) {
-                activation_output[i] = std::max(0.0f, linear1_output[i]);
-            }
+    class FeedForwardNetwork {
+    private:
+        std::vector<std::vector<float>> weight1_;
+        std::vector<float> bias1_;
+        std::vector<std::vector<float>> weight2_;
+        std::vector<float> bias2_;
 
-            std::vector<float> linear2_output(input_size);
-            for (int i = 0; i < input_size; i++) {
-                float weighted_sum = 0.0f;
-                for (int j = 0; j < input_size; j++) {
-                    weighted_sum += weight2[i][j] * activation_output[j];
+    public:
+        FeedForwardNetwork() {
+            weight1_ = initializeWeights(kHiddenSize, kFeedForwardSize, true);
+            bias1_ = initializeBias(kFeedForwardSize, true);
+            weight2_ = initializeWeights(kFeedForwardSize, kHiddenSize, true);
+            bias2_ = initializeBias(kHiddenSize, true);
+        }
+
+        std::vector<float> operator()(const std::vector<float>& input) {
+            std::vector<float> output = linearTransform(input, weight1_, bias1_);
+            output = relu(output);
+            output = linearTransform(output, weight2_, bias2_);
+            return output;
+        }
+
+    private:
+        std::vector<std::vector<float>> initializeWeights(int inputSize, int outputSize, bool random) {
+            std::vector<std::vector<float>> weights(inputSize, std::vector<float>(outputSize, 0.0f));
+            if (random) {
+                for (int i = 0; i < inputSize; ++i) {
+                    for (int j = 0; j < outputSize; ++j) {
+                        weights[i][j] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                    }
                 }
-                linear2_output[i] = weighted_sum + bias2[i];
             }
+            return weights;
+        }
 
-            ff_output = linear2_output;
-            return ff_output;
+        std::vector<float> initializeBias(int size, bool random) {
+            std::vector<float> bias(size, 0.0f);
+            if (random) {
+                for (int i = 0; i < size; ++i) {
+                    bias[i] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                }
+            }
+            return bias;
+        }
+
+        std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<std::vector<float>>& weights, const std::vector<float>& biases) {
+            const int inputSize = input.size();
+            const int outputSize = weights[0].size();
+
+            std::vector<float> output(outputSize, 0.0f);
+            for (int i = 0; i < outputSize; ++i) {
+                for (int j = 0; j < inputSize; ++j) {
+                    output[i] += input[j] * weights[j][i] + biases[i];
+                }
+            }
+            return output;
+        }
+
+        std::vector<float> relu(const std::vector<float>& input) {
+            std::vector<float> output = input;
+            const int size = input.size();
+            for (int i = 0; i < size; ++i) {
+                output[i] = std::max(0.0f, input[i]);
+            }
+            return output;
         }
     };
 
     std::vector<TransformerEncoderLayer> transformerEncoderLayers_;
+    MultiHeadAttention multiHeadAttention_;
+    PositionalEncoding positionalEncoding_;
+    FeedForwardNetwork feedForwardNetwork_;
 
 public:
-    TransformerModel() : transformerEncoderLayers_(kNumLayers) {}
+    TransformerModel() : transformerEncoderLayers_(kNumLayers), positionalEncoding_(1000, kHiddenSize) {}
 
     std::vector<float> operator()(const std::vector<float>& input) {
-        std::vector<std::vector<float>> attentionMask(input.size(), std::vector<float>(input.size(), 1.0f));
-        std::vector<float> encoder_output = input;
+        const int inputSize = input.size();
+        std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
+        std::vector<float> encoderOutput = applyPositionalEncoding(input);
 
         for (auto& layer : transformerEncoderLayers_) {
-            encoder_output = layer(encoder_output, attentionMask);
+            encoderOutput = layer(encoderOutput, attentionMask);
         }
 
-        return encoder_output;
+        return encoderOutput;
     }
 
     void printOutput(const std::vector<float>& output) {
@@ -138,6 +305,19 @@ public:
         }
 
         return result;
+    }
+
+private:
+    std::vector<float> applyPositionalEncoding(const std::vector<float>& input) {
+        const int inputSize = input.size();
+        std::vector<float> output(inputSize);
+
+        for (int i = 0; i < inputSize; ++i) {
+            std::vector<float> positionalEncoding = positionalEncoding_(i);
+            output[i] = input[i] + positionalEncoding[i];
+        }
+
+        return output;
     }
 };
 
