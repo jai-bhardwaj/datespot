@@ -1179,4 +1179,784 @@ __global__ void LAUNCH_BOUNDS() kCalculateLinearL2HingeOutputDelta_kernel(uint32
         pDelta[uOffset + pos] = w * diff;
     }
 }
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
 
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? min(static_cast<Float>(0.0f), diff) : max(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (a > Zero);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (One / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(static_cast<Float>(0.0f), diff) : max(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (a > Zero);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (One / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(static_cast<Float>(0.0f), diff) : max(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (a > Zero);
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight, Float slope)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a > Zero) + (a <= Zero) * slope);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight, Float slope)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a > Zero) + (a <= Zero) * slope);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight, Float slope)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a > Zero) + (a <= Zero) * slope);
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight, Float alpha)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= Zero) + (a < Zero) * (a + alpha));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight, Float alpha)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= Zero) + (a < Zero) * (a + alpha));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight, Float alpha)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= Zero) + (a < Zero) * (a + alpha));
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight, Float alpha, Float lambda)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= Zero) * lambda + (a < Zero) * (lambda * alpha * exp(a)));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight, Float alpha, Float lambda)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= Zero) * lambda + (a < Zero) * (lambda * alpha * exp(a)));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight, Float alpha, Float lambda)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= Zero) * lambda + (a < Zero) * (lambda * alpha * exp(a)));
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+template<typename T>
+void kCalculateL2HingeOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight, Float slope, Float alpha, Float lambda)
+{
+    dim3 grid(batch, (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock);
+
+    switch (activation)
+    {
+        case Sigmoid:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+        
+        case Tanh:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+
+        case Linear:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+
+        case RectifiedLinear:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+            
+        case LeakyRectifiedLinear:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+
+        case ExponentialLinear:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+
+        case ScaledExponentialLinear:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+
+        case SoftMax:
+            kCalculateL2HingeOutputDelta_kernel<<<grid, getGpu()._threadsPerBlock>>>(position, batch, stride, pUnit, pDelta, pData, pDataWeight, slope, alpha, lambda);
+            LAUNCHERROR("kCalculateL2HingeOutputDelta_kernel");
+            break;
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 256.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * a * (static_cast<Float>(1.0) - a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 256.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * a * (static_cast<Float>(1.0) - a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 128.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * a * (static_cast<Float>(1.0) - a);
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (static_cast<Float>(1.0) - a * a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 256.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (static_cast<Float>(1.0) - a * a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 128.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (static_cast<Float>(1.0) - a * a);
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 256.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 128.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<T>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (a > static_cast<Float>(0.0));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 256.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (a > static_cast<Float>(0.0));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / 128.0);
+        Float diff = a - fabsf(t);
+        diff = (t > static_cast<Float>(0.0)) ? fminf(static_cast<Float>(0.0), diff) : fmaxf(static_cast<Float>(0.0), diff);
+        pDelta[uOffset + pos] = w * diff * (a > static_cast<Float>(0.0));
+    }
+}
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight, Float slope)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a > 0.0f) + (a <= 0.0f) * slope);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight, Float slope)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a > 0.0f) + (a <= 0.0f) * slope);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight, Float slope)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a > 0.0f) + (a <= 0.0f) * slope);
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight, Float alpha)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= 0.0f) + (a < 0.0f) * (a + alpha));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight, Float alpha)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= 0.0f) + (a < 0.0f) * (a + alpha));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight, Float alpha)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= 0.0f) + (a < 0.0f) * (a + alpha));
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight, Float alpha, Float lambda)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= 0.0f) * lambda + (a < 0.0f) * (lambda * alpha * expf(a)));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight, Float alpha, Float lambda)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= 0.0f) * lambda + (a < 0.0f) * (lambda * alpha * expf(a)));
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight, Float alpha, Float lambda)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff * ((a >= 0.0f) * lambda + (a < 0.0f) * (lambda * alpha * expf(a)));
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateIndexedSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
+{
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float diff = a - fabsf(t);
+        diff = (t > 0.0f) ? min(0.0f, diff) : max(0.0f, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
