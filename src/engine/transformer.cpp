@@ -2,6 +2,8 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
 constexpr int kNumLayers = 6;
 constexpr int kNumHeads = 8;
@@ -60,7 +62,7 @@ private:
             if (random) {
                 for (int i = 0; i < numHeads; ++i) {
                     for (int j = 0; j < inputSize; ++j) {
-                        weights[i][j] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                        weights[i][j] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / inputSize);
                     }
                 }
             }
@@ -71,19 +73,10 @@ private:
             std::vector<float> bias(numHeads, 0.0f);
             if (random) {
                 for (int i = 0; i < numHeads; ++i) {
-                    bias[i] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                    bias[i] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / kHiddenSize);
                 }
             }
             return bias;
-        }
-
-        std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<float>& weight, float bias) {
-            const int inputSize = input.size();
-            std::vector<float> output(inputSize, 0.0f);
-            for (int i = 0; i < inputSize; ++i) {
-                output[i] = input[i] * weight[i] + bias;
-            }
-            return output;
         }
 
         std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<std::vector<float>>& weights, const std::vector<float>& biases) {
@@ -116,16 +109,42 @@ private:
             const int inputSize = queries.size();
             std::vector<float> attentionScores(inputSize, 0.0f);
 
-            for (int i = 0; i < inputSize; ++i) {
-                for (int j = 0; j < inputSize; ++j) {
-                    float dotProduct = 0.0f;
-                    for (int k = 0; k < headSize; ++k) {
-                        dotProduct += queries[i * headSize + k] * keys[j * headSize + k];
-                    }
-                    attentionScores[i] += dotProduct * attentionMask[i][j];
-                }
-            }
+            float* queriesDev;
+            float* keysDev;
+            float* attentionScoresDev;
+
+            cudaMalloc((void**)&queriesDev, inputSize * headSize * sizeof(float));
+            cudaMalloc((void**)&keysDev, inputSize * headSize * sizeof(float));
+            cudaMalloc((void**)&attentionScoresDev, inputSize * sizeof(float));
+
+            cudaMemcpy(queriesDev, queries.data(), inputSize * headSize * sizeof(float), cudaMemcpyHostToDevice);
+            cudaMemcpy(keysDev, keys.data(), inputSize * headSize * sizeof(float), cudaMemcpyHostToDevice);
+
+            dim3 blockDim(16, 16);
+            dim3 gridDim((inputSize + blockDim.x - 1) / blockDim.x, (inputSize + blockDim.y - 1) / blockDim.y);
+
+            computeAttentionScoresKernel<<<gridDim, blockDim>>>(queriesDev, keysDev, attentionScoresDev, inputSize, headSize);
+
+            cudaMemcpy(attentionScores.data(), attentionScoresDev, inputSize * sizeof(float), cudaMemcpyDeviceToHost);
+
+            cudaFree(queriesDev);
+            cudaFree(keysDev);
+            cudaFree(attentionScoresDev);
+
             return attentionScores;
+        }
+
+        __global__ void computeAttentionScoresKernel(const float* queries, const float* keys, float* attentionScores, int inputSize, int headSize) {
+            int i = blockIdx.x * blockDim.x + threadIdx.x;
+            int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+            if (i < inputSize && j < inputSize) {
+                float dotProduct = 0.0f;
+                for (int k = 0; k < headSize; ++k) {
+                    dotProduct += queries[i * headSize + k] * keys[j * headSize + k];
+                }
+                attentionScores[i] += dotProduct * attentionMask[i][j];
+            }
         }
 
         std::vector<float> softmax(const std::vector<float>& input) {
@@ -225,7 +244,7 @@ private:
             if (random) {
                 for (int i = 0; i < inputSize; ++i) {
                     for (int j = 0; j < outputSize; ++j) {
-                        weights[i][j] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                        weights[i][j] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / inputSize);
                     }
                 }
             }
@@ -236,7 +255,7 @@ private:
             std::vector<float> bias(size, 0.0f);
             if (random) {
                 for (int i = 0; i < size; ++i) {
-                    bias[i] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                    bias[i] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / size);
                 }
             }
             return bias;
