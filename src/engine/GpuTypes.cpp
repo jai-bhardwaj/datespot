@@ -86,34 +86,149 @@ private:
      */
     static constexpr int MaxGPUs = 32;
 
+    /**
+     * @brief Flag indicating whether ECC (Error Correction Code) support is available.
+     */
     bool _bECCSupport;
+
+    /**
+     * @brief Flag indicating whether host memory can be mapped to the GPU.
+     */
     bool _bCanMapHostMemory;
+
+    /**
+     * @brief Flag indicating whether CPU validation is enabled.
+     */
     bool _bCPUValidate;
+
+    /**
+     * @brief Flag indicating whether unified memory is enabled.
+     */
     bool _bUnifiedMemory;
+
+    /**
+     * @brief Flag indicating whether the current process is a single node.
+     */
     bool _bSingleNode;
+
+    /**
+     * @brief Flag indicating whether peer-to-peer access between GPUs is enabled.
+     */
     bool _bP2P;
+
+    /**
+     * @brief The acceptable error value for comparisons.
+     */
     float _acceptableError;
+
+    /**
+     * @brief The total CPU memory available.
+     */
     unsigned long long int _totalCPUMemory;
+
+    /**
+     * @brief The total GPU memory available.
+     */
     unsigned long long int _totalGPUMemory;
+
+    /**
+     * @brief The number of processes.
+     */
     int _numprocs;
+
+    /**
+     * @brief The ID of the current process.
+     */
     int _id;
+
+    /**
+     * @brief The SM (Streaming Multiprocessor) version.
+     */
     int _sm_version;
+
+    /**
+     * @brief The major version of SM.
+     */
     int _sm_major;
+
+    /**
+     * @brief The warp size.
+     */
     int _warpSize;
+
+    /**
+     * @brief The maximum number of sparse connections supported.
+     */
     int _maxSparse;
+
+    /**
+     * @brief The maximum number of analog sparse connections supported.
+     */
     int _maxSparseAnalog;
+
+    /**
+     * @brief The cuBLAS handle for GPU operations.
+     */
     cudaStream_t _cuBLASHandle;
+
+    /**
+     * @brief The cuDNN handle for GPU deep neural network operations.
+     */
     cudaStream_t _cuDNNHandle;
+
+    /**
+     * @brief The accumulator for parallel operations.
+     */
     std::unique_ptr<GpuBuffer<unsigned long long int>> _pbAccumulator;
+
+    /**
+     * @brief Pointer to the accumulator for parallel operations.
+     */
     GpuBuffer<unsigned long long int>* _pAccumulator;
+
+    /**
+     * @brief Pointer to the network object.
+     */
     Network* _pNetwork;
+
+    /**
+     * @brief The device properties of the current GPU.
+     */
     cudaDeviceProp _deviceProp;
+
+    /**
+     * @brief The GPU device ID.
+     */
     int _device;
+
+    /**
+     * @brief The number of threads per block.
+     */
     int _threadsPerBlock;
+
+    /**
+     * @brief The number of bits in a warp.
+     */
     int _warpBits;
+
+    /**
+     * @brief The bitmask for a warp.
+     */
     int _warpMask;
+
+    /**
+     * @brief GPU data used in computations.
+     */
     GpuData _data;
+
+    /**
+     * @brief The cuRand generator for GPU random number generation.
+     */
     curandGenerator_t _RNG;
+
+    /**
+     * @brief The total memory available.
+     */
     int _totalMemory;
 
     /**
@@ -203,22 +318,90 @@ public:
     GpuContext::GpuContext()
         : _bECCSupport(false),
         _bCanMapHostMemory(false),
+
+        /**
+         * @brief Flag indicating whether CPU validation is enabled.
+         */
         _bCPUValidate(false),
+
+        /**
+         * @brief Flag indicating whether unified memory is enabled.
+         */
         _bUnifiedMemory(false),
+
+        /**
+         * @brief Flag indicating whether the current process is a single node.
+         */
         _bSingleNode(false),
+
+        /**
+         * @brief Flag indicating whether peer-to-peer access between GPUs is enabled.
+         */
         _bP2P(false),
+
+        /**
+         * @brief The acceptable error value for comparisons.
+         */
         _acceptableError(cAcceptableError),
+
+        /**
+         * @brief The total CPU memory available.
+         */
         _totalCPUMemory(0),
+
+        /**
+         * @brief The total GPU memory available.
+         */
         _totalGPUMemory(0),
+
+        /**
+         * @brief The number of processes.
+         */
         _numprocs(1),
+
+        /**
+         * @brief The ID of the current process.
+         */
         _id(0),
+
+        /**
+         * @brief The SM (Streaming Multiprocessor) version.
+         */
         _sm_version(SM_3X),
+
+        /**
+         * @brief The major version of SM.
+         */
         _sm_major(0),
+
+        /**
+         * @brief The warp size.
+         */
         _warpSize(32),
+
+        /**
+         * @brief The maximum number of sparse connections supported.
+         */
         _maxSparse(SM_3X_MAXSPARSE),
+
+        /**
+         * @brief The maximum number of analog sparse connections supported.
+         */
         _maxSparseAnalog(SM_3X_MAXSPARSEANALOG),
+
+        /**
+         * @brief The cuBLAS handle for GPU operations.
+         */
         _cuBLASHandle(0),
+
+        /**
+         * @brief The cuDNN handle for GPU deep neural network operations.
+         */
         _cuDNNHandle(0),
+
+        /**
+         * @brief The accumulator for parallel operations.
+         */
         _pbAccumulator()
     {
     }
@@ -248,14 +431,52 @@ public:
      */
     void GpuContext::Startup(int argc, char** argv)
     {
+        /**
+         * @brief Initializes CUDA.
+         */
         InitializeCUDA();
+
+        /**
+         * @brief Initializes MPI.
+         *
+         * @param argc Number of command line arguments.
+         * @param argv Array of command line arguments.
+         */
         InitializeMPI(argc, argv);
+
+        /**
+         * @brief Initializes GPU devices.
+         */
         InitializeGPUDevices();
+
+        /**
+         * @brief Selects compatible GPU.
+         */
         SelectCompatibleGPU();
+
+        /**
+         * @brief Enables peer access between GPUs.
+         */
         EnablePeerAccess();
+
+        /**
+         * @brief Initializes cuBLAS on the GPU.
+         */
         InitializeCuBLAS();
+
+        /**
+         * @brief Initializes cuDNN on the GPU.
+         */
         InitializeCuDNN();
+
+        /**
+         * @brief Initializes cuRand on the GPU.
+         */
         InitializeCuRand();
+
+        /**
+         * @brief Copies constants.
+         */
         CopyConstants();
     }
 
@@ -264,9 +485,24 @@ public:
      */
     void GpuContext::CopyConstants()
     {
+        /**
+         * @brief Sets the GPU data for kernels.
+         */
         SetKernelsGpuData();
+
+        /**
+         * @brief Sets the GPU data for KLoss.
+         */
         SetKLossGpuData();
+
+        /**
+         * @brief Sets the GPU data for KActivation.
+         */
         SetKActivationGpuData();
+
+        /**
+         * @brief Sets the GPU data for KDelta.
+         */
         SetKDeltaGpuData();
     }
 
@@ -298,8 +534,16 @@ public:
      */
     void GpuContext::Shutdown()
     {
+        /**
+         * @brief Resets the accumulator for the current instance.
+         */
         _pbAccumulator.reset();
 
+        /**
+         * @brief Shuts down cuBLAS on the GPU for the current process.
+         *
+         * @param _device The GPU device ID.
+         */
         std::cout("GpuContext::Shutdown: Shutting down cuBLAS on GPU for process %d\n", _device);
         cublasStatus_t cstatus = cublasDestroy(_cuBLASHandle);
         if (cstatus != CUBLAS_STATUS_SUCCESS)
@@ -308,6 +552,11 @@ public:
         }
         std::cout("GpuContext::Shutdown: CuBLAS shut down on GPU for process %d\n", _device);
 
+        /**
+         * @brief Shuts down cuDNN on the GPU for the current process.
+         *
+         * @param _device The GPU device ID.
+         */
         std::cout("GpuContext::Shutdown: Shutting down cuDNN on GPU for process %d\n", _device);
         cudnnStatus_t cdstatus = cudnnDestroy(_cuDNNHandle);
         if (cdstatus != CUDNN_STATUS_SUCCESS)
@@ -316,6 +565,11 @@ public:
         }
         std::cout("GpuContext::Shutdown: CuDNN shut down on GPU for process %d\n", _device);
 
+        /**
+         * @brief Shuts down cuRand on the GPU for the current process.
+         *
+         * @param _device The GPU device ID.
+         */
         std::cout("GpuContext::Shutdown: Shutting down cuRand on GPU for process %d\n", _device);
         curandStatus_t crstatus = curandDestroyGenerator(_RNG);
         if (crstatus != CURAND_STATUS_SUCCESS)
@@ -324,10 +578,17 @@ public:
         }
         std::cout("GpuContext::Shutdown: CuRand shut down on GPU for process %d\n", _device);
 
+        /**
+         * @brief Exits the CUDA thread.
+         */
         cudaThreadExit();
 
+        /**
+         * @brief Finalizes the MPI process.
+         */
         MPI_Finalize();
         std::cout("GpuContext::Shutdown: Process %d out of %d finalized.\n", _id, _numprocs);
+
     }
 
     /**
@@ -337,26 +598,60 @@ public:
      */
     void GpuContext::SetNeuralNetwork(Network* pNetwork)
     {
+        /**
+         * @brief Sets the network object for the current instance.
+         *
+         * @param pNetwork Pointer to the network object.
+         */
         _pNetwork = pNetwork;
+
+        /**
+         * @brief Copies LRN (Local Response Normalization) parameters from the network object.
+         */
         _data._LRN_k = pNetwork->_LRN_k;
         _data._LRN_n = pNetwork->_LRN_n;
         _data._LRN_alpha = pNetwork->_LRN_alpha;
         _data._LRN_beta = pNetwork->_LRN_beta;
+
+        /**
+         * @brief Copies Maxout parameters from the network object.
+         */
         _data._maxout_k = pNetwork->_maxout_k;
+
+        /**
+         * @brief Copies sparseness penalty parameters from the network object.
+         */
         _data._bSparsenessPenalty = pNetwork->_bSparsenessPenalty;
         _data._sparsenessPenalty_p = pNetwork->_sparsenessPenalty_p;
         _data._sparsenessPenalty_beta = pNetwork->_sparsenessPenalty_beta;
+
+        /**
+         * @brief Copies denoising parameters from the network object.
+         */
         _data._bDenoising = pNetwork->_bDenoising;
         _data._denoising_p = pNetwork->_denoising_p;
         _data._denoising_q = 1.0f / (1.0f - pNetwork->_denoising_p);
+
+        /**
+         * @brief Copies delta boost parameters from the network object.
+         */
         _data._deltaBoost_one = pNetwork->_deltaBoost_one;
         _data._deltaBoost_zero = pNetwork->_deltaBoost_zero;
+
+        /**
+         * @brief Copies SMCE (Softmax Cross Entropy) parameters from the network object.
+         */
         _data._SMCE_oneTarget = pNetwork->_SMCE_oneTarget;
         _data._SMCE_zeroTarget = pNetwork->_SMCE_zeroTarget;
         _data._SMCE_oneScale = pNetwork->_SMCE_oneScale;
         _data._SMCE_zeroScale = pNetwork->_SMCE_zeroScale;
+
+        /**
+         * @brief Copies shuffle indices and checks if shuffling is enabled.
+         */
         _data._bShuffleIndices = pNetwork->_bShuffleIndices && (pNetwork->_mode == Mode::Training);
         _data._pShuffleIndex = pNetwork->_pShuffleIndex;
+
         CopyConstants();
     }
 
