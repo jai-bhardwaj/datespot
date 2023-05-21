@@ -6,13 +6,13 @@
 __constant__ GpuData cData;
 
 /**
- * @brief Computes the atomic maximum of a floating-point value.
+ * @brief Computes the atomic maximum of a Floating-point value.
  *
  * @param address Pointer to the value to update.
  * @param val The value to compare and update.
  * @return The previous value before the update.
  */
-__device__ inline float atomicMax(float* address, float val)
+__device__ inline Float atomicMax(Float* address, Float val)
 {
     int* address_as_i = reinterpret_cast<int*>(address);
     int old = *address_as_i;
@@ -20,10 +20,10 @@ __device__ inline float atomicMax(float* address, float val)
     do
     {
         assumed = old;
-        old = atomicCAS(address_as_i, assumed, __float_as_int(fmaxf(val, __int_as_float(assumed))));
+        old = atomicCAS(address_as_i, assumed, __Float_as_int(fmaxf(val, __int_as_Float(assumed))));
     }
     while (assumed != old);
-    return __int_as_float(old);
+    return __int_as_Float(old);
 }
 
 /**
@@ -52,12 +52,12 @@ void GetKActivationGpuData()
  * @param pData Pointer to the data array.
  * @param size Number of elements in the array.
  */
-__global__ void kCalculateSigmoidActivation_kernel(float* pData, uint64_t size)
+__global__ void kCalculateSigmoidActivation_kernel(Float* pData, uint64_t size)
 {
     uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
     if (pos < size)
     {
-        float a = 1.0f / (1.0f + expf(-pData[pos]));
+        Float a = 1.0f / (1.0f + expf(-pData[pos]));
         pData[pos] = a;
     }
 }
@@ -68,7 +68,7 @@ __global__ void kCalculateSigmoidActivation_kernel(float* pData, uint64_t size)
  * @param pData Pointer to the data array.
  * @param size Number of elements in the array.
  */
-void kCalculateSigmoidActivation(float* pData, uint64_t size)
+void kCalculateSigmoidActivation(Float* pData, uint64_t size)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
@@ -82,7 +82,7 @@ void kCalculateSigmoidActivation(float* pData, uint64_t size)
  * @param pData Pointer to the data array.
  * @param size Number of elements in the array.
  */
-__global__ void kCalculateTanhActivation_kernel(float* pData, uint64_t size)
+__global__ void kCalculateTanhActivation_kernel(Float* pData, uint64_t size)
 {
     uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
     if (pos < size)
@@ -95,7 +95,7 @@ __global__ void kCalculateTanhActivation_kernel(float* pData, uint64_t size)
  * @param pData Pointer to the data array.
  * @param size Number of elements in the array.
  */
-void kCalculateTanhActivation(float* pData, uint64_t size)
+void kCalculateTanhActivation(Float* pData, uint64_t size)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
@@ -109,7 +109,7 @@ void kCalculateTanhActivation(float* pData, uint64_t size)
  * @param pData Pointer to the data array.
  * @param size Number of elements in the array.
  */
-__global__ void kCalculateRELUActivation_kernel(float* pData, uint64_t size)
+__global__ void kCalculateRELUActivation_kernel(Float* pData, uint64_t size)
 {
     uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
     if (pos < size)
@@ -122,7 +122,7 @@ __global__ void kCalculateRELUActivation_kernel(float* pData, uint64_t size)
  * @param pData Pointer to the data array.
  * @param size Number of elements in the array.
  */
-void kCalculateRELUActivation(float* pData, uint64_t size)
+void kCalculateRELUActivation(Float* pData, uint64_t size)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
@@ -137,12 +137,12 @@ void kCalculateRELUActivation(float* pData, uint64_t size)
  * @param size Number of elements in the array.
  * @param slope Slope of the activation function for negative input values.
  */
-__global__ void kCalculateLRELUActivation_kernel(float* pData, uint64_t size, float slope)
+__global__ void kCalculateLRELUActivation_kernel(Float* pData, uint64_t size, Float slope)
 {
     uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
     if (pos < size)
     {
-        float val = pData[pos];
+        Float val = pData[pos];
         pData[pos] = fmaxf(val, val * slope);
     }
 }
@@ -154,7 +154,7 @@ __global__ void kCalculateLRELUActivation_kernel(float* pData, uint64_t size, fl
  * @param size Number of elements in the array.
  * @param slope Slope of the activation function for negative input values.
  */
-void kCalculateLRELUActivation(float* pData, uint64_t size, float slope)
+void kCalculateLRELUActivation(Float* pData, uint64_t size, Float slope)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
@@ -169,12 +169,12 @@ void kCalculateLRELUActivation(float* pData, uint64_t size, float slope)
  * @param size Number of elements in the array.
  * @param alpha Alpha value for the activation function.
  */
-__global__ void kCalculateELUActivation_kernel(float* pData, uint64_t size, float alpha)
+__global__ void kCalculateELUActivation_kernel(Float* pData, uint64_t size, Float alpha)
 {
     uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
     if (pos < size)
     {
-        float x = pData[pos];
+        Float x = pData[pos];
         pData[pos] = (x > 0.0f) ? x : alpha * (expf(x) - 1.0f);
     }
 }
@@ -186,7 +186,7 @@ __global__ void kCalculateELUActivation_kernel(float* pData, uint64_t size, floa
  * @param size Number of elements in the array.
  * @param alpha Alpha value for the activation function.
  */
-void kCalculateELUActivation(float* pData, uint64_t size, float alpha)
+void kCalculateELUActivation(Float* pData, uint64_t size, Float alpha)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
@@ -202,12 +202,12 @@ void kCalculateELUActivation(float* pData, uint64_t size, float alpha)
  * @param alpha Alpha value for the activation function.
  * @param lambda Lambda value for the activation function.
  */
-__global__ void kCalculateSELUActivation_kernel(float* pData, uint64_t size, float alpha, float lambda)
+__global__ void kCalculateSELUActivation_kernel(Float* pData, uint64_t size, Float alpha, Float lambda)
 {
     uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
     if (pos < size)
     {
-        float x = pData[pos];
+        Float x = pData[pos];
         pData[pos] = (x > 0.0f) ? lambda * x : lambda * alpha * (expf(x) - 1.0f);
     }
 }
@@ -220,7 +220,7 @@ __global__ void kCalculateSELUActivation_kernel(float* pData, uint64_t size, flo
  * @param alpha Alpha value for the activation function.
  * @param lambda Lambda value for the activation function.
  */
-void kCalculateSELUActivation(float* pData, uint64_t size, float alpha, float lambda)
+void kCalculateSELUActivation(Float* pData, uint64_t size, Float alpha, Float lambda)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
@@ -234,25 +234,25 @@ void kCalculateSELUActivation(float* pData, uint64_t size, float alpha, float la
  * @param pData Pointer to the data array.
  * @param stride The stride between elements in pData.
  */
-__global__ void kCalculateSoftMaxActivation_kernel(float* pData, uint32_t stride)
+__global__ void kCalculateSoftMaxActivation_kernel(Float* pData, uint32_t stride)
 {
     __shared__ unsigned long long int sAccumulator;
-    __shared__ float sMaxValue;
+    __shared__ Float sMaxValue;
 
     if (threadIdx.x == 0)
     {
         sAccumulator = 0;
-        sMaxValue = -std::numeric_limits<float>::infinity();
+        sMaxValue = -std::numeric_limits<Float>::infinity();
     }
     __syncthreads();
 
     pData += blockIdx.x * stride;
     uint32_t pos = threadIdx.x;
-    float maxValue = -std::numeric_limits<float>::infinity();
+    Float maxValue = -std::numeric_limits<Float>::infinity();
 
     while (pos < stride)
     {
-        float z = pData[pos];
+        Float z = pData[pos];
         maxValue = fmaxf(z, maxValue);
         pos += blockDim.x;
     }
@@ -270,10 +270,10 @@ __global__ void kCalculateSoftMaxActivation_kernel(float* pData, uint32_t stride
     maxValue = sMaxValue;
 
     pos = threadIdx.x;
-    float sum = 0.0f;
+    Float sum = 0.0f;
     while (pos < stride)
     {
-        float z = pData[pos];
+        Float z = pData[pos];
         sum += expf(z - maxValue);
         pos += blockDim.x;
     }
@@ -287,13 +287,13 @@ __global__ void kCalculateSoftMaxActivation_kernel(float* pData, uint32_t stride
     if (tgx == 0)
         atomicAdd(&sAccumulator, lsum);
     __syncthreads();
-    float norm = 1.0f / static_cast<float>((double)sAccumulator * ONEOVERERRORSCALE);
+    Float norm = 1.0f / static_cast<Float>((double)sAccumulator * ONEOVERERRORSCALE);
 
     pos = threadIdx.x;
     while (pos < stride)
     {
-        float z = pData[pos];
-        float a = expf(z - maxValue);
+        Float z = pData[pos];
+        Float a = expf(z - maxValue);
         pData[pos] = fminf(1.0f, a * norm);
         pos += blockDim.x;
     }
@@ -306,7 +306,7 @@ __global__ void kCalculateSoftMaxActivation_kernel(float* pData, uint32_t stride
  * @param batch Number of batches in the data array.
  * @param stride The stride between elements in pData.
  */
-void kCalculateSoftMaxActivation(float* pData, uint32_t batch, uint32_t stride)
+void kCalculateSoftMaxActivation(Float* pData, uint32_t batch, uint32_t stride)
 {
     uint32_t blocks = CalculateBlocks(batch);
     uint32_t threads = getGpu()._threadsPerBlock;
