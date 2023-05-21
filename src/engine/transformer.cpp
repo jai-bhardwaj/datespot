@@ -12,8 +12,8 @@ class TransformerModel {
 private:
     class TransformerEncoderLayer {
     public:
-        std::vector<float> operator()(const std::vector<float>& input) {
-            std::vector<float> self_attention_output = selfAttention(input);
+        std::vector<float> operator()(const std::vector<float>& input, const std::vector<std::vector<float>>& attentionMask) {
+            std::vector<float> self_attention_output = selfAttention(input, attentionMask);
             std::vector<float> add_norm_output = addAndNormalize(input, self_attention_output);
             std::vector<float> feed_forward_output = feedForward(add_norm_output);
             std::vector<float> encoder_output = addAndNormalize(add_norm_output, feed_forward_output);
@@ -21,14 +21,14 @@ private:
         }
 
     private:
-        std::vector<float> selfAttention(const std::vector<float>& input) {
+        std::vector<float> selfAttention(const std::vector<float>& input, const std::vector<std::vector<float>>& attentionMask) {
             std::vector<float> attention_output;
             const int input_size = input.size();
 
             std::vector<float> attention_scores(input_size);
             for (int i = 0; i < input_size; i++) {
                 for (int j = 0; j < input_size; j++) {
-                    attention_scores[i] += input[i] * input[j];
+                    attention_scores[i] += input[i] * input[j] * attentionMask[i][j];
                 }
             }
 
@@ -56,8 +56,11 @@ private:
 
         std::vector<float> addAndNormalize(const std::vector<float>& input, const std::vector<float>& output) {
             std::vector<float> normalized_output;
-            for (std::size_t i = 0; i < input.size(); ++i) {
-                normalized_output.push_back(input[i] + output[i]);
+            const int input_size = input.size();
+
+            normalized_output.reserve(input_size);
+            for (int i = 0; i < input_size; ++i) {
+                normalized_output.push_back((input[i] + output[i]) / std::sqrt(kHiddenSize));
             }
             return normalized_output;
         }
@@ -105,10 +108,11 @@ public:
     TransformerModel() : transformerEncoderLayers_(kNumLayers) {}
 
     std::vector<float> operator()(const std::vector<float>& input) {
+        std::vector<std::vector<float>> attentionMask(input.size(), std::vector<float>(input.size(), 1.0f));
         std::vector<float> encoder_output = input;
 
         for (auto& layer : transformerEncoderLayers_) {
-            encoder_output = layer(encoder_output);
+            encoder_output = layer(encoder_output, attentionMask);
         }
 
         return encoder_output;
