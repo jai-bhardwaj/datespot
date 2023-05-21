@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <random>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
@@ -58,11 +59,15 @@ private:
 
     private:
         std::vector<std::vector<float>> initializeWeights(int inputSize, int numHeads, bool random) {
-            std::vector<std::vector<float>> weights(numHeads, std::vector<float>(inputSize, 0.0f));
+            std::vector<std::vector<float>> weights(numHeads, std::vector<float>(inputSize));
             if (random) {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / inputSize));
+
                 for (int i = 0; i < numHeads; ++i) {
                     for (int j = 0; j < inputSize; ++j) {
-                        weights[i][j] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / inputSize);
+                        weights[i][j] = distribution(gen);
                     }
                 }
             }
@@ -70,10 +75,14 @@ private:
         }
 
         std::vector<float> initializeBias(int numHeads, bool random) {
-            std::vector<float> bias(numHeads, 0.0f);
+            std::vector<float> bias(numHeads);
             if (random) {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / kHiddenSize));
+
                 for (int i = 0; i < numHeads; ++i) {
-                    bias[i] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / kHiddenSize);
+                    bias[i] = distribution(gen);
                 }
             }
             return bias;
@@ -83,7 +92,7 @@ private:
             const int inputSize = input.size();
             const int numHeads = weights.size();
 
-            std::vector<float> output(inputSize, 0.0f);
+            std::vector<float> output(inputSize);
             for (int i = 0; i < inputSize; ++i) {
                 for (int head = 0; head < numHeads; ++head) {
                     output[i] += input[i] * weights[head][i] + biases[head];
@@ -240,11 +249,15 @@ private:
 
     private:
         std::vector<std::vector<float>> initializeWeights(int inputSize, int outputSize, bool random) {
-            std::vector<std::vector<float>> weights(inputSize, std::vector<float>(outputSize, 0.0f));
+            std::vector<std::vector<float>> weights(inputSize, std::vector<float>(outputSize));
             if (random) {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / inputSize));
+
                 for (int i = 0; i < inputSize; ++i) {
                     for (int j = 0; j < outputSize; ++j) {
-                        weights[i][j] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / inputSize);
+                        weights[i][j] = distribution(gen);
                     }
                 }
             }
@@ -252,10 +265,14 @@ private:
         }
 
         std::vector<float> initializeBias(int size, bool random) {
-            std::vector<float> bias(size, 0.0f);
+            std::vector<float> bias(size);
             if (random) {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / size));
+
                 for (int i = 0; i < size; ++i) {
-                    bias[i] = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * std::sqrt(2.0f / size);
+                    bias[i] = distribution(gen);
                 }
             }
             return bias;
@@ -265,7 +282,7 @@ private:
             const int inputSize = input.size();
             const int outputSize = weights[0].size();
 
-            std::vector<float> output(outputSize, 0.0f);
+            std::vector<float> output(outputSize);
             for (int i = 0; i < outputSize; ++i) {
                 for (int j = 0; j < inputSize; ++j) {
                     output[i] += input[j] * weights[j][i] + biases[i];
@@ -280,6 +297,19 @@ private:
             for (int i = 0; i < size; ++i) {
                 output[i] = std::max(0.0f, input[i]);
             }
+            return output;
+        }
+    };
+
+    class TransformerEncoderLayer {
+    private:
+        MultiHeadAttention multiHeadAttention_;
+        FeedForwardNetwork feedForwardNetwork_;
+
+    public:
+        std::vector<float> operator()(const std::vector<float>& input, const std::vector<std::vector<float>>& attentionMask) {
+            std::vector<float> attentionOutput = multiHeadAttention_(input, attentionMask);
+            std::vector<float> output = feedForwardNetwork_(attentionOutput);
             return output;
         }
     };
