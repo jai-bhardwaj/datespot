@@ -20,7 +20,7 @@ void GetKDeltaGpuData()
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, T* pData, NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -28,15 +28,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel(uint32_t pos
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * static_cast<NNFloat>(1.0 / (T(1) << 8 * sizeof(T)));
-        pDelta[uOffset + pos] = w * (a - t) * a * (static_cast<NNFloat>(1.0) - a);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * static_cast<Float>(1.0 / (T(1) << 8 * sizeof(T)));
+        pDelta[uOffset + pos] = w * (a - t) * a * (static_cast<Float>(1.0) - a);
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, uint8_t* pData, NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, uint8_t* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -44,15 +44,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel<uint8_t>(uin
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(UINT8_MAX));
-        pDelta[uOffset + pos] = w * (a - t) * a * (static_cast<NNFloat>(1.0) - a);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(UINT8_MAX));
+        pDelta[uOffset + pos] = w * (a - t) * a * (static_cast<Float>(1.0) - a);
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel<int8_t>(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, int8_t* pData, NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel<int8_t>(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, int8_t* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -60,15 +60,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateSigmoidOutputDelta_kernel<int8_t>(uint
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(INT8_MAX));
-        pDelta[uOffset + pos] = w * (a - t) * a * (static_cast<NNFloat>(1.0) - a);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(INT8_MAX));
+        pDelta[uOffset + pos] = w * (a - t) * a * (static_cast<Float>(1.0) - a);
     }
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, T* pData, NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -76,10 +76,10 @@ __global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel(uint32_t positi
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
-        pDelta[uOffset + pos] = w * (a - t) * (static_cast<NNFloat>(1.0) - a * a);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        pDelta[uOffset + pos] = w * (a - t) * (static_cast<Float>(1.0) - a * a);
     }
 }
 
@@ -87,7 +87,7 @@ __global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel(uint32_t positi
 #include <cuda_fp16.h>
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const uint8_t* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const uint8_t* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -95,15 +95,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel<uint8_t>(uint32
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(UINT8_MAX));
-        pDelta[uOffset + pos] = w * (a - t) * (static_cast<NNFloat>(1.0) - a * a);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(UINT8_MAX));
+        pDelta[uOffset + pos] = w * (a - t) * (static_cast<Float>(1.0) - a * a);
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel<int8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const int8_t* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel<int8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const int8_t* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -111,15 +111,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateTanhOutputDelta_kernel<int8_t>(uint32_
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(INT8_MAX));
-        pDelta[uOffset + pos] = w * (a - t) * (static_cast<NNFloat>(1.0) - a * a);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(INT8_MAX));
+        pDelta[uOffset + pos] = w * (a - t) * (static_cast<Float>(1.0) - a * a);
     }
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const T* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const T* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -127,15 +127,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel(uint32_t posi
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const uint8_t* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const uint8_t* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -143,15 +143,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel<uint8_t>(uint
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(UINT8_MAX));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(UINT8_MAX));
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel<int8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const int8_t* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel<int8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const int8_t* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -159,15 +159,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateLinearOutputDelta_kernel<int8_t>(uint3
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(INT8_MAX));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(INT8_MAX));
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const T* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const T* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -175,15 +175,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel(uint32_t positi
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
-        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<NNFloat>(0.0));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<Float>(0.0));
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const uint8_t* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const uint8_t* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -191,15 +191,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel<uint8_t>(uint32
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(UINT8_MAX));
-        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<NNFloat>(0.0));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(UINT8_MAX));
+        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<Float>(0.0));
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel<char>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const char* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel<char>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const char* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -207,15 +207,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateRELUOutputDelta_kernel<char>(uint32_t 
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(128.0));
-        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<NNFloat>(0.0));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(128.0));
+        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<Float>(0.0));
     }
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const T* pData, const NNFloat* pDataWeight, NNFloat slope)
+__global__ void LAUNCH_BOUNDS() kCalculateLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const T* pData, const Float* pDataWeight, Float slope)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -223,15 +223,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateLRELUOutputDelta_kernel(uint32_t posit
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
-        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<NNFloat>(0.0)) + (a <= static_cast<NNFloat>(0.0)) * slope;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<Float>(0.0)) + (a <= static_cast<Float>(0.0)) * slope;
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateLRELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const uint8_t* pData, const NNFloat* pDataWeight, NNFloat slope)
+__global__ void LAUNCH_BOUNDS() kCalculateLRELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const uint8_t* pData, const Float* pDataWeight, Float slope)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -239,15 +239,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateLRELUOutputDelta_kernel<uint8_t>(uint3
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(256.0));
-        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<NNFloat>(0.0)) + (a <= static_cast<NNFloat>(0.0)) * slope;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        pDelta[uOffset + pos] = w * (a - t) * (a > static_cast<Float>(0.0)) + (a <= static_cast<Float>(0.0)) * slope;
     }
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const T* pData, const NNFloat* pDataWeight, NNFloat alpha)
+__global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const T* pData, const Float* pDataWeight, Float alpha)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -255,15 +255,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel(uint32_t positio
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
-        pDelta[uOffset + pos] = w * (a - t) * (a >= static_cast<NNFloat>(0.0)) + (a < static_cast<NNFloat>(0.0)) * (a + alpha);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        pDelta[uOffset + pos] = w * (a - t) * (a >= static_cast<Float>(0.0)) + (a < static_cast<Float>(0.0)) * (a + alpha);
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const uint8_t* pData, const NNFloat* pDataWeight, NNFloat alpha)
+__global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const uint8_t* pData, const Float* pDataWeight, Float alpha)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -271,17 +271,17 @@ __global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel<uint8_t>(uint32_
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(256.0));
-        pDelta[uOffset + pos] = w * (a - t) * (a >= static_cast<NNFloat>(0.0)) + (a < static_cast<NNFloat>(0.0)) * (a + alpha);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        pDelta[uOffset + pos] = w * (a - t) * (a >= static_cast<Float>(0.0)) + (a < static_cast<Float>(0.0)) * (a + alpha);
     }
 }
 
 #include <cuda_fp16.h>
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const char* pData, const NNFloat* pDataWeight, NNFloat alpha)
+__global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const char* pData, const Float* pDataWeight, Float alpha)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -289,15 +289,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateELUOutputDelta_kernel(uint32_t positio
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(128.0));
-        pDelta[uOffset + pos] = w * (a - t) * ((a >= static_cast<NNFloat>(0.0)) + (a < static_cast<NNFloat>(0.0)) * (a + alpha));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(128.0));
+        pDelta[uOffset + pos] = w * (a - t) * ((a >= static_cast<Float>(0.0)) + (a < static_cast<Float>(0.0)) * (a + alpha));
     }
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const T* pData, const NNFloat* pDataWeight, NNFloat alpha, NNFloat lambda)
+__global__ void LAUNCH_BOUNDS() kCalculateSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const T* pData, const Float* pDataWeight, Float alpha, Float lambda)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -305,15 +305,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateSELUOutputDelta_kernel(uint32_t positi
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
-        pDelta[uOffset + pos] = w * (a - t) * ((a >= static_cast<NNFloat>(0.0)) * lambda + (a < static_cast<NNFloat>(0.0)) * (lambda * alpha * expf(a)));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        pDelta[uOffset + pos] = w * (a - t) * ((a >= static_cast<Float>(0.0)) * lambda + (a < static_cast<Float>(0.0)) * (lambda * alpha * expf(a)));
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateSELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const uint8_t* pData, const NNFloat* pDataWeight, NNFloat alpha, NNFloat lambda)
+__global__ void LAUNCH_BOUNDS() kCalculateSELUOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const uint8_t* pData, const Float* pDataWeight, Float alpha, Float lambda)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -321,15 +321,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateSELUOutputDelta_kernel<uint8_t>(uint32
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(256.0));
-        pDelta[uOffset + pos] = w * (a - t) * ((a >= static_cast<NNFloat>(0.0)) * lambda + (a < static_cast<NNFloat>(0.0)) * (lambda * alpha * expf(a)));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        pDelta[uOffset + pos] = w * (a - t) * ((a >= static_cast<Float>(0.0)) * lambda + (a < static_cast<Float>(0.0)) * (lambda * alpha * expf(a)));
     }
 }
 
 template <typename T>
-__global__ void LAUNCH_BOUNDS() kCalculateSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const T* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const T* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -337,15 +337,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateSoftMaxOutputDelta_kernel(uint32_t pos
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <>
-__global__ void LAUNCH_BOUNDS() kCalculateSoftMaxOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const NNFloat* pUnit, NNFloat* pDelta, const uint8_t* pData, const NNFloat* pDataWeight)
+__global__ void LAUNCH_BOUNDS() kCalculateSoftMaxOutputDelta_kernel<uint8_t>(uint32_t position, uint32_t batch, uint32_t stride, const Float* pUnit, Float* pDelta, const uint8_t* pData, const Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -353,15 +353,15 @@ __global__ void LAUNCH_BOUNDS() kCalculateSoftMaxOutputDelta_kernel<uint8_t>(uin
         uint64_t uOffset = blockIdx.x * stride;
         uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<NNFloat>(1.0);
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (static_cast<NNFloat>(1.0) / static_cast<NNFloat>(256.0));
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template<typename T>
-void kCalculateOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit, NNFloat* pDelta, T* pData, NNFloat* pDataWeight, NNFloat slope, NNFloat alpha, NNFloat lambda)
+void kCalculateOutputDelta(Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight, Float slope, Float alpha, Float lambda)
 {
     dim3 grid(batch, (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock);
     switch (activation)
@@ -486,8 +486,8 @@ void kCalculateOutputDelta(Activation activation, uint32_t position, uint32_t ba
 }
 template <typename T>
 __global__ void kCalculateIndexedSigmoidOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -496,17 +496,17 @@ __global__ void kCalculateIndexedSigmoidOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t) * a * (1.0f - a);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedSigmoidOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -515,17 +515,17 @@ __global__ void kCalculateIndexedSigmoidOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t) * a * (1.0f - a);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedSigmoidOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -534,17 +534,17 @@ __global__ void kCalculateIndexedSigmoidOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t) * a * (1.0f - a);
     }
 }
 
 template <typename T>
 __global__ void kCalculateIndexedTanhOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -553,17 +553,17 @@ __global__ void kCalculateIndexedTanhOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t) * (1.0f - a * a);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedTanhOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -572,16 +572,16 @@ __global__ void kCalculateIndexedTanhOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t) * (1.0f - a * a);
     }
 }
 template <>
 __global__ void kCalculateIndexedTanhOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -590,17 +590,17 @@ __global__ void kCalculateIndexedTanhOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t) * (1.0f - a * a);
     }
 }
 
 template <typename T>
 __global__ void kCalculateIndexedLinearOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -609,17 +609,17 @@ __global__ void kCalculateIndexedLinearOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedLinearOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -628,17 +628,17 @@ __global__ void kCalculateIndexedLinearOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedLinearOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -647,17 +647,17 @@ __global__ void kCalculateIndexedLinearOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <typename T>
 __global__ void kCalculateIndexedRELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -666,17 +666,17 @@ __global__ void kCalculateIndexedRELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t) * (a > 0.0f);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedRELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -685,17 +685,17 @@ __global__ void kCalculateIndexedRELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t) * (a > 0.0f);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedRELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -704,17 +704,17 @@ __global__ void kCalculateIndexedRELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t) * (a > 0.0f);
     }
 }
 
 template <typename T>
 __global__ void kCalculateIndexedLRELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight, NNFloat slope)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight, Float slope)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -723,17 +723,17 @@ __global__ void kCalculateIndexedLRELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t) * ((a > 0.0f) + (a <= 0.0f) * slope);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedLRELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight, NNFloat slope)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight, Float slope)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -742,17 +742,17 @@ __global__ void kCalculateIndexedLRELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t) * ((a > 0.0f) + (a <= 0.0f) * slope);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedLRELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight, NNFloat slope)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight, Float slope)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -761,16 +761,16 @@ __global__ void kCalculateIndexedLRELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t) * ((a > 0.0f) + (a <= 0.0f) * slope);
     }
 }
 template <typename T>
 __global__ void kCalculateIndexedELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight, NNFloat alpha)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight, Float alpha)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -779,17 +779,17 @@ __global__ void kCalculateIndexedELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t) * ((a >= 0.0f) + (a < 0.0f) * (a + alpha));
     }
 }
 
 template <>
 __global__ void kCalculateIndexedELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight, NNFloat alpha)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight, Float alpha)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -798,17 +798,17 @@ __global__ void kCalculateIndexedELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t) * ((a >= 0.0f) + (a < 0.0f) * (a + alpha));
     }
 }
 
 template <>
 __global__ void kCalculateIndexedELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight, NNFloat alpha)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight, Float alpha)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -817,17 +817,17 @@ __global__ void kCalculateIndexedELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t) * ((a >= 0.0f) + (a < 0.0f) * (a + alpha));
     }
 }
 
 template <typename T>
 __global__ void kCalculateIndexedSELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight, NNFloat alpha, NNFloat lambda)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight, Float alpha, Float lambda)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -836,17 +836,17 @@ __global__ void kCalculateIndexedSELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t) * ((a >= 0.0f) * lambda + (a < 0.0f) * (lambda * alpha * expf(a)));
     }
 }
 
 template <>
 __global__ void kCalculateIndexedSELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight, NNFloat alpha, NNFloat lambda)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight, Float alpha, Float lambda)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -855,17 +855,17 @@ __global__ void kCalculateIndexedSELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t) * ((a >= 0.0f) * lambda + (a < 0.0f) * (lambda * alpha * expf(a)));
     }
 }
 
 template <>
 __global__ void kCalculateIndexedSELUOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight, NNFloat alpha, NNFloat lambda)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight, Float alpha, Float lambda)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -874,17 +874,17 @@ __global__ void kCalculateIndexedSELUOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t) * ((a >= 0.0f) * lambda + (a < 0.0f) * (lambda * alpha * expf(a)));
     }
 }
 
 template <typename T>
 __global__ void kCalculateIndexedSoftMaxOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -893,17 +893,17 @@ __global__ void kCalculateIndexedSoftMaxOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = pData[dOffset + pos];
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedSoftMaxOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, unsigned char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, unsigned char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -912,17 +912,17 @@ __global__ void kCalculateIndexedSoftMaxOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 256.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 256.0f);
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 
 template <>
 __global__ void kCalculateIndexedSoftMaxOutputDelta_kernel(
-    uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, char* pData, NNFloat* pDataWeight)
+    uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, char* pData, Float* pDataWeight)
 {
     uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
     if (pos < stride)
@@ -931,16 +931,16 @@ __global__ void kCalculateIndexedSoftMaxOutputDelta_kernel(
         uint64_t dpos =
             pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset = dpos * stride;
-        NNFloat w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
-        NNFloat a = pUnit[uOffset + pos];
-        NNFloat t = static_cast<NNFloat>(pData[dOffset + pos]) * (1.0f / 128.0f);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : 1.0f;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (1.0f / 128.0f);
         pDelta[uOffset + pos] = w * (a - t);
     }
 }
 template <typename T>
 void kCalculateIndexedOutputDelta(
-    Activation activation, uint32_t position, uint32_t batch, uint32_t stride, NNFloat* pUnit,
-    NNFloat* pDelta, uint32_t* pIndex, T* pData, NNFloat* pDataWeight, NNFloat slope, NNFloat alpha, NNFloat lambda)
+    Activation activation, uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit,
+    Float* pDelta, uint32_t* pIndex, T* pData, Float* pDataWeight, Float slope, Float alpha, Float lambda)
 {
     dim3 grid(batch, (stride + getGpu()._threadsPerBlock - 1) / getGpu()._threadsPerBlock);
     switch (activation)
@@ -992,6 +992,191 @@ void kCalculateIndexedOutputDelta(
                 position, batch, stride, pUnit, pDelta, pIndex, pData, pDataWeight);
             LAUNCHERROR("kCalculateIndexedSoftMaxOutputDelta_kernel");
             break;
+    }
+}
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (One / static_cast<Float>(sizeof(T) * 8));
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * a * (One - a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (One / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * a * (One - a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (One / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * a * (One - a);
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * (One - a * a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (One / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * (One - a * a);
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight)
+{
+    constexpr Float One = static_cast<Float>(1.0);
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : One;
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (One / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff * (One - a * a);
+    }
+}
+
+template<typename T>
+__global__ void LAUNCH_BOUNDS() kCalculateLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, T* pData, Float* pDataWeight)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = pData[dOffset + pos];
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, unsigned char* pData, Float* pDataWeight)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(256.0));
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff;
+    }
+}
+
+template<>
+__global__ void LAUNCH_BOUNDS() kCalculateLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stride, Float* pUnit, Float* pDelta, char* pData, Float* pDataWeight)
+{
+    constexpr Float Zero = static_cast<Float>(0.0);
+
+    uint64_t pos = (blockIdx.y * blockDim.x) + threadIdx.x;
+    if (pos < stride)
+    {
+        uint64_t uOffset = blockIdx.x * stride;
+        uint64_t dpos = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
+        uint64_t dOffset = dpos * stride;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
+        Float a = pUnit[uOffset + pos];
+        Float t = static_cast<Float>(pData[dOffset + pos]) * (static_cast<Float>(1.0) / static_cast<Float>(128.0));
+        Float diff = a - fabsf(t);
+        diff = (t > Zero) ? min(Zero, diff) : max(Zero, diff);
+        pDelta[uOffset + pos] = w * diff;
     }
 }
 
