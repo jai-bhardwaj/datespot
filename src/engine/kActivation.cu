@@ -2,6 +2,7 @@
 #include "Types.h"
 #include <limits>
 #include <cmath>
+#include <algorithm>
 
 __constant__ GpuData cData;
 
@@ -104,16 +105,19 @@ void kCalculateTanhActivation(Float* pData, uint64_t size)
 }
 
 /**
- * @brief Kernel function to compute ReLU activation for each element in pData.
+ * @brief Applies a unary function to each element in the data array using CUDA parallelism.
  *
+ * @tparam UnaryFunction The type of the unary function.
  * @param pData Pointer to the data array.
  * @param size Number of elements in the array.
+ * @param function The unary function to apply to each element.
  */
-__global__ void kCalculateRELUActivation_kernel(Float* pData, uint64_t size)
+template <typename UnaryFunction>
+__global__ void kApplyUnaryFunction_kernel(Float* pData, uint64_t size, UnaryFunction function)
 {
     uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
     if (pos < size)
-        pData[pos] = fmaxf(0.0f, pData[pos]);
+        pData[pos] = function(pData[pos]);
 }
 
 /**
@@ -126,25 +130,9 @@ void kCalculateRELUActivation(Float* pData, uint64_t size)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
-    kCalculateRELUActivation_kernel<<<blocks, threads>>>(pData, size);
+    auto relu = [](Float x) { return std::max(0.0f, x); };
+    kApplyUnaryFunction_kernel<<<blocks, threads>>>(pData, size, relu);
     LAUNCHERROR("kCalculateRELUActivation_kernel");
-}
-
-/**
- * @brief Kernel function to compute Leaky ReLU activation for each element in pData.
- *
- * @param pData Pointer to the data array.
- * @param size Number of elements in the array.
- * @param slope Slope of the activation function for negative input values.
- */
-__global__ void kCalculateLRELUActivation_kernel(Float* pData, uint64_t size, Float slope)
-{
-    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
-    if (pos < size)
-    {
-        Float val = pData[pos];
-        pData[pos] = fmaxf(val, val * slope);
-    }
 }
 
 /**
@@ -158,25 +146,9 @@ void kCalculateLRELUActivation(Float* pData, uint64_t size, Float slope)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
-    kCalculateLRELUActivation_kernel<<<blocks, threads>>>(pData, size, slope);
+    auto leakyRelu = [slope](Float x) { return std::max(x, x * slope); };
+    kApplyUnaryFunction_kernel<<<blocks, threads>>>(pData, size, leakyRelu);
     LAUNCHERROR("kCalculateLRELUActivation_kernel");
-}
-
-/**
- * @brief Kernel function to compute ELU activation for each element in pData.
- *
- * @param pData Pointer to the data array.
- * @param size Number of elements in the array.
- * @param alpha Alpha value for the activation function.
- */
-__global__ void kCalculateELUActivation_kernel(Float* pData, uint64_t size, Float alpha)
-{
-    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
-    if (pos < size)
-    {
-        Float x = pData[pos];
-        pData[pos] = (x > 0.0f) ? x : alpha * (expf(x) - 1.0f);
-    }
 }
 
 /**
@@ -190,26 +162,9 @@ void kCalculateELUActivation(Float* pData, uint64_t size, Float alpha)
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
-    kCalculateELUActivation_kernel<<<blocks, threads>>>(pData, size, alpha);
+    auto elu = [alpha](Float x) { return (x > 0.0f) ? x : alpha * (std::exp(x) - 1.0f); };
+    kApplyUnaryFunction_kernel<<<blocks, threads>>>(pData, size, elu);
     LAUNCHERROR("kCalculateELUActivation_kernel");
-}
-
-/**
- * @brief Kernel function to compute SELU activation for each element in pData.
- *
- * @param pData Pointer to the data array.
- * @param size Number of elements in the array.
- * @param alpha Alpha value for the activation function.
- * @param lambda Lambda value for the activation function.
- */
-__global__ void kCalculateSELUActivation_kernel(Float* pData, uint64_t size, Float alpha, Float lambda)
-{
-    uint64_t pos = blockIdx.x * blockDim.x + threadIdx.x;
-    if (pos < size)
-    {
-        Float x = pData[pos];
-        pData[pos] = (x > 0.0f) ? lambda * x : lambda * alpha * (expf(x) - 1.0f);
-    }
 }
 
 /**
@@ -224,7 +179,8 @@ void kCalculateSELUActivation(Float* pData, uint64_t size, Float alpha, Float la
 {
     uint32_t blocks = CalculateBlocks(size);
     uint32_t threads = getGpu()._threadsPerBlock;
-    kCalculateSELUActivation_kernel<<<blocks, threads>>>(pData, size, alpha, lambda);
+    auto selu = [alpha, lambda](Float x) { return (x > 0.0f) ? lambda * x : lambda * alpha * (std::exp(x) - 1.0f); };
+    kApplyUnaryFunction_kernel<<<blocks, threads>>>(pData, size, selu);
     LAUNCHERROR("kCalculateSELUActivation_kernel");
 }
 
