@@ -487,54 +487,110 @@ cudnnTensorDescriptor_t Layer::getTensorDescriptor(uint32_t batch)
     return _oddBatchTensorDescriptor;
 }
 
+/**
+ * @brief Retrieves the name of the layer.
+ *
+ * @return A constant reference to the name of the layer.
+ */
 const string& Layer::GetName() const {
-  return _name;
+    return _name;
 }
 
+/**
+ * @brief Retrieves the name of the dataset associated with the layer.
+ *
+ * @return A constant reference to the name of the dataset.
+ */
 const string& Layer::GetDataSetName() const {
     return _dataSet;
 }
+
+/**
+ * @brief Retrieves the kind of the layer.
+ *
+ * @return The kind of the layer.
+ */
 Layer::Kind Layer::GetKind() const {
-  return _kind;
+    return _kind;
 }
 
+/**
+ * @brief Retrieves the type of the layer.
+ *
+ * @return The type of the layer.
+ */
 Layer::Type Layer::GetType() const {
   return _type;
 }
 
+/**
+ * @brief Retrieves the attributes of the layer.
+ *
+ * @return The attributes of the layer.
+ */
 uint32_t Layer::GetAttributes() const {
-  return _attributes;
+    return _attributes;
 }
 
+/**
+ * @brief Retrieves the dataset associated with the layer.
+ *
+ * @return A pointer to the dataset associated with the layer.
+ */
 DataSetBase* Layer::GetDataSet() const {
-  return _pDataSet;
+    return _pDataSet;
 }
 
+/**
+ * @brief Retrieves the number of dimensions of the layer.
+ *
+ * @return The number of dimensions of the layer.
+ */
 uint32_t Layer::GetNumDimensions() const {
-  return _dimensions;
+    return _dimensions;
 }
 
-tuple<uint32_t, uint32_t, uint32_t, uint32_t> Layer::GetDimensions() const
-{
+/**
+ * @brief Retrieves the dimensions of the layer.
+ *
+ * @return A tuple representing the dimensions of the layer in the order (Nx, Ny, Nz, Nw).
+ */
+tuple<uint32_t, uint32_t, uint32_t, uint32_t> Layer::GetDimensions() const {
     return make_tuple(_Nx, _Ny, _Nz, _Nw);
 }
 
-tuple<uint32_t, uint32_t, uint32_t, uint32_t> Layer::GetLocalDimensions() const
-{
+/**
+ * @brief Retrieves the local dimensions of the layer.
+ *
+ * @return A tuple representing the local dimensions of the layer in the order (maxX - minX, Ny, Nz, Nw).
+ */
+tuple<uint32_t, uint32_t, uint32_t, uint32_t> Layer::GetLocalDimensions() const {
     return make_tuple(_maxX - _minX, _Ny, _Nz, _Nw);
 }
 
-tuple<uint32_t, uint32_t, uint32_t> Layer::GetKernelDimensions() const
-{
+/**
+ * @brief Retrieves the kernel dimensions of the layer.
+ *
+ * @return A tuple representing the kernel dimensions of the layer in the order (kernelX, kernelY, kernelZ).
+ */
+tuple<uint32_t, uint32_t, uint32_t> Layer::GetKernelDimensions() const {
     return make_tuple(_kernelX, _kernelY, _kernelZ);
 }
 
-tuple<uint32_t, uint32_t, uint32_t> Layer::GetKernelStride() const
-{
+/**
+ * @brief Retrieves the kernel stride of the layer.
+ *
+ * @return A tuple representing the kernel stride of the layer in the order (kernelStrideX, kernelStrideY, kernelStrideZ).
+ */
+tuple<uint32_t, uint32_t, uint32_t> Layer::GetKernelStride() const {
     return make_tuple(_kernelStrideX, _kernelStrideY, _kernelStrideZ);
 }
 
-
+/**
+ * @brief Retrieves the tensor descriptor and prints its details.
+ *
+ * @param t The tensor descriptor to retrieve.
+ */
 void Layer::DumpTensor(cudnnTensorDescriptor_t t)
 {
     cudnnDataType_t dataType;
@@ -543,8 +599,10 @@ void Layer::DumpTensor(cudnnTensorDescriptor_t t)
     std::array<int, 16> vStride{};
     cudnnStatus_t cudnnStatus = cudnnGetTensorNdDescriptor(t, 8, &dataType, &ndims, vDim.data(), vStride.data());
     CUDNNERROR(cudnnStatus, "cudnnGetTensorNdDescriptor error");
+    // Print tensor details
     std::cout << "Tensor:   " << ndims << " dimensions" << std::endl;
     std::cout << "DataType: " << dataType << std::endl;
+    // Print each dimension and stride
     for (auto [i, dim, stride] : zipWithIndex(vDim, vStride))
         std::cout << i << ' ' << dim << ' ' << stride << std::endl;
     std::cout << std::endl;
@@ -573,6 +631,13 @@ void Layer::Allocate(bool validate)
 
         switch (_dimensions)
         {
+            /**
+             * Set the tensor descriptor for case 2.
+             *
+             * @param _localBatch The local batch size.
+             * @param _Ny The number of rows.
+             * @param _Nx The number of columns.
+             */
             case 2:
                 vDimensions[0] = _localBatch;
                 vDimensions[1] = _Ny;
@@ -583,10 +648,27 @@ void Layer::Allocate(bool validate)
                 cudnnStatus = cudnnSetTensorNdDescriptor(_tensorDescriptor, CUDNN_DATA_FLOAT, _dimensions + 1, vDimensions.data(), vStride.data());
                 break;
 
+            /**
+             * Set the tensor descriptor for case 3.
+             *
+             * @param _localBatch The local batch size.
+             * @param _Nz The number of channels.
+             * @param _Ny The number of rows.
+             * @param _Nx The number of columns.
+             */
             case 3:
                 cudnnStatus = cudnnSetTensor4dDescriptor(_tensorDescriptor, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, _localBatch, _Nz, _Ny, _Nx);
                 break;
 
+            /**
+             * Set the tensor descriptor for case 4.
+             *
+             * @param _localBatch The local batch size.
+             * @param _Nw The number of samples.
+             * @param _Nz The number of channels.
+             * @param _Ny The number of rows.
+             * @param _Nx The number of columns.
+             */
             case 4:
                 vDimensions[0] = _localBatch;
                 vDimensions[1] = _Nw;
@@ -648,12 +730,65 @@ void Layer::SetBatch(uint32_t batch)
 
 void Layer::RefreshParallelization()
 {
-    constexpr uint32_t convolutionalInputs = countLayersOfType(_vIncomingLayer, Layer::Type::Convolutional);
-    constexpr uint32_t fullyConnectedInputs = countLayersOfType(_vIncomingLayer, Layer::Type::FullyConnected);
-    constexpr uint32_t poolingInputs = countLayersOfType(_vIncomingLayer, Layer::Type::Pooling);
-    constexpr uint32_t convolutionalOutputs = countLayersOfType(_vOutgoingLayer, Layer::Type::Convolutional);
-    constexpr uint32_t fullyConnectedOutputs = countLayersOfType(_vOutgoingLayer, Layer::Type::FullyConnected);
-    constexpr uint32_t poolingOutputs = countLayersOfType(_vOutgoingLayer, Layer::Type::Pooling);
+/**
+ * Count the number of layers of a specific type in the incoming layer vector.
+ *
+ * @tparam TLayer The layer type.
+ * @param _vIncomingLayer The vector of incoming layers.
+ * @param _type The layer type to count.
+ * @return The count of layers of the specified type.
+ */
+constexpr uint32_t convolutionalInputs = countLayersOfType(_vIncomingLayer, Layer::Type::Convolutional);
+
+/**
+ * Count the number of layers of a specific type in the incoming layer vector.
+ *
+ * @tparam TLayer The layer type.
+ * @param _vIncomingLayer The vector of incoming layers.
+ * @param _type The layer type to count.
+ * @return The count of layers of the specified type.
+ */
+constexpr uint32_t fullyConnectedInputs = countLayersOfType(_vIncomingLayer, Layer::Type::FullyConnected);
+
+/**
+ * Count the number of layers of a specific type in the incoming layer vector.
+ *
+ * @tparam TLayer The layer type.
+ * @param _vIncomingLayer The vector of incoming layers.
+ * @param _type The layer type to count.
+ * @return The count of layers of the specified type.
+ */
+constexpr uint32_t poolingInputs = countLayersOfType(_vIncomingLayer, Layer::Type::Pooling);
+
+/**
+ * Count the number of layers of a specific type in the outgoing layer vector.
+ *
+ * @tparam TLayer The layer type.
+ * @param _vOutgoingLayer The vector of outgoing layers.
+ * @param _type The layer type to count.
+ * @return The count of layers of the specified type.
+ */
+constexpr uint32_t convolutionalOutputs = countLayersOfType(_vOutgoingLayer, Layer::Type::Convolutional);
+
+/**
+ * Count the number of layers of a specific type in the outgoing layer vector.
+ *
+ * @tparam TLayer The layer type.
+ * @param _vOutgoingLayer The vector of outgoing layers.
+ * @param _type The layer type to count.
+ * @return The count of layers of the specified type.
+ */
+constexpr uint32_t fullyConnectedOutputs = countLayersOfType(_vOutgoingLayer, Layer::Type::FullyConnected);
+
+/**
+ * Count the number of layers of a specific type in the outgoing layer vector.
+ *
+ * @tparam TLayer The layer type.
+ * @param _vOutgoingLayer The vector of outgoing layers.
+ * @param _type The layer type to count.
+ * @return The count of layers of the specified type.
+ */
+constexpr uint32_t poolingOutputs = countLayersOfType(_vOutgoingLayer, Layer::Type::Pooling);
 
     const auto kindToParallelization = [](Layer::Kind kind) -> Layer::Parallelization {
         const std::unordered_map<Layer::Kind, Layer::Parallelization> kindToParallelizationMap = {
