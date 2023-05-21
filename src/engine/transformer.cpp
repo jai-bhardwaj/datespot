@@ -28,9 +28,10 @@ private:
             std::vector<float> attention_scores(input_size);
             for (int i = 0; i < input_size; i++) {
                 for (int j = 0; j < input_size; j++) {
+                    attention_scores[i] += input[i] * input[j];
                 }
             }
-            
+
             std::vector<float> attention_weights(input_size);
             float sum = 0.0f;
             for (int i = 0; i < input_size; i++) {
@@ -40,7 +41,7 @@ private:
             for (int i = 0; i < input_size; i++) {
                 attention_weights[i] /= sum;
             }
-            
+
             attention_output.reserve(input_size);
             for (int i = 0; i < input_size; i++) {
                 float weighted_sum = 0.0f;
@@ -49,12 +50,15 @@ private:
                 }
                 attention_output.push_back(weighted_sum);
             }
-            
+
             return attention_output;
         }
 
         std::vector<float> addAndNormalize(const std::vector<float>& input, const std::vector<float>& output) {
             std::vector<float> normalized_output;
+            for (std::size_t i = 0; i < input.size(); ++i) {
+                normalized_output.push_back(input[i] + output[i]);
+            }
             return normalized_output;
         }
 
@@ -62,29 +66,29 @@ private:
             std::vector<float> ff_output;
             const int input_size = input.size();
 
-            // Apply the first linear transformation
+            std::vector<std::vector<float>> weight1(input_size, std::vector<float>(kFeedForwardSize));
+            std::vector<float> bias1(kFeedForwardSize);
+            std::vector<std::vector<float>> weight2(kFeedForwardSize, std::vector<float>(input_size));
+            std::vector<float> bias2(input_size);
+
             std::vector<float> linear1_output(input_size);
             for (int i = 0; i < input_size; i++) {
                 float weighted_sum = 0.0f;
                 for (int j = 0; j < input_size; j++) {
-                    // Perform the linear transformation using weight matrix and bias vector
                     weighted_sum += weight1[i][j] * input[j];
                 }
                 linear1_output[i] = weighted_sum + bias1[i];
             }
 
-            // Apply the non-linear activation function (e.g., ReLU)
             std::vector<float> activation_output(input_size);
             for (int i = 0; i < input_size; i++) {
                 activation_output[i] = std::max(0.0f, linear1_output[i]);
             }
 
-            // Apply the second linear transformation
             std::vector<float> linear2_output(input_size);
             for (int i = 0; i < input_size; i++) {
                 float weighted_sum = 0.0f;
                 for (int j = 0; j < input_size; j++) {
-                    // Perform the linear transformation using weight matrix and bias vector
                     weighted_sum += weight2[i][j] * activation_output[j];
                 }
                 linear2_output[i] = weighted_sum + bias2[i];
