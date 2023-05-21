@@ -4,7 +4,7 @@ import numpy as np
 # Define the extension module
 module1 = Extension(
     'tensorhub',
-    sources=['tensorhubmodule.cc', '../src/utils/cdl.cpp'],
+    sources=['module.cc', '../src/utils/cdl.cpp'],
     include_dirs=[
         np.get_include(),
         '/usr/local/cuda/include',
