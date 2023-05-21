@@ -16,8 +16,29 @@ class LayerDescriptor;
  */
 class Layer {
 public:
+    /**
+     * @brief Friend class declaration for Network.
+     *
+     * Network class is a friend of Layer class, allowing access to its private and protected members.
+     */
     friend class Network;
+
+    /**
+     * @brief Friend class declaration for Weight.
+     *
+     * Weight class is a friend of Layer class, allowing access to its private and protected members.
+     */
     friend class Weight;
+
+    /**
+     * @brief Friend function declaration for LoadNeuralNetworkNetCDF.
+     *
+     * LoadNeuralNetworkNetCDF function is a friend of Layer class, allowing access to its private and protected members.
+     *
+     * @param fname The file name of the neural network in NetCDF format.
+     * @param batch The batch size for the neural network.
+     * @return A pointer to the loaded neural network.
+     */
     friend Network* LoadNeuralNetworkNetCDF(const std::string_view fname, int batch);
 
     /**
