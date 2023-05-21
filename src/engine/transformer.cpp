@@ -31,7 +31,6 @@ private:
                 }
             }
             
-            // Apply softmax to the attention scores
             std::vector<float> attention_weights(input_size);
             float sum = 0.0f;
             for (int i = 0; i < input_size; i++) {
@@ -42,7 +41,6 @@ private:
                 attention_weights[i] /= sum;
             }
             
-            // Calculate attention output using the attention weights
             attention_output.reserve(input_size);
             for (int i = 0; i < input_size; i++) {
                 float weighted_sum = 0.0f;
@@ -57,13 +55,37 @@ private:
 
         std::vector<float> addAndNormalize(const std::vector<float>& input, const std::vector<float>& output) {
             std::vector<float> normalized_output;
-            // Implement add and normalize logic
             return normalized_output;
         }
 
         std::vector<float> feedForward(const std::vector<float>& input) {
             std::vector<float> ff_output;
-            // Implement feed-forward logic
+            const int input_size = input.size();
+
+            std::vector<float> linear1_output(input_size);
+            for (int i = 0; i < input_size; i++) {
+                float weighted_sum = 0.0f;
+                for (int j = 0; j < input_size; j++) {
+                    weighted_sum += weight1[i][j] * input[j];
+                }
+                linear1_output[i] = weighted_sum + bias1[i];
+            }
+
+            std::vector<float> activation_output(input_size);
+            for (int i = 0; i < input_size; i++) {
+                activation_output[i] = std::max(0.0f, linear1_output[i]);
+            }
+
+            std::vector<float> linear2_output(input_size);
+            for (int i = 0; i < input_size; i++) {
+                float weighted_sum = 0.0f;
+                for (int j = 0; j < input_size; j++) {
+                    weighted_sum += weight2[i][j] * activation_output[j];
+                }
+                linear2_output[i] = weighted_sum + bias2[i];
+            }
+
+            ff_output = linear2_output;
             return ff_output;
         }
     };
