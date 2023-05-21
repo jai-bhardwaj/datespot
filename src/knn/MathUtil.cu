@@ -28,13 +28,15 @@ __global__ void kFloatToHalf_kernel(const float* src, size_t length, half* dst) 
 /**
  * @brief Converts an array of floats to half-precision floats on the GPU.
  *
- * @param hSource Host array of floats.
+ * @param hostInput Host array of floats.
  * @param sourceSizeInBytes Size of the host array in bytes.
- * @param dDest Device array of half-precision floats.
- * @param dBuffer Temporary buffer on the GPU for data transfer.
+ * @param deviceOutput Device array of half-precision floats.
  * @param bufferSizeInBytes Size of the temporary buffer in bytes.
+ * @param freeBuffer Flag indicating whether to free the temporary buffer.
+ *
+ * @throws std::invalid_argument if sourceSizeInBytes is not divisible by sizeof(float) or bufferSizeInBytes is not divisible by sizeof(float).
  */
-void kFloatToHalf(const float* hSource, size_t sourceSizeInBytes, half* dDest, float* dBuffer, size_t bufferSizeInBytes) {
+void kFloatToHalf(const float* hostInput, size_t sourceSizeInBytes, half* deviceOutput, size_t bufferSizeInBytes, bool freeBuffer = true) {
   if (sourceSizeInBytes % sizeof(float) != 0) {
     throw std::invalid_argument("sourceSizeInBytes must be divisible by sizeof(float)");
   }
@@ -47,39 +49,26 @@ void kFloatToHalf(const float* hSource, size_t sourceSizeInBytes, half* dDest, f
   dim3 threads(kBlockSize);
   dim3 blocks((bufferLen + threads.x - 1) / threads.x);
 
+  float* deviceBuffer = nullptr;
+  CHECK_CUDA_ERROR(cudaMalloc(&deviceBuffer, bufferSizeInBytes));
+
+  size_t sourceLength = sourceSizeInBytes / sizeof(float);
   size_t srcLeftBytes = sourceSizeInBytes;
   size_t offset = 0;
 
   while (srcLeftBytes > 0) {
-    size_t cpyBytes = srcLeftBytes < bufferSizeInBytes ? srcLeftBytes : bufferSizeInBytes;
-    size_t cpyLength = cpyBytes / sizeof(float);
+    size_t copyLength = srcLeftBytes < bufferSizeInBytes ? srcLeftBytes / sizeof(float) : bufferLen;
 
-    CHECK_ERR(cudaMemcpyAsync(dBuffer, hSource + offset, cpyBytes, cudaMemcpyHostToDevice));
-    LAUNCH_ERR((kFloatToHalf_kernel<<<blocks, threads>>>(dBuffer, cpyLength, dDest + offset)));
-    CHECK_ERR(cudaGetLastError());
-    CHECK_ERR(cudaDeviceSynchronize());
+    CHECK_CUDA_ERROR(cudaMemcpy(deviceBuffer, hostInput + offset, copyLength * sizeof(float), cudaMemcpyHostToDevice));
+    LAUNCH_KERNEL(kFloatToHalf_kernel, blocks, threads)(deviceBuffer, copyLength, deviceOutput + offset);
 
-    offset += cpyLength;
-    srcLeftBytes -= cpyBytes;
+    offset += copyLength;
+    srcLeftBytes -= copyLength * sizeof(float);
   }
-}
 
-/**
- * @brief Converts an array of floats to half-precision floats on the GPU.
- *        Allocates a temporary buffer on the GPU.
- *
- * @param hSource Host array of floats.
- * @param sourceSizeInBytes Size of the host array in bytes.
- * @param dDest Device array of half-precision floats.
- * @param bufferSizeInBytes Size of the temporary buffer in bytes.
- */
-void kFloatToHalf(const float* hSource, size_t sourceSizeInBytes, half* dDest, size_t bufferSizeInBytes) {
-  float* dBuffer = nullptr;
-  CHECK_ERR(cudaMalloc(&dBuffer, bufferSizeInBytes));
-
-  kFloatToHalf(hSource, sourceSizeInBytes, dDest, dBuffer, bufferSizeInBytes);
-
-  CHECK_ERR(cudaFree(dBuffer));
+  if (freeBuffer) {
+    CHECK_CUDA_ERROR(cudaFree(deviceBuffer));
+  }
 }
 
 /**
@@ -99,12 +88,14 @@ __global__ void kHalfToFloat_kernel(const half* src, size_t length, float* dst) 
 /**
  * @brief Converts an array of half-precision floats to floats on the GPU.
  *
- * @param dSource Device array of half-precision floats.
+ * @param deviceInput Device array of half-precision floats.
  * @param sourceSizeInBytes Size of the device array in bytes.
- * @param hDest Host array of floats.
+ * @param hostOutput Host array of floats.
  * @param bufferSizeInBytes Size of the temporary buffer in bytes.
+ *
+ * @throws std::invalid_argument if sourceSizeInBytes is not divisible by sizeof(half) or bufferSizeInBytes is not divisible by sizeof(float).
  */
-void kHalfToFloat(const half* dSource, size_t sourceSizeInBytes, float* hDest, size_t bufferSizeInBytes) {
+void kHalfToFloat(const half* deviceInput, size_t sourceSizeInBytes, float* hostOutput, size_t bufferSizeInBytes) {
   if (sourceSizeInBytes % sizeof(half) != 0) {
     throw std::invalid_argument("sourceSizeInBytes must be divisible by sizeof(half)");
   }
@@ -117,28 +108,25 @@ void kHalfToFloat(const half* dSource, size_t sourceSizeInBytes, float* hDest, s
   dim3 threads(kBlockSize);
   dim3 blocks((bufferLen + threads.x - 1) / threads.x);
 
-  float* dBuffer = nullptr;
-  CHECK_ERR(cudaMalloc(&dBuffer, bufferLen * sizeof(float)));
+  float* deviceBuffer = nullptr;
+  CHECK_CUDA_ERROR(cudaMalloc(&deviceBuffer, bufferLen * sizeof(float)));
 
   size_t sourceLength = sourceSizeInBytes / sizeof(half);
-  size_t srcLeftBytes = sourceLength * sizeof(float);
+  size_t srcLeftBytes = sourceSizeInBytes;
   size_t offset = 0;
 
   while (srcLeftBytes > 0) {
-    size_t cpyBytes = srcLeftBytes < bufferSizeInBytes ? srcLeftBytes : bufferSizeInBytes;
-    size_t cpyLength = cpyBytes / sizeof(float);
+    size_t copyLength = srcLeftBytes < bufferSizeInBytes ? srcLeftBytes / sizeof(float) : bufferLen;
 
-    LAUNCH_ERR((kHalfToFloat_kernel<<<blocks, threads>>>(dSource + offset, cpyLength, dBuffer)));
-    CHECK_ERR(cudaMemcpyAsync(hDest + offset, dBuffer, cpyBytes, cudaMemcpyDeviceToHost));
-    CHECK_ERR(cudaGetLastError());
-    CHECK_ERR(cudaDeviceSynchronize());
+    LAUNCH_KERNEL(kHalfToFloat_kernel, blocks, threads)(deviceInput + offset, copyLength, deviceBuffer);
+    CHECK_CUDA_ERROR(cudaMemcpy(hostOutput + offset, deviceBuffer, copyLength * sizeof(float), cudaMemcpyDeviceToHost));
 
-    offset += cpyLength;
-    srcLeftBytes -= cpyBytes;
+    offset += copyLength;
+    srcLeftBytes -= copyLength * sizeof(float);
   }
 
-  CHECK_ERR(cudaFree(dBuffer));
+  CHECK_CUDA_ERROR(cudaFree(deviceBuffer));
 }
 
 }  // namespace math
-}  // namespace astdl
+}
