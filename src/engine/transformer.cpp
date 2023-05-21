@@ -62,24 +62,29 @@ private:
             std::vector<float> ff_output;
             const int input_size = input.size();
 
+            // Apply the first linear transformation
             std::vector<float> linear1_output(input_size);
             for (int i = 0; i < input_size; i++) {
                 float weighted_sum = 0.0f;
                 for (int j = 0; j < input_size; j++) {
+                    // Perform the linear transformation using weight matrix and bias vector
                     weighted_sum += weight1[i][j] * input[j];
                 }
                 linear1_output[i] = weighted_sum + bias1[i];
             }
 
+            // Apply the non-linear activation function (e.g., ReLU)
             std::vector<float> activation_output(input_size);
             for (int i = 0; i < input_size; i++) {
                 activation_output[i] = std::max(0.0f, linear1_output[i]);
             }
 
+            // Apply the second linear transformation
             std::vector<float> linear2_output(input_size);
             for (int i = 0; i < input_size; i++) {
                 float weighted_sum = 0.0f;
                 for (int j = 0; j < input_size; j++) {
+                    // Perform the linear transformation using weight matrix and bias vector
                     weighted_sum += weight2[i][j] * activation_output[j];
                 }
                 linear2_output[i] = weighted_sum + bias2[i];
