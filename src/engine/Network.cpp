@@ -3509,48 +3509,183 @@ std::unique_ptr<Network> LoadNeuralNetworkNetCDF(const std::string& fname, const
                 attribute.getValues(&value);
             };
 
+            /**
+             * Retrieves the value of the "version" attribute and assigns it to the variable "version".
+             * @param attribute The name of the attribute to retrieve.
+             * @param version [out] The variable to store the retrieved value.
+             */
             getAttribute("version", version);
+
+            /**
+             * Retrieves the value of the "name" attribute and assigns it to the variable "nd._name".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._name [out] The variable to store the retrieved value.
+             */
             getAttribute("name", nd._name);
+
+            /**
+             * Retrieves the value of the "kind" attribute and assigns it to the variable "nd._kind".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._kind [out] The variable to store the retrieved value.
+             */
             getAttribute("kind", nd._kind);
+
+            /**
+             * Retrieves the value of the "errorFunction" attribute and assigns it to the variable "nd._errorFunction".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._errorFunction [out] The variable to store the retrieved value.
+             */
             getAttribute("errorFunction", nd._errorFunction);
+
+            /**
+             * Retrieves the value of the "decay" attribute and assigns it to the variable "nd._decay".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._decay [out] The variable to store the retrieved value.
+             */
             getAttribute("decay", nd._decay);
+
+            /**
+             * Retrieves the value of the "maxout_k" attribute and assigns it to the variable "nd._maxout_k".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._maxout_k [out] The variable to store the retrieved value.
+             */
             getAttribute("maxout_k", nd._maxout_k);
+
+            /**
+             * Retrieves the value of the "LRN_k" attribute and assigns it to the variable "nd._LRN_k".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._LRN_k [out] The variable to store the retrieved value.
+             */
             getAttribute("LRN_k", nd._LRN_k);
+
+            /**
+             * Retrieves the value of the "LRN_n" attribute and assigns it to the variable "nd._LRN_n".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._LRN_n [out] The variable to store the retrieved value.
+             */
             getAttribute("LRN_n", nd._LRN_n);
+
+            /**
+             * Retrieves the value of the "LRN_alpha" attribute and assigns it to the variable "nd._LRN_alpha".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._LRN_alpha [out] The variable to store the retrieved value.
+             */
             getAttribute("LRN_alpha", nd._LRN_alpha);
+
+            /**
+             * Retrieves the value of the "LRN_beta" attribute and assigns it to the variable "nd._LRN_beta".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._LRN_beta [out] The variable to store the retrieved value.
+             */
             getAttribute("LRN_beta", nd._LRN_beta);
 
             uint32_t bSparsenessPenalty;
+
+            /**
+             * Retrieves the value of the "bSparsenessPenalty" attribute and assigns it to the variable "bSparsenessPenalty".
+             * @param attribute The name of the attribute to retrieve.
+             * @param bSparsenessPenalty [out] The variable to store the retrieved value.
+             */
             getAttribute("bSparsenessPenalty", bSparsenessPenalty);
             nd._bSparsenessPenalty = (bSparsenessPenalty != 0);
 
+            /**
+             * Retrieves the value of the "sparsenessPenalty_p" attribute and assigns it to the variable "nd._sparsenessPenalty_p".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._sparsenessPenalty_p [out] The variable to store the retrieved value.
+             */
             getAttribute("sparsenessPenalty_p", nd._sparsenessPenalty_p);
+
+            /**
+             * Retrieves the value of the "sparsenessPenalty_beta" attribute and assigns it to the variable "nd._sparsenessPenalty_beta".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._sparsenessPenalty_beta [out] The variable to store the retrieved value.
+             */
             getAttribute("sparsenessPenalty_beta", nd._sparsenessPenalty_beta);
 
             uint32_t bDenoising;
+
+            /**
+             * Retrieves the value of the "bDenoising" attribute and assigns it to the variable "bDenoising".
+             * @param attribute The name of the attribute to retrieve.
+             * @param bDenoising [out] The variable to store the retrieved value.
+             */
             getAttribute("bDenoising", bDenoising);
             nd._bDenoising = (bDenoising != 0);
 
+            /**
+             * Retrieves the value of the "denoising_p" attribute and assigns it to the variable "nd._denoising_p".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._denoising_p [out] The variable to store the retrieved value.
+             */
             getAttribute("denoising_p", nd._denoising_p);
+
+            /**
+             * Retrieves the value of the "deltaBoost_one" attribute and assigns it to the variable "nd._deltaBoost_one".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._deltaBoost_one [out] The variable to store the retrieved value.
+             */
             getAttribute("deltaBoost_one", nd._deltaBoost_one);
+
+            /**
+             * Retrieves the value of the "deltaBoost_zero" attribute and assigns it to the variable "nd._deltaBoost_zero".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._deltaBoost_zero [out] The variable to store the retrieved value.
+             */
             getAttribute("deltaBoost_zero", nd._deltaBoost_zero);
+
+            /**
+             * Retrieves the value of the "SMCE_oneScale" attribute and assigns it to the variable "nd._SMCE_oneScale".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._SMCE_oneScale [out] The variable to store the retrieved value.
+             */
             getAttribute("SMCE_oneScale", nd._SMCE_oneScale);
+
+            /**
+             * Retrieves the value of the "SMCE_zeroScale" attribute and assigns it to the variable "nd._SMCE_zeroScale".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._SMCE_zeroScale [out] The variable to store the retrieved value.
+             */
             getAttribute("SMCE_zeroScale", nd._SMCE_zeroScale);
+
+            /**
+             * Retrieves the value of the "SMCE_oneTarget" attribute and assigns it to the variable "nd._SMCE_oneTarget".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._SMCE_oneTarget [out] The variable to store the retrieved value.
+             */
             getAttribute("SMCE_oneTarget", nd._SMCE_oneTarget);
+
+            /**
+             * Retrieves the value of the "SMCE_zeroTarget" attribute and assigns it to the variable "nd._SMCE_zeroTarget".
+             * @param attribute The name of the attribute to retrieve.
+             * @param nd._SMCE_zeroTarget [out] The variable to store the retrieved value.
+             */
             getAttribute("SMCE_zeroTarget", nd._SMCE_zeroTarget);
 
+            /**
+             * Retrieves the "checkpoint_name" attribute from the NcGroupAtt object "checkpoint_nameAtt" and stores the values in the variable "nd._checkpoint_name".
+             * @param checkpoint_nameAtt The NcGroupAtt object representing the "checkpoint_name" attribute.
+             */
             NcGroupAtt checkpoint_nameAtt = nc.getAtt("checkpoint_name");
             if (!checkpoint_nameAtt.isNull())
             {
                 checkpoint_nameAtt.getValues(nd._checkpoint_name);
             }
 
+            /**
+             * Retrieves the "checkpoint_interval" attribute from the NcGroupAtt object "checkpoint_intervalAtt" and stores the value in the variable "nd._checkpoint_interval".
+             * @param checkpoint_intervalAtt The NcGroupAtt object representing the "checkpoint_interval" attribute.
+             */
             NcGroupAtt checkpoint_intervalAtt = nc.getAtt("checkpoint_interval");
             if (!checkpoint_intervalAtt.isNull())
             {
                 checkpoint_intervalAtt.getValues(&nd._checkpoint_interval);
             }
 
+            /**
+             * Retrieves the "checkpoint_epochs" attribute from the NcGroupAtt object "checkpoint_epochsAtt" and stores the value in the variable "nd._checkpoint_epochs".
+             * @param checkpoint_epochsAtt The NcGroupAtt object representing the "checkpoint_epochs" attribute.
+             */
             NcGroupAtt checkpoint_epochsAtt = nc.getAtt("checkpoint_epochs");
             if (!checkpoint_epochsAtt.isNull())
             {
@@ -3558,9 +3693,20 @@ std::unique_ptr<Network> LoadNeuralNetworkNetCDF(const std::string& fname, const
             }
 
             uint32_t bShuffleIndices;
+
+            /**
+             * Retrieves the value of the "ShuffleIndices" attribute and assigns it to the variable "bShuffleIndices".
+             * @param attribute The name of the attribute to retrieve.
+             * @param bShuffleIndices [out] The variable to store the retrieved value.
+             */
             getAttribute("ShuffleIndices", bShuffleIndices);
             nd._bShuffleIndices = (bShuffleIndices != 0);
 
+            /**
+             * Retrieves the value of the "layers" attribute and assigns it to the variable "layers".
+             * @param attribute The name of the attribute to retrieve.
+             * @param layers [out] The variable to store the retrieved value.
+             */
             getAttribute("layers", layers);
 
             for (uint32_t i = 0; i < layers; i++)
@@ -3599,23 +3745,55 @@ std::unique_ptr<Network> LoadNeuralNetworkNetCDF(const std::string& fname, const
         }
     }
 
+    /**
+     * Broadcasts the value of "bResult" from process 0 to all other processes in MPI_COMM_WORLD.
+     * @param bResult The boolean value to broadcast.
+     */
     MPI_Bcast(&bResult, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
+
+    /**
+     * Checks the value of "bResult" and performs actions if it is false.
+     * If "bResult" is false, it shuts down the GPU and exits the program with status -1.
+     */
     if (!bResult)
     {
         getGpu().Shutdown();
         exit(-1);
     }
 
+    /**
+     * Broadcasts the NetworkDescriptor object "nd" to all processes in MPI_COMM_WORLD.
+     * @param nd The NetworkDescriptor object to broadcast.
+     */
     MPI_Bcast_NetworkDescriptor(nd);
 
+    /**
+     * Prints the message "LoadNeuralNetworkJSON: Enumerating network:" to the standard output stream.
+     * Prints the NetworkDescriptor object "nd" to the standard output stream.
+     * This is performed by the process with GPU ID 0.
+     */
     if (getGpu()._id == 0)
     {
         std::cout << "LoadNeuralNetworkJSON: Enumerating network:" << std::endl;
         std::cout << nd << std::endl;
     }
 
+    /**
+     * Resets the neural network "pNetwork" with the provided NetworkDescriptor "nd" and batch size "batch".
+     * @param nd The NetworkDescriptor object used to reset the neural network.
+     * @param batch The batch size to use for the neural network.
+     */
     pNetwork->Reset(nd, batch);
+
+    /**
+     * Refreshes the state of the neural network "pNetwork".
+     */
     pNetwork->RefreshState();
+
+    /**
+     * Returns the pointer to the neural network "pNetwork".
+     * @return A pointer to the neural network.
+     */
     return pNetwork;
 }
 bool Network::P2P_Bcast(void* pBuffer, size_t size)
@@ -3671,8 +3849,32 @@ bool Network::P2P_Bcast(void* pBuffer, size_t size)
         }
         else
         {
+            /**
+             * Copies data from the source memory address "pBuffer" to the destination memory address "_pCPUBuffer.get()" using cudaMemcpy.
+             * @param _pCPUBuffer.get() The destination memory address in the _pCPUBuffer.
+             * @param pBuffer The source memory address.
+             * @param size The size of the data to be copied in bytes.
+             * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+             */
             cudaMemcpy(_pCPUBuffer.get(), pBuffer, size, cudaMemcpyDefault);
+
+            /**
+             * Broadcasts the data from the source memory address "_pCPUBuffer.get()" to all processes in MPI_COMM_WORLD.
+             * @param _pCPUBuffer.get() The source memory address.
+             * @param size The size of the data to be broadcasted.
+             * @param MPI_BYTE The datatype of the elements being broadcasted.
+             * @param 0 The root process that broadcasts the data.
+             * @param MPI_COMM_WORLD The communicator representing all processes.
+             */
             MPI_Bcast(_pCPUBuffer.get(), size, MPI_BYTE, 0, MPI_COMM_WORLD);
+
+            /**
+             * Copies data from the source memory address "_pCPUBuffer.get()" to the destination memory address "pBuffer" using cudaMemcpy.
+             * @param pBuffer The destination memory address.
+             * @param _pCPUBuffer.get() The source memory address in the _pCPUBuffer.
+             * @param size The size of the data to be copied in bytes.
+             * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+             */
             cudaMemcpy(pBuffer, _pCPUBuffer.get(), size, cudaMemcpyDefault);
         }
     }
@@ -3687,16 +3889,69 @@ bool Network::P2P_Allreduce(Float* pBuffer, size_t size)
         {
             if (getGpu()._numprocs == 2)
             {
+                /**
+                 * Copies data from the source memory address "pBuffer" to the destination memory address "GetPeerBuffer()" using cudaMemcpy.
+                 * @param GetPeerBuffer() The destination memory address in the PeerBuffer.
+                 * @param pBuffer The source memory address.
+                 * @param size The size of the data to be copied in bytes.
+                 * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+                 */
                 cudaMemcpy(GetPeerBuffer(), pBuffer, size * sizeof(Float), cudaMemcpyDefault);
+
+                /**
+                 * Synchronizes the current CUDA device.
+                 */
                 cudaDeviceSynchronize();
+
+                /**
+                 * Blocks until all processes in MPI_COMM_WORLD have reached this point.
+                 */
                 MPI_Barrier(MPI_COMM_WORLD);
+
+                /**
+                 * Adds the data from the source memory address "pBuffer" to the destination memory address "GetP2PReceiveBuffer()".
+                 * @param pBuffer The source memory address.
+                 * @param GetP2PReceiveBuffer() The destination memory address.
+                 * @param size The size of the data to be added.
+                 */
                 kAddBuffers(pBuffer, GetP2PReceiveBuffer(), size);
             }
             else
             {
+                /**
+                 * Calculates the number of stages based on the total number of processes in getGpu()._numprocs.
+                 * The number of stages is calculated as getGpu()._numprocs - 1.
+                 * @param getGpu()._numprocs The total number of processes.
+                 * @return The number of stages calculated.
+                 */
                 uint32_t stages = getGpu()._numprocs - 1;
+
+                /**
+                 * Calculates the segment index for the current process.
+                 * Each process is assigned a unique segment index based on its getGpu()._id.
+                 * @param getGpu()._id The ID of the current process.
+                 * @return The segment index assigned to the current process.
+                 */
                 uint64_t segment = getGpu()._id;
+
+                /**
+                 * Calculates the start index for the current process's segment.
+                 * The start index determines the starting position of the data for the current process's segment.
+                 * @param size The total size of the data.
+                 * @param segment The segment index assigned to the current process.
+                 * @param getGpu()._numprocs The total number of processes.
+                 * @return The start index for the current process's segment.
+                 */
                 uint64_t start = (size * segment) / getGpu()._numprocs;
+
+                /**
+                 * Calculates the end index for the current process's segment.
+                 * The end index determines the ending position (exclusive) of the data for the current process's segment.
+                 * @param size The total size of the data.
+                 * @param segment The segment index assigned to the current process.
+                 * @param getGpu()._numprocs The total number of processes.
+                 * @return The end index for the current process's segment.
+                 */
                 uint64_t end = (size * (segment + 1)) / getGpu()._numprocs;
 
                 for (uint32_t i = 0; i < stages; i++)
@@ -3706,34 +3961,130 @@ bool Network::P2P_Allreduce(Float* pBuffer, size_t size)
                     else
                         cudaMemcpy(GetPeerBuffer(), GetP2PSendBuffer(), (end - start) * sizeof(Float), cudaMemcpyDefault);
 
+                    /**
+                     * Synchronizes the current CUDA device.
+                     */
                     cudaDeviceSynchronize();
+
+                    /**
+                     * Blocks until all processes in MPI_COMM_WORLD have reached this point.
+                     */
                     MPI_Barrier(MPI_COMM_WORLD);
+
+                    /**
+                     * Swaps the contents of the PeerBuffer and P2PSendBuffer.
+                     */
                     SwapPeerBuffers();
+
+                    /**
+                     * Updates the segment, start, and end values for the next data transfer.
+                     * @param segment The current segment index.
+                     * @param getGpu()._numprocs The total number of processes.
+                     * @param size The total size of the data.
+                     */
                     segment = (segment + 1) % getGpu()._numprocs;
                     start = (size * segment) / getGpu()._numprocs;
                     end = (size * (segment + 1)) / getGpu()._numprocs;
+
+                    /**
+                     * Adds the data from the source memory address "GetP2PSendBuffer()" to the destination memory address "pBuffer + start".
+                     * @param GetP2PSendBuffer() The source memory address.
+                     * @param pBuffer + start The destination memory address.
+                     * @param end - start The size of the data to be added.
+                     */
                     kAddBuffers(GetP2PSendBuffer(), pBuffer + start, end - start);
                 }
 
+                /**
+                 * Copies data from the source memory address "GetP2PSendBuffer()" to the destination memory address "pBuffer + start" using cudaMemcpy.
+                 * @param pBuffer + start The destination memory address.
+                 * @param GetP2PSendBuffer() The source memory address.
+                 * @param (end - start) * sizeof(Float) The size of the data to be copied in bytes.
+                 * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+                 */
                 cudaMemcpy(pBuffer + start, GetP2PSendBuffer(), (end - start) * sizeof(Float), cudaMemcpyDefault);
+                /**
+                 * Iterates over the stages to perform computation or data exchange.
+                 * @param i The index of the current stage.
+                 * @param stages The total number of stages.
+                 */
                 for (uint32_t i = 0; i < stages; i++)
                 {
+                    /**
+                     * Copies data from the P2PSendBuffer to the PeerBuffer using cudaMemcpy.
+                     * @param GetPeerBuffer() The destination memory address in the PeerBuffer.
+                     * @param GetP2PSendBuffer() The source memory address in the P2PSendBuffer.
+                     * @param (end - start) * sizeof(Float) The size of the data to be copied in bytes.
+                     * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+                     */
                     cudaMemcpy(GetPeerBuffer(), GetP2PSendBuffer(), (end - start) * sizeof(Float), cudaMemcpyDefault);
 
+                    /**
+                     * Synchronizes the current CUDA device.
+                     */
                     cudaDeviceSynchronize();
+
+                    /**
+                     * Blocks until all processes in MPI_COMM_WORLD have reached this point.
+                     */
                     MPI_Barrier(MPI_COMM_WORLD);
+
+                    /**
+                     * Swaps the contents of the PeerBuffer and P2PSendBuffer.
+                     */
                     SwapPeerBuffers();
+
+                    /**
+                     * Updates the segment, start, and end values for the next data transfer.
+                     * @param segment The current segment index.
+                     * @param getGpu()._numprocs The total number of processes.
+                     * @param size The total size of the data.
+                     */
                     segment = (segment + 1) % getGpu()._numprocs;
                     start = (size * segment) / getGpu()._numprocs;
                     end = (size * (segment + 1)) / getGpu()._numprocs;
+
+                    /**
+                     * Copies data from the P2PSendBuffer to the specified range in the pBuffer using cudaMemcpy.
+                     * @param pBuffer The destination memory address in the pBuffer.
+                     * @param GetP2PSendBuffer() The source memory address in the P2PSendBuffer.
+                     * @param (end - start) * sizeof(Float) The size of the data to be copied in bytes.
+                     * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+                     */
                     cudaMemcpy(pBuffer + start, GetP2PSendBuffer(), (end - start) * sizeof(Float), cudaMemcpyDefault);
                 }
             }
         }
         else
         {
+            /**
+             * Copies data from the source memory address "pBuffer" to the destination memory address "_pCPUBuffer.get()" using cudaMemcpy.
+             * @param _pCPUBuffer.get() The destination memory address in the _pCPUBuffer.
+             * @param pBuffer The source memory address.
+             * @param size The size of the data to be copied in bytes.
+             * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+             */
             cudaMemcpy(_pCPUBuffer.get(), pBuffer, size * sizeof(Float), cudaMemcpyDefault);
+
+            /**
+             * Performs an allreduce operation on the data in _pCPUBuffer using MPI_Allreduce.
+             * The result is stored in _pCPUBuffer.
+             * @param MPI_IN_PLACE The input data is taken from the _pCPUBuffer itself.
+             * @param _pCPUBuffer.get() The output buffer to store the result.
+             * @param size The size of the data to be reduced.
+             * @param MPI_FLOAT The datatype of the elements being reduced.
+             * @param MPI_SUM The operation to be performed during reduction (summation).
+             * @param MPI_COMM_WORLD The communicator representing all processes.
+             */
             MPI_Allreduce(MPI_IN_PLACE, _pCPUBuffer.get(), size, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+
+            /**
+             * Copies data from the source memory address "_pCPUBuffer.get()" to the destination memory address "pBuffer" using cudaMemcpy.
+             * @param pBuffer The destination memory address.
+             * @param _pCPUBuffer.get() The source memory address in the _pCPUBuffer.
+             * @param size The size of the data to be copied in bytes.
+             * @param cudaMemcpyDefault The cudaMemcpyKind specifying the type of memory copy.
+             */
             cudaMemcpy(pBuffer, _pCPUBuffer.get(), size * sizeof(Float), cudaMemcpyDefault);
         }
     }
