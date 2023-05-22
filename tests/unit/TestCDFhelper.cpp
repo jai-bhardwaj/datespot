@@ -10,7 +10,7 @@
 /**
  * @brief Test fixture for the NetCDFhelper class.
  */
-class TestNetCDFhelper : public ::testing::Test {
+class TestCDFhelper : public ::testing::Test {
     const static std::map<std::string, unsigned int> validFeatureIndex;
 
 public:
@@ -108,7 +108,7 @@ public:
     }
 };
 
-const std::map<std::string, unsigned int> TestNetCDFhelper::validFeatureIndex = {
+const std::map<std::string, unsigned int> TestCDFhelper::validFeatureIndex = {
     { "110510", 26743 },
     { "121019", 26740 },
     { "121017", 26739 },
@@ -117,28 +117,28 @@ const std::map<std::string, unsigned int> TestNetCDFhelper::validFeatureIndex = 
 };
 
 /**
- * @brief Test suite for the TestNetCDFhelper class.
+ * @brief Test suite for the TestCDFhelper class.
  */
-TEST_F(TestNetCDFhelper, TestLoadIndexWithValidInput) {
+TEST_F(TestCDFhelper, TestLoadIndexWithValidInput) {
     TestLoadIndexWithValidInput();
 }
 
-TEST_F(TestNetCDFhelper, TestLoadIndexWithDuplicateEntry) {
+TEST_F(TestCDFhelper, TestLoadIndexWithDuplicateEntry) {
     TestLoadIndexWithDuplicateEntry();
 }
 
-TEST_F(TestNetCDFhelper, TestLoadIndexWithDuplicateLabelOnly) {
+TEST_F(TestCDFhelper, TestLoadIndexWithDuplicateLabelOnly) {
     TestLoadIndexWithDuplicateLabelOnly();
 }
 
-TEST_F(TestNetCDFhelper, TestLoadIndexWithMissingLabel) {
+TEST_F(TestCDFhelper, TestLoadIndexWithMissingLabel) {
     TestLoadIndexWithMissingLabel();
 }
 
-TEST_F(TestNetCDFhelper, TestLoadIndexWithMissingLabelAndTab) {
+TEST_F(TestCDFhelper, TestLoadIndexWithMissingLabelAndTab) {
     TestLoadIndexWithMissingLabelAndTab();
 }
 
-TEST_F(TestNetCDFhelper, TestLoadIndexWithExtraTab) {
+TEST_F(TestCDFhelper, TestLoadIndexWithExtraTab) {
     TestLoadIndexWithExtraTab();
 }
