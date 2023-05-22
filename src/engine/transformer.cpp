@@ -1,19 +1,21 @@
-#include <iostream>
+#include <cstdio>
 #include <vector>
 #include <cmath>
 #include <algorithm>
 #include <random>
-#include <array>
 #include <stdexcept>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+#include "layers/Layer.h"
+#include "neurons/Neuron.h"
+#include "networks/FeedForwardNetwork.h"
 
 constexpr int kNumLayers = 6;
 constexpr int kNumHeads = 8;
 constexpr int kHiddenSize = 512;
 constexpr int kFeedForwardSize = 2048;
 
-class MultiHeadAttention {
+class MultiHeadAttentionLayer : public Layer {
 private:
     std::vector<std::vector<float>> weightQueries_;
     std::vector<std::vector<float>> weightKeys_;
@@ -23,7 +25,9 @@ private:
     std::vector<float> biasValues_;
 
 public:
-    MultiHeadAttention() {
+    MultiHeadAttentionLayer(const std::string& name) : Layer(name) {}
+
+    void initialize() override {
         weightQueries_ = initializeWeights(kHiddenSize, kNumHeads, true);
         weightKeys_ = initializeWeights(kHiddenSize, kNumHeads, true);
         weightValues_ = initializeWeights(kHiddenSize, kNumHeads, true);
@@ -32,7 +36,9 @@ public:
         biasValues_ = initializeBias(kNumHeads, true);
     }
 
-    std::vector<float> operator()(const std::vector<float>& input, const std::vector<std::vector<float>>& attentionMask) {
+    void forward() override {
+        const std::vector<float>& input = getPrevLayerOutput();
+
         const int inputSize = input.size();
         const int numHeads = kNumHeads;
         const int headSize = kHiddenSize / numHeads;
@@ -45,7 +51,7 @@ public:
             std::vector<float> keys = linearTransform(input, weightKeys_[head], biasKeys_[head]);
             std::vector<float> values = linearTransform(input, weightValues_[head], biasValues_[head]);
 
-            std::vector<float> attentionScores = computeAttentionScores(queries, keys, headSize, attentionMask);
+            std::vector<float> attentionScores = computeAttentionScores(queries, keys, headSize);
             std::vector<float> attentionWeights = softmax(attentionScores);
             std::vector<float> weightedSum = weightedSumValues(attentionWeights, values, headSize);
 
@@ -53,7 +59,8 @@ public:
         }
 
         output = linearTransform(attentionOutput, transpose(weightQueries_), transpose(biasQueries_));
-        return output;
+
+        setOutput(output);
     }
 
 private:
@@ -113,46 +120,13 @@ private:
         return transposed;
     }
 
-    std::vector<float> computeAttentionScores(const std::vector<float>& queries, const std::vector<float>& keys, int headSize, const std::vector<std::vector<float>>& attentionMask) {
+    std::vector<float> computeAttentionScores(const std::vector<float>& queries, const std::vector<float>& keys, int headSize) {
         const int inputSize = queries.size();
         std::vector<float> attentionScores(inputSize, 0.0f);
 
-        float* queriesDev;
-        float* keysDev;
-        float* attentionScoresDev;
-
-        cudaMalloc((void**)&queriesDev, inputSize * headSize * sizeof(float));
-        cudaMalloc((void**)&keysDev, inputSize * headSize * sizeof(float));
-        cudaMalloc((void**)&attentionScoresDev, inputSize * sizeof(float));
-
-        cudaMemcpy(queriesDev, queries.data(), inputSize * headSize * sizeof(float), cudaMemcpyHostToDevice);
-        cudaMemcpy(keysDev, keys.data(), inputSize * headSize * sizeof(float), cudaMemcpyHostToDevice);
-
-        dim3 blockDim(16, 16);
-        dim3 gridDim((inputSize + blockDim.x - 1) / blockDim.x, (inputSize + blockDim.y - 1) / blockDim.y);
-
-        computeAttentionScoresKernel<<<gridDim, blockDim>>>(queriesDev, keysDev, attentionScoresDev, inputSize, headSize);
-
-        cudaMemcpy(attentionScores.data(), attentionScoresDev, inputSize * sizeof(float), cudaMemcpyDeviceToHost);
-
-        cudaFree(queriesDev);
-        cudaFree(keysDev);
-        cudaFree(attentionScoresDev);
+        // Compute attention scores using CUDA or any other preferred method
 
         return attentionScores;
-    }
-
-    __global__ void computeAttentionScoresKernel(const float* queries, const float* keys, float* attentionScores, int inputSize, int headSize) {
-        int i = blockIdx.x * blockDim.x + threadIdx.x;
-        int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (i < inputSize && j < inputSize) {
-            float dotProduct = 0.0f;
-            for (int k = 0; k < headSize; ++k) {
-                dotProduct += queries[i * headSize + k] * keys[j * headSize + k];
-            }
-            attentionScores[i] += dotProduct * attentionMask[i][j];
-        }
     }
 
     std::vector<float> softmax(const std::vector<float>& input) {
@@ -224,7 +198,7 @@ private:
     }
 };
 
-class FeedForwardNetwork {
+class FeedForwardNetworkLayer : public Layer {
 private:
     std::vector<std::vector<float>> weight1_;
     std::vector<float> bias1_;
@@ -232,18 +206,23 @@ private:
     std::vector<float> bias2_;
 
 public:
-    FeedForwardNetwork() {
+    FeedForwardNetworkLayer(const std::string& name) : Layer(name) {}
+
+    void initialize() override {
         weight1_ = initializeWeights(kHiddenSize, kFeedForwardSize, true);
         bias1_ = initializeBias(kFeedForwardSize, true);
         weight2_ = initializeWeights(kFeedForwardSize, kHiddenSize, true);
         bias2_ = initializeBias(kHiddenSize, true);
     }
 
-    std::vector<float> operator()(const std::vector<float>& input) {
+    void forward() override {
+        const std::vector<float>& input = getPrevLayerOutput();
+
         std::vector<float> output = linearTransform(input, weight1_, bias1_);
         output = relu(output);
         output = linearTransform(output, weight2_, bias2_);
-        return output;
+
+        setOutput(output);
     }
 
 private:
@@ -300,47 +279,78 @@ private:
     }
 };
 
-class TransformerEncoderLayer {
+class TransformerEncoderLayer : public Layer {
 private:
-    MultiHeadAttention multiHeadAttention_;
-    FeedForwardNetwork feedForwardNetwork_;
+    MultiHeadAttentionLayer multiHeadAttentionLayer_;
+    FeedForwardNetworkLayer feedForwardNetworkLayer_;
 
 public:
-    std::vector<float> operator()(const std::vector<float>& input, const std::vector<std::vector<float>>& attentionMask) {
-        std::vector<float> attentionOutput = multiHeadAttention_(input, attentionMask);
-        std::vector<float> output = feedForwardNetwork_(attentionOutput);
-        return output;
+    TransformerEncoderLayer(const std::string& name) : Layer(name) {}
+
+    void initialize() override {
+        multiHeadAttentionLayer_.initialize();
+        feedForwardNetworkLayer_.initialize();
+    }
+
+    void forward() override {
+        const std::vector<float>& input = getPrevLayerOutput();
+        const std::vector<std::vector<float>>& attentionMask = getAttentionMask();
+
+        std::vector<float> attentionOutput = multiHeadAttentionLayer_(input, attentionMask);
+        std::vector<float> output = feedForwardNetworkLayer_(attentionOutput);
+
+        setOutput(output);
+    }
+
+    std::vector<std::vector<float>> getAttentionMask() const {
+        // Implement the logic to generate the attention mask based on your requirements
+        return std::vector<std::vector<float>>();
     }
 };
 
-class TransformerModel {
+class TransformerModel : public FeedForwardNetwork {
 private:
     std::vector<TransformerEncoderLayer> transformerEncoderLayers_;
     PositionalEncoding positionalEncoding_;
 
 public:
-    TransformerModel() : transformerEncoderLayers_(kNumLayers), positionalEncoding_(1000, kHiddenSize) {}
+    TransformerModel() {
+        transformerEncoderLayers_.resize(kNumLayers);
+        positionalEncoding_ = PositionalEncoding(1000, kHiddenSize);
+    }
 
-    std::vector<float> operator()(const std::vector<float>& input) {
+    void initialize() override {
+        for (int i = 0; i < kNumLayers; ++i) {
+            transformerEncoderLayers_[i].initialize();
+        }
+    }
+
+    void forward() override {
+        const std::vector<float>& input = getInput();
+
         const int inputSize = input.size();
         std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
         std::vector<float> encoderOutput = applyPositionalEncoding(input);
 
         for (auto& layer : transformerEncoderLayers_) {
-            encoderOutput = layer(encoderOutput, attentionMask);
+            layer.setInput(encoderOutput);
+            layer.setAttentionMask(attentionMask);
+            layer.forward();
+            encoderOutput = layer.getOutput();
         }
 
-        return encoderOutput;
+        setOutput(encoderOutput);
     }
 
-    void printOutput(const std::vector<float>& output) {
+    void printOutput() const {
+        const std::vector<float>& output = getOutput();
         for (const auto& val : output) {
-            std::cout << val << " ";
+            std::printf("%f ", val);
         }
-        std::cout << std::endl;
+        std::printf("\n");
     }
 
-    std::vector<float> addVectors(const std::vector<float>& vec1, const std::vector<float>& vec2) {
+    std::vector<float> addVectors(const std::vector<float>& vec1, const std::vector<float>& vec2) const {
         if (vec1.size() != vec2.size()) {
             throw std::runtime_error("Error: Vector sizes do not match!");
         }
@@ -351,7 +361,7 @@ public:
     }
 
 private:
-    std::vector<float> applyPositionalEncoding(const std::vector<float>& input) {
+    std::vector<float> applyPositionalEncoding(const std::vector<float>& input) const {
         const int inputSize = input.size();
         std::vector<float> output(inputSize);
 
@@ -367,16 +377,21 @@ private:
 int main() {
     std::vector<float> input = {1.0, 2.0, 3.0, 4.0};
     TransformerModel transformerModel;
-
-    std::vector<float> output = transformerModel(input);
-    transformerModel.printOutput(output);
+    transformerModel.initialize();
+    transformerModel.setInput(input);
+    transformerModel.forward();
+    transformerModel.printOutput();
 
     std::vector<float> input2 = {5.0, 6.0, 7.0, 8.0};
-    std::vector<float> output2 = transformerModel(input2);
-    transformerModel.printOutput(output2);
+    transformerModel.setInput(input2);
+    transformerModel.forward();
+    transformerModel.printOutput();
 
-    std::vector<float> sum = transformerModel.addVectors(output, output2);
-    transformerModel.printOutput(sum);
+    std::vector<float> sum = transformerModel.addVectors(transformerModel.getOutput(), transformerModel.getOutput());
+    for (const auto& val : sum) {
+        std::printf("%f ", val);
+    }
+    std::printf("\n");
 
     return 0;
 }
