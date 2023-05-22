@@ -133,7 +133,7 @@ namespace knn {
             cudaEventRecord(stop, 0);
             cudaEventSynchronize(stop);
             cudaEventElapsedTime(&elapsed, start, stop);
-            data->elapsedTopK[device] = elapsed;
+            data->elapsedOutput[device] = elapsed;
 
             cudaMemcpy(hScores, dScores, hResultScores.getSizeInBytes(), cudaMemcpyDeviceToHost);
             cudaMemcpy(hIndexes, dIndexes, hResultIndexes.getSizeInBytes(), cudaMemcpyDeviceToHost);
