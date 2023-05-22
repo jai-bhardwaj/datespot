@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include "layers/Layer.h"
-#include "neurons/Neuron.h"
-#include "networks/FeedForwardNetwork.h"
+#include "Layer.h"
+#include "Neuron.h"
+#include "FeedForwardNetwork.h"
 
 constexpr int kNumLayers = 6;
 constexpr int kNumHeads = 8;
