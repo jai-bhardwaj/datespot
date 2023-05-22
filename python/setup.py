@@ -39,7 +39,7 @@ module1 = Extension(
         '../system-tensorhub/lib',
         '/usr/local/lib/python3.8/dist-packages/tensorflow'
     ],
-    language='c++20',
+    language='c++',
     extra_compile_args=['-DOMPI_SKIP_MPICXX']
 )
 
@@ -56,7 +56,7 @@ setup(
         'Development Status :: 5 - Staging',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: Apache-2.0 License',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: C++',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
@@ -69,4 +69,3 @@ setup(
         'Bug Tracker': 'https://github.com/dimske-sys/tensorhub/issues',
     },
 )
-
