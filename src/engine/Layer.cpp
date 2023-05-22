@@ -13,6 +13,13 @@
 using namespace netCDF;
 using namespace netCDF::exceptions;
 
+/**
+ * @brief Print the contents of a Float array with the specified name.
+ *
+ * @param name The name of the array.
+ * @param p The pointer to the Float array.
+ * @param stride The stride of the array.
+ */
 void DumpP(const char* name, Float* p, int stride) {
     std::cout << name << ": ";
     std::vector<Float> data(stride);
@@ -24,111 +31,454 @@ void DumpP(const char* name, Float* p, int stride) {
 }
 
 Layer::Layer(LayerDescriptor& d, uint32_t batch)
-    : _name(d._name),
-      _kind(d._kind),
-      _type(d._type),
-      _attributes(d._attributes),
-      _poolingFunction(d._poolingFunction),
-      _dataSet(d._dataSet),
-      _pDataSet(nullptr),
-      _vSource(d._vSource),
-      _vSkip(d._vSkip),
-      _pbUnit(),
-      _pbDelta(),
-      _pbDropout(),
-      _pbDeltaBN(),
-      _pbScaleGradientBN(),
-      _pbScaleGradientVelocityBN(),
-      _pbBiasGradientBN(),
-      _pbBiasGradientVelocityBN(),
-      _pbUnitBN(),
-      _pbScaleBN(),
-      _pbBiasBN(),
-      _pbRunningMeanBN(),
-      _pbRunningVarianceBN(),
-      _pbSaveMeanBN(),
-      _pbSaveInvVarianceBN(),
-      _Nx(d._Nx),
-      _Ny(d._Ny),
-      _Nz(d._Nz),
-      _Nw(d._Nw),
-      _strideBN(0),
-      _dimensions(d._dimensions),
-      _weightInit(d._weightInit),
-      _weightInitScale(d._weightInitScale),
-      _biasInit(d._biasInit),
-      _kernelX(d._kernelX),
-      _kernelY(d._kernelY),
-      _kernelZ(d._kernelZ),
-      _kernelStrideX(d._kernelStrideX),
-      _kernelStrideY(d._kernelStrideY),
-      _kernelStrideZ(d._kernelStrideZ),
-      _kernelPaddingX(d._kernelPaddingX),
-      _kernelPaddingY(d._kernelPaddingY),
-      _kernelPaddingZ(d._kernelPaddingZ),
-      _kernelDimensions(d._kernelDimensions),
-      _weightNorm(d._weightNorm),
-      _deltaNorm(d._deltaNorm),
-      _pDropout(d._pDropout),
-      _activation(d._activation),
-      _oddBatch(0),
-      _bSparse(d._attributes & Layer::Attributes::Sparse),
-      _sparsenessPenalty_p(d._sparsenessPenalty_p),
-      _sparsenessPenalty_beta(d._sparsenessPenalty_beta),
-      _bDenoising(d._attributes & Layer::Attributes::Denoising),
-      _bFastSparse(false),
-      _bDirty(true),
-      _bnCalls(0),
-      _priority(-1),
-      _deltaUpdateCount(0),
-      _unitUpdateCount(0),
-      _batch(batch),
-      _localBatch(batch),
-      _RELUSlope(d._RELUSlope),
-      _ELUAlpha(d._ELUAlpha),
-      _SELULambda(d._SELULambda),
-      _bBatchNormalization(d._attributes & Layer::Attributes::BatchNormalization)
+    /**
+     * @brief The name of the layer.
+     */
+    _name(d._name),
+    /**
+     * @brief The kind of layer.
+     */
+    _kind(d._kind),
+
+    /**
+     * @brief The type of layer.
+     */
+    _type(d._type),
+
+    /**
+     * @brief The attributes of the layer.
+     */
+    _attributes(d._attributes),
+
+    /**
+     * @brief The pooling function used by the layer.
+     */
+    _poolingFunction(d._poolingFunction),
+
+    /**
+     * @brief The data set used by the layer.
+     */
+    _dataSet(d._dataSet),
+
+    /**
+     * @brief Pointer to the data set.
+     */
+    _pDataSet(nullptr),
+
+    /**
+     * @brief The vSource of the layer.
+     */
+    _vSource(d._vSource),
+
+    /**
+     * @brief The vSkip of the layer.
+     */
+    _vSkip(d._vSkip),
+
+    /**
+     * @brief The pbUnit of the layer.
+     */
+    _pbUnit(),
+
+    /**
+     * @brief The pbDelta of the layer.
+     */
+    _pbDelta(),
+
+    /**
+     * @brief The pbDropout of the layer.
+     */
+    _pbDropout(),
+
+    /**
+     * @brief The pbDeltaBN of the layer.
+     */
+    _pbDeltaBN(),
+
+    /**
+     * @brief The pbScaleGradientBN of the layer.
+     */
+    _pbScaleGradientBN(),
+
+    /**
+     * @brief The pbScaleGradientVelocityBN of the layer.
+     */
+    _pbScaleGradientVelocityBN(),
+
+    /**
+     * @brief The pbBiasGradientBN of the layer.
+     */
+    _pbBiasGradientBN(),
+
+    /**
+     * @brief The pbBiasGradientVelocityBN of the layer.
+     */
+    _pbBiasGradientVelocityBN(),
+
+    /**
+     * @brief The pbUnitBN of the layer.
+     */
+    _pbUnitBN(),
+
+    /**
+     * @brief The pbScaleBN of the layer.
+     */
+    _pbScaleBN(),
+
+    /**
+     * @brief The pbBiasBN of the layer.
+     */
+    _pbBiasBN(),
+
+    /**
+     * @brief The pbRunningMeanBN of the layer.
+     */
+    _pbRunningMeanBN(),
+
+    /**
+     * @brief The pbRunningVarianceBN of the layer.
+     */
+    _pbRunningVarianceBN(),
+
+    /**
+     * @brief The pbSaveMeanBN of the layer.
+     */
+    _pbSaveMeanBN(),
+
+    /**
+     * @brief The pbSaveInvVarianceBN of the layer.
+     */
+    _pbSaveInvVarianceBN(),
+
+    /**
+     * @brief The Nx dimension of the layer.
+     */
+    _Nx(d._Nx),
+
+    /**
+     * @brief The Ny dimension of the layer.
+     */
+    _Ny(d._Ny),
+
+    /**
+     * @brief The Nz dimension of the layer.
+     */
+    _Nz(d._Nz),
+
+    /**
+     * @brief The Nw dimension of the layer.
+     */
+    _Nw(d._Nw),
+
+    /**
+     * @brief The strideBN of the layer.
+     */
+    _strideBN(0),
+
+    /**
+     * @brief The dimensions of the layer.
+     */
+    _dimensions(d._dimensions),
+
+    /**
+     * @brief The weight initialization of the layer.
+     */
+    _weightInit(d._weightInit),
+
+    /**
+     * @brief The weight initialization scale of the layer.
+     */
+    _weightInitScale(d._weightInitScale),
+
+    /**
+     * @brief The bias initialization of the layer.
+     */
+    _biasInit(d._biasInit),
+
+    /**
+     * @brief The X dimension of the kernel.
+     */
+    _kernelX(d._kernelX),
+
+    /**
+     * @brief The Y dimension of the kernel.
+     */
+    _kernelY(d._kernelY),
+
+    /**
+     * @brief The Z dimension of the kernel.
+     */
+    _kernelZ(d._kernelZ),
+
+    /**
+     * @brief The X dimension stride of the kernel.
+     */
+    _kernelStrideX(d._kernelStrideX),
+
+    /**
+     * @brief The Y dimension stride of the kernel.
+     */
+    _kernelStrideY(d._kernelStrideY),
+
+    /**
+     * @brief The Z dimension stride of the kernel.
+     */
+    _kernelStrideZ(d._kernelStrideZ),
+
+    /**
+     * @brief The X dimension padding of the kernel.
+     */
+    _kernelPaddingX(d._kernelPaddingX),
+
+    /**
+     * @brief The Y dimension padding of the kernel.
+     */
+    _kernelPaddingY(d._kernelPaddingY),
+
+    /**
+     * @brief The Z dimension padding of the kernel.
+     */
+    _kernelPaddingZ(d._kernelPaddingZ),
+
+    /**
+     * @brief The kernel dimensions of the layer.
+     */
+    _kernelDimensions(d._kernelDimensions),
+
+    /**
+     * @brief The weight normalization of the layer.
+     */
+    _weightNorm(d._weightNorm),
+
+    /**
+     * @brief The delta normalization of the layer.
+     */
+    _deltaNorm(d._deltaNorm),
+
+    /**
+     * @brief The dropout probability of the layer.
+     */
+    _pDropout(d._pDropout),
+
+    /**
+     * @brief The activation function of the layer.
+     */
+    _activation(d._activation),
+
+    /**
+     * @brief Flag indicating whether the batch size is odd.
+     */
+    _oddBatch(0),
+
+    /**
+     * @brief Flag indicating whether the layer is sparse.
+     */
+    _bSparse(d._attributes & Layer::Attributes::Sparse),
+
+    /**
+     * @brief The sparseness penalty p value of the layer.
+     */
+    _sparsenessPenalty_p(d._sparsenessPenalty_p),
+
+    /**
+     * @brief The sparseness penalty beta value of the layer.
+     */
+    _sparsenessPenalty_beta(d._sparsenessPenalty_beta),
+
+    /**
+     * @brief Flag indicating whether the layer is denoising.
+     */
+    _bDenoising(d._attributes & Layer::Attributes::Denoising),
+
+    /**
+     * @brief Flag indicating whether fast sparse computation is used.
+     */
+    _bFastSparse(false),
+
+    /**
+     * @brief Flag indicating whether the layer is dirty.
+     */
+    _bDirty(true),
+
+    /**
+     * @brief The number of batch normalization calls.
+     */
+    _bnCalls(0),
+
+    /**
+     * @brief The priority of the layer.
+     */
+    _priority(-1),
+
+    /**
+     * @brief The delta update count of the layer.
+     */
+    _deltaUpdateCount(0),
+
+    /**
+     * @brief The unit update count of the layer.
+     */
+    _unitUpdateCount(0),
+
+    /**
+     * @brief The batch size for the layer.
+     */
+    _batch(batch),
+
+    /**
+     * @brief The local batch size for the layer.
+     */
+    _localBatch(batch),
+
+    /**
+     * @brief The slope value for the ReLU activation function.
+     */
+    _RELUSlope(d._RELUSlope),
+
+    /**
+     * @brief The alpha value for the ELU activation function.
+     */
+    _ELUAlpha(d._ELUAlpha),
+
+    /**
+     * @brief The lambda value for the SELU activation function.
+     */
+    _SELULambda(d._SELULambda),
+
+    /**
+     * @brief Flag indicating whether batch normalization is used.
+     */
+    _bBatchNormalization(d._attributes & Layer::Attributes::BatchNormalization)
+
 {
+    /**
+     * @brief Calculate the stride of the layer based on the dimensions (_Nx, _Ny, _Nz, _Nw).
+     */
     _stride = _Nx * _Ny * _Nz * _Nw;
+
+    /**
+     * @brief Determine the parallelization type based on the layer type.
+     *
+     * For FullyConnected type, the parallelization is Model.
+     * For other types, the parallelization is Data.
+     */
     if (_type == FullyConnected)
         _parallelization = Model;
     else
         _parallelization = Data;
 
+    /**
+     * @brief Calculate the minimum and maximum X values for the current GPU.
+     */
     _minX = static_cast<size_t>(_Nx * getGpu()._id) / static_cast<size_t>(getGpu()._numprocs);
     _maxX = static_cast<size_t>(_Nx * (getGpu()._id + 1)) / static_cast<size_t>(getGpu()._numprocs);
+
+    /**
+     * @brief Calculate the local stride for the current GPU based on the X range (_minX, _maxX) and dimensions (_Ny, _Nz, _Nw).
+     */
     _localStride = (_maxX - _minX) * _Ny * _Nz * _Nw;
+
+    /**
+     * @brief Calculate the maximum local stride across all GPUs based on the total X range and dimensions (_Ny, _Nz, _Nw).
+     */
     _maxLocalStride = (((static_cast<size_t>(_Nx) + getGpu()._numprocs - 1) / static_cast<size_t>(getGpu()._numprocs)) * _Ny * _Nz * _Nw);
 
+    /**
+     * @brief Check if the layer type is Pooling or Convolutional.
+     */
     if ((_type == Layer::Type::Pooling) || (_type == Layer::Type::Convolutional))
+
     {
+        /**
+         * @brief Create a tensor descriptor for the layer.
+         *
+         * @param _tensorDescriptor The pointer to the tensor descriptor.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus_t cudnnStatus = cudnnCreateTensorDescriptor(&_tensorDescriptor);
-        CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create _tensordescriptor");
+        CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create _tensorDescriptor");
+
+        /**
+         * @brief Create a tensor descriptor for the odd batch size.
+         *
+         * @param _oddBatchTensorDescriptor The pointer to the odd batch tensor descriptor.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus = cudnnCreateTensorDescriptor(&_oddBatchTensorDescriptor);
-        CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create _oddBatchTensordescriptor");
+        CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create _oddBatchTensorDescriptor");
     }
 
     if (_bBatchNormalization)
     {
+        /**
+         * @brief The CUDA status.
+         */
         cudaError_t status;
+
+        /**
+         * @brief Create a tensor descriptor for scale, bias, mean, and variance of batch normalization.
+         *
+         * @param _scaleBiasMeanVarDescBN The pointer to the tensor descriptor.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus_t cudnnStatus = cudnnCreateTensorDescriptor(&_scaleBiasMeanVarDescBN);
         CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create _scaleBiasMeanVarDescBN");
-        cudnnStatus = cudnnCreateTensorDescriptor(&_tensorDescriptorBN);
-        CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create _tensordescriptorBN");
 
+        /**
+         * @brief Create a tensor descriptor for batch normalization.
+         *
+         * @param _tensorDescriptorBN The pointer to the tensor descriptor.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
+        cudnnStatus = cudnnCreateTensorDescriptor(&_tensorDescriptorBN);
+        CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create _tensorDescriptorBN");
+
+        /**
+         * @brief Set the strideBN based on the layer type.
+         */
         if (_type == Layer::Type::Convolutional)
             _strideBN = _Nz;
         else
             _strideBN = _localStride;
 
+        /**
+         * @brief Reset the unique pointer for _pbScaleGradientBN.
+         */
         _pbScaleGradientBN.reset(new GpuBuffer<Float>(_strideBN));
+
+        /**
+         * @brief Reset the unique pointer for _pbBiasGradientBN.
+         */
         _pbBiasGradientBN.reset(new GpuBuffer<Float>(_strideBN));
+
+        /**
+         * @brief Reset the unique pointer for _pbScaleBN.
+         */
         _pbScaleBN.reset(new GpuBuffer<Float>(_strideBN));
+
+        /**
+         * @brief Reset the unique pointer for _pbBiasBN.
+         */
         _pbBiasBN.reset(new GpuBuffer<Float>(_strideBN));
+
+        /**
+         * @brief Reset the unique pointer for _pbRunningMeanBN.
+         */
         _pbRunningMeanBN.reset(new GpuBuffer<Float>(_strideBN));
+
+        /**
+         * @brief Reset the unique pointer for _pbRunningVarianceBN.
+         */
         _pbRunningVarianceBN.reset(new GpuBuffer<Float>(_strideBN));
 
+        /**
+         * @brief Reset the unique pointer for _pbSaveMeanBN.
+         */
         _pbSaveMeanBN.reset(new GpuBuffer<Float>(_strideBN));
+
+        /**
+         * @brief Reset the unique pointer for _pbSaveInvVarianceBN.
+         */
         _pbSaveInvVarianceBN.reset(new GpuBuffer<Float>(_strideBN));
 
         if (getGpu()._id == 0)
@@ -151,6 +501,9 @@ Layer::Layer(LayerDescriptor& d, uint32_t batch)
                       << " bytes of BN saving InvVariance for layer " << _name << std::endl;
         }
 
+        /**
+         * @brief Copy the values from d._vScaleBN to _pbScaleBN if d._vScaleBN is not empty; otherwise, initialize _pbScaleBN with ones.
+         */
         if (!d._vScaleBN.empty())
         {
             status = cudaMemcpy(_pbScaleBN->_pDevData, d._vScaleBN.data(), _strideBN * sizeof(Float), cudaMemcpyHostToDevice);
@@ -161,6 +514,10 @@ Layer::Layer(LayerDescriptor& d, uint32_t batch)
             status = cudaMemcpy(_pbScaleBN->_pDevData, ones.data(), _strideBN * sizeof(Float), cudaMemcpyHostToDevice);
         }
         RTERROR(status, "Layer::Layer: cudaMemcpy failed on  _pbScaleBN");
+
+        /**
+         * @brief Copy the values from d._vBiasBN to _pbBiasBN if d._vBiasBN is not empty; otherwise, set _pbBiasBN to all zeros.
+         */
         if (!d._vBiasBN.empty())
         {
             status = cudaMemcpy(_pbBiasBN->_pDevData, d._vBiasBN.data(), _strideBN * sizeof(Float), cudaMemcpyHostToDevice);
@@ -170,6 +527,10 @@ Layer::Layer(LayerDescriptor& d, uint32_t batch)
             status = cudaMemset(_pbBiasBN->_pDevData, 0, _strideBN * sizeof(Float));
         }
         RTERROR(status, "Layer::Layer: cudaMemcpy failed on  _pbBiasBN");
+
+        /**
+         * @brief Copy the values from d._vRunningMeanBN to _pbRunningMeanBN if d._vRunningMeanBN is not empty; otherwise, set _pbRunningMeanBN to all zeros.
+         */
         if (!d._vRunningMeanBN.empty())
         {
             status = cudaMemcpy(_pbRunningMeanBN->_pDevData, d._vRunningMeanBN.data(), _strideBN * sizeof(Float), cudaMemcpyHostToDevice);
@@ -179,6 +540,10 @@ Layer::Layer(LayerDescriptor& d, uint32_t batch)
             status = cudaMemset(_pbRunningMeanBN->_pDevData, 0, _strideBN * sizeof(Float));
         }
         RTERROR(status, "Layer::Layer: cudaMemcpy failed on  _pbRunningMeanBN");
+
+        /**
+         * @brief Copy the values from d._vRunningVarianceBN to _pbRunningVarianceBN if d._vRunningVarianceBN is not empty; otherwise, set _pbRunningVarianceBN to all zeros.
+         */
         if (!d._vRunningVarianceBN.empty())
         {
             status = cudaMemcpy(_pbRunningVarianceBN->_pDevData, d._vRunningVarianceBN.data(), _strideBN * sizeof(Float), cudaMemcpyHostToDevice);
@@ -189,23 +554,52 @@ Layer::Layer(LayerDescriptor& d, uint32_t batch)
         }
         RTERROR(status, "Layer::Layer: cudaMemcpy failed on  _pbRunningVarianceBN");
 
+        /**
+         * @brief Set _pbScaleGradientBN to all zeros.
+         */
         status = cudaMemset(_pbScaleGradientBN->_pDevData, 0, _strideBN * sizeof(Float));
         RTERROR(status, "Layer::Layer: cudaMemset failed on  _pbScaleGradientBN");
+
+        /**
+         * @brief Set _pbBiasGradientBN to all zeros.
+         */
         status = cudaMemset(_pbBiasGradientBN->_pDevData, 0, _strideBN * sizeof(Float));
         RTERROR(status, "Layer::Layer: cudaMemset failed on  _pbBiasGradientBN");
+
+        /**
+         * @brief Set _pbSaveMeanBN to all zeros.
+         */
         status = cudaMemset(_pbSaveMeanBN->_pDevData, 0, _strideBN * sizeof(Float));
         RTERROR(status, "Layer::Layer: cudaMemset failed on  _pbSaveMeanBN");
+
+        /**
+         * @brief Set _pbSaveInvVarianceBN to all zeros.
+         */
         status = cudaMemset(_pbSaveInvVarianceBN->_pDevData, 0, _strideBN * sizeof(Float));
         RTERROR(status, "Layer::Layer: cudaMemset failed on  _pbSaveInvVarianceBN");
     }
 
     if (_type == Layer::Type::Pooling)
     {
+        /**
+         * @brief Create a pooling descriptor for the layer.
+         *
+         * @param _poolingDescriptor The pointer to the pooling descriptor.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus_t cudnnStatus = cudnnCreatePoolingDescriptor(&_poolingDescriptor);
         CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create pooling descriptor");
+
+        /**
+         * @brief Create vectors to store kernel dimensions, kernel padding, and kernel stride.
+         */
         std::vector<int> vKernel(3);
         std::vector<int> vKernelPadding(3);
         std::vector<int> vKernelStride(3);
+
+        /**
+         * @brief Set the values for kernel dimensions, kernel padding, and kernel stride.
+         */
         vKernel[0] = _kernelX;
         vKernel[1] = _kernelY;
         vKernel[2] = _kernelZ;
@@ -230,6 +624,18 @@ Layer::Layer(LayerDescriptor& d, uint32_t batch)
                 break;
 
             case PoolingFunction::Average:
+                /**
+                 * @brief Set the descriptor for pooling operation.
+                 *
+                 * @param _poolingDescriptor The pooling descriptor to be set.
+                 * @param CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING The pooling mode (average pooling with count excluding padding).
+                 * @param CUDNN_PROPAGATE_NAN Flag indicating whether to propagate NaN values.
+                 * @param _kernelDimensions The dimensions of the pooling kernel.
+                 * @param vKernel The data vector for the pooling kernel dimensions.
+                 * @param vKernelPadding The data vector for the pooling kernel padding dimensions.
+                 * @param vKernelStride The data vector for the pooling kernel stride dimensions.
+                 * @return The cudnnStatus_t indicating the success or failure of the operation.
+                 */
                 cudnnSetPoolingNdDescriptor(_poolingDescriptor,
                                             CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING,
                                             CUDNN_PROPAGATE_NAN,
@@ -241,6 +647,12 @@ Layer::Layer(LayerDescriptor& d, uint32_t batch)
                 break;
 
             case PoolingFunction::LRN:
+                /**
+                 * @brief Create a local response normalization (LRN) descriptor.
+                 *
+                 * @param _LRNDescriptor The pointer to the LRN descriptor.
+                 * @return The cudnnStatus_t indicating the success or failure of the operation.
+                 */
                 cudnnStatus = cudnnCreateLRNDescriptor(&_LRNDescriptor);
                 CUDNNERROR(cudnnStatus, "Layer::Layer: unable to create LRN descriptor");
                 break;
@@ -253,26 +665,85 @@ Layer::~Layer()
     Deallocate();
     if ((_type == Layer::Type::Pooling) || (_type == Layer::Type::Convolutional))
     {
+        /**
+         * @brief Destroy the tensor descriptor for the layer.
+         *
+         * @param _tensorDescriptor The tensor descriptor to be destroyed.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus_t cudnnStatus = cudnnDestroyTensorDescriptor(_tensorDescriptor);
         CUDNNERROR(cudnnStatus, "Layer::~Layer: unable to delete _tensorDescriptor");
+
+        /**
+         * @brief Destroy the tensor descriptor for the odd batch size.
+         *
+         * @param _oddBatchTensorDescriptor The tensor descriptor to be destroyed.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus = cudnnDestroyTensorDescriptor(_oddBatchTensorDescriptor);
         CUDNNERROR(cudnnStatus, "Layer::~Layer: unable to delete _oddBatchTensorDescriptor");
     }
 
     if (_bBatchNormalization)
     {
+        /**
+         * @brief Destroy the tensor descriptor for scale, bias, mean, and variance of batch normalization.
+         *
+         * @param _scaleBiasMeanVarDescBN The tensor descriptor to be destroyed.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus_t cudnnStatus = cudnnDestroyTensorDescriptor(_scaleBiasMeanVarDescBN);
         CUDNNERROR(cudnnStatus, "Layer::~Layer: unable to delete _scaleBiasMeanVarDescBN");
+
+        /**
+         * @brief Destroy the tensor descriptor for batch normalization.
+         *
+         * @param _tensorDescriptorBN The tensor descriptor to be destroyed.
+         * @return The cudnnStatus_t indicating the success or failure of the operation.
+         */
         cudnnStatus = cudnnDestroyTensorDescriptor(_tensorDescriptorBN);
         CUDNNERROR(cudnnStatus, "Layer::~Layer: unable to delete _tensorDescriptorBN");
+
+        /**
+         * @brief Reset the unique pointer for pbScaleBN.
+         */
         _pbScaleBN.reset();
+
+        /**
+         * @brief Reset the unique pointer for pbBiasBN.
+         */
         _pbBiasBN.reset();
+
+        /**
+         * @brief Reset the unique pointer for pbScaleGradientBN.
+         */
         _pbScaleGradientBN.reset();
+
+        /**
+         * @brief Reset the unique pointer for pbBiasGradientBN.
+         */
         _pbBiasGradientBN.reset();
+
+        /**
+         * @brief Reset the unique pointer for pbRunningMeanBN.
+         */
         _pbRunningMeanBN.reset();
+
+        /**
+         * @brief Reset the unique pointer for pbRunningVarianceBN.
+         */
         _pbRunningVarianceBN.reset();
+
+        /**
+         * @brief Reset the unique pointer for pbSaveMeanBN.
+         */
         _pbSaveMeanBN.reset();
+
+        /**
+         * @brief Reset the unique pointer for pbSaveInvVarianceBN.
+         */
         _pbSaveInvVarianceBN.reset();
+
     }
 
     if (_type == Layer::Type::Pooling)
@@ -293,17 +764,61 @@ void Layer::Deallocate()
     if (getGpu()._id == 0)
         std::cout << "Layer::Deallocate: Deallocating all data for layer " << _name << std::endl;
 
+    /**
+     * @brief Reset the unique pointer for pbUnit.
+     */
     _pbUnit.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbUnitBN.
+     */
     _pbUnitBN.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbDelta.
+     */
     _pbDelta.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbDeltaBN.
+     */
     _pbDeltaBN.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbDropout.
+     */
     _pbDropout.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbBuffer1.
+     */
     _pbBuffer1.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbBuffer2.
+     */
     _pbBuffer2.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbScaleVelocityBN.
+     */
     _pbScaleVelocityBN.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbScaleGradientVelocityBN.
+     */
     _pbScaleGradientVelocityBN.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbBiasVelocityBN.
+     */
     _pbBiasVelocityBN.reset();
+
+    /**
+     * @brief Reset the unique pointer for pbBiasGradientVelocityBN.
+     */
     _pbBiasGradientVelocityBN.reset();
+
 }
 
 bool Layer::GetUnits(std::vector<Float>& vUnit)
