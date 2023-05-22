@@ -3,14 +3,22 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <span>
 
 #include "cudautil.h"
 #include "KnnData.h"
 #include "MathUtil.h"
 
 namespace astdl::knn {
+
+    /**
+     * @brief Number of rows to pad the matrix for alignment.
+     */
     inline static constexpr int ROW_PADDING = 8;
 
+    /**
+     * @brief Mapping from string to DataType enumeration.
+     */
     inline static const std::unordered_map<std::string, DataType> STRING_TO_DATA_TYPE = {
         { "fp32", DataType::FP32 },
         { "fp16", DataType::FP16 }
@@ -131,6 +139,7 @@ namespace astdl::knn {
             }
         }
 
+        cublasHandles.reserve(numGpus);
         for (int i = 0; i < numGpus; ++i)
         {
             CHECK_ERR(cudaSetDevice(i));
@@ -167,20 +176,20 @@ namespace astdl::knn {
 
         collectionRowsPadded[device] = rowsPadded;
 
+        hKeys[device].reserve(actualRows);
         std::string key;
         float vector[columns];
-        for (int rowNum = 0; dataReader->readRow(&key, vector); ++rowNum)
+        for (const auto& [key, vector] : std::span(hKeys[device]).zip(std::span(hTmpData, rows * columns).subspan(0, actualRows * columns)))
         {
-            hKeys[device].push_back(key);
-            for (int j = 0; j < columns; ++j) {
-                hTmpData[j * rows + rowNum] = vector[j];
-            }
+            key.push_back(key);
+            std::copy_n(vector.data(), columns, hTmpData);
+            hTmpData += columns;
         }
 
         if (dataType == DataType::FP16)
         {
             dCollectionPartitions[device] = allocateMatrixOnDevice(rows, columns, sizeof(half));
-            astdl::math::kFloatToHalf(hTmpData, hTmpDataBytes, static_cast<half*>(dCollectionPartitions[device].data));
+            astdl::math::kFloatToHalf(hTmpMatrix.data, hTmpDataBytes, static_cast<half*>(dCollectionPartitions[device].data));
 
             dInputBatches[device] = allocateMatrixOnDevice(batchSize, columns, sizeof(half));
             dInputBatchTmpBuffers[device] = allocateMatrixOnDevice(batchSize, columns, sizeof(float));
@@ -188,11 +197,11 @@ namespace astdl::knn {
         else
         {
             dCollectionPartitions[device] = allocateMatrixOnDevice(rows, columns, sizeof(float));
-            CHECK_ERR(cudaMemcpy(dCollectionPartitions[device].data, hTmpData, hTmpDataBytes, cudaMemcpyHostToDevice));
+            CHECK_ERR(cudaMemcpy(dCollectionPartitions[device].data, hTmpMatrix.data, hTmpDataBytes, cudaMemcpyHostToDevice));
             dInputBatches[device] = allocateMatrixOnDevice(batchSize, columns, sizeof(float));
         }
 
-        free(hTmpData);
+        freeMatrix(hTmpMatrix);
 
         dProducts[device] = allocateMatrixOnDevice(batchSize, rows, sizeof(float));
         dResultScores[device] = allocateMatrixOnDevice(batchSize, maxK, sizeof(float));
@@ -210,40 +219,33 @@ namespace astdl::knn {
                   << freeMemory << " MB, Total: " << totalMemory << " MB\n";
     }
 
-    void KnnData::load(const std::map<int, DataReader*>& deviceToData)
+    void KnnData::load(const std::vector<std::pair<int, DataReader*>>& deviceToData)
     {
-        #pragma omp parallel num_threads(numGpus)
+        #pragma omp parallel for num_threads(numGpus)
+        for (size_t i = 0; i < deviceToData.size(); ++i)
         {
-            int device = omp_get_thread_num();
-            auto dataReader = deviceToData.find(device);
-            if (dataReader == deviceToData.end())
-            {
-                std::stringstream msg;
-                msg << "Data reader for device " << device << " not specified. Must specify readers for all " << numGpus
-                    << " devices";
-                throw std::runtime_error(msg.str());
-            }
-
-            load(device, dataReader->second);
+            int device = deviceToData[i].first;
+            DataReader* dataReader = deviceToData[i].second;
+            load(device, dataReader);
         }
     }
 
     void KnnData::load(const std::map<int, std::string>& deviceToFile, char keyValDelim, char vecDelim)
     {
-        std::map<int, DataReader*> deviceToData;
+        std::vector<std::pair<int, DataReader*>> deviceToData;
         for (const auto& entry : deviceToFile)
         {
             int device = entry.first;
             std::string file = entry.second;
             DataReader* dataReader = new TextFileDataReader(file, keyValDelim, vecDelim);
-            deviceToData.insert({ device, dataReader });
+            deviceToData.emplace_back(device, dataReader);
         }
 
         load(deviceToData);
 
-        for (const auto& entry : deviceToData)
+        for (const auto& [device, dataReader] : deviceToData)
         {
-            delete entry.second;
+            delete dataReader;
         }
         deviceToData.clear();
     }
