@@ -5,22 +5,23 @@
 #include <stdexcept>
 #include <charconv>
 #include <filesystem>
+#include <format>
 
 #include <json/json.h>
 
 namespace fs = std::filesystem;
 
 /**
- * @brief Read lines from a file and return them as a vector of strings.
+ * @brief Read lines from a file and return them as a span of strings.
  *
  * @param filePath The path to the file.
- * @return A vector of strings containing the lines from the file.
+ * @return A span of strings containing the lines from the file.
  * @throws std::runtime_error If the file cannot be opened.
  */
 [[nodiscard]] std::vector<std::string> readLinesFromFile(const fs::path& filePath) {
     std::ifstream file(filePath);
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + filePath.string());
+        throw std::runtime_error(std::format("Failed to open file: {}", filePath.string()));
     }
 
     std::vector<std::string> lines;
