@@ -1,29 +1,37 @@
 #include <gtest/gtest.h>
-#include "GpuTypes.h"
-#include "Types.h"
-#include "Layer.h"
+#include "engine/GpuTypes.h"
+#include "engine/Types.h"
+#include "engine/Layer.h"
 #include <span>
 
 /**
  * @brief Fixture for testing DataSet class.
  */
-
 class TestDataSetFixture : public ::testing::Test {
 protected:
-    DataSetDimensions datasetDim = DataSetDimensions(128, 1, 1);
-    uint32_t examples = 32;
-    uint32_t uniqueExamples = 16;
-    double sparseDensity = 0.1;
-    size_t stride = datasetDim._height * datasetDim._width * datasetDim._length;
-    size_t dataLength = stride * examples;
+    DataSetDimensions datasetDim = DataSetDimensions(128, 1, 1); /**< Dimensions of the dataset */
+    uint32_t examples = 32; /**< Number of examples */
+    uint32_t uniqueExamples = 16; /**< Number of unique examples */
+    double sparseDensity = 0.1; /**< Density of sparse data */
+    size_t stride = datasetDim._height * datasetDim._width * datasetDim._length; /**< Stride */
+    size_t dataLength = stride * examples; /**< Length of data */
 
+    /**
+     * @brief Set up the fixture.
+     */
     void SetUp() override {
     }
 
+    /**
+     * @brief Tear down the fixture.
+     */
     void TearDown() override {
     }
 };
 
+/**
+ * @brief Test case for creating a dense dataset.
+ */
 TEST_F(TestDataSetFixture, testCreateDenseDataset) {
     DataSet<uint32_t> dataset(32, datasetDim);
 
@@ -42,6 +50,9 @@ TEST_F(TestDataSetFixture, testCreateDenseDataset) {
     EXPECT_EQ(dataset._sparseDataSize, 0);
 }
 
+/**
+ * @brief Test case for creating a dense indexed dataset.
+ */
 TEST_F(TestDataSetFixture, testCreateDenseIndexedDataset) {
     DataSet<uint32_t> dataset(examples, uniqueExamples, datasetDim);
 
@@ -60,6 +71,9 @@ TEST_F(TestDataSetFixture, testCreateDenseIndexedDataset) {
     EXPECT_EQ(dataset._sparseDataSize, 0);
 }
 
+/**
+ * @brief Test case for creating a sparse dataset.
+ */
 TEST_F(TestDataSetFixture, testCreateSparseDataset) {
     bool isWeighted = false;
     DataSet<int> dataset(examples, sparseDensity, datasetDim, isWeighted);
@@ -79,6 +93,9 @@ TEST_F(TestDataSetFixture, testCreateSparseDataset) {
     EXPECT_EQ(dataset._sparseDataSize, static_cast<uint64_t>(128.0 * 0.1 * 32.0));
 }
 
+/**
+ * @brief Test case for creating a sparse weighted dataset.
+ */
 TEST_F(TestDataSetFixture, testCreateSparseWeightedDataset) {
     bool isWeighted = true;
     DataSet<int> dataset(examples, sparseDensity, datasetDim, isWeighted);
@@ -98,6 +115,9 @@ TEST_F(TestDataSetFixture, testCreateSparseWeightedDataset) {
     EXPECT_EQ(dataset._sparseDataSize, static_cast<uint64_t>(128.0 * 0.1 * 32.0));
 }
 
+/**
+ * @brief Test case for creating a sparse indexed dataset.
+ */
 TEST_F(TestDataSetFixture, testCreateSparseIndexedDataset) {
     size_t sparseDataSize = 128 * uniqueExamples / 10;
     bool isIndexed = true;
@@ -119,6 +139,9 @@ TEST_F(TestDataSetFixture, testCreateSparseIndexedDataset) {
     EXPECT_EQ(dataset._sparseDataSize, sparseDataSize);
 }
 
+/**
+ * @brief Test case for creating a sparse weighted indexed dataset.
+ */
 TEST_F(TestDataSetFixture, testCreateSparseWeightedIndexedDataset) {
     size_t sparseDataSize = 128 * uniqueExamples / 10;
     bool isIndexed = true;
@@ -140,6 +163,9 @@ TEST_F(TestDataSetFixture, testCreateSparseWeightedIndexedDataset) {
     EXPECT_EQ(dataset._sparseDataSize, static_cast<uint64_t>(128.0 * 0.1 * 16.0));
 }
 
+/**
+ * @brief Test case for loading dense data into the dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadDenseData) {
     DataSet<uint32_t> dataset(examples, datasetDim);
 
@@ -157,12 +183,18 @@ TEST_F(TestDataSetFixture, testLoadDenseData) {
     }
 }
 
+/**
+ * @brief Test case for setting dense data on a sparse dataset.
+ */
 TEST_F(TestDataSetFixture, testSetDenseData_OnSparseDataset) {
     DataSet<uint32_t> dataset(examples, sparseDensity, datasetDim, false);
     uint32_t srcData[dataLength];
     EXPECT_THROW(dataset.LoadDenseData(srcData), std::runtime_error);
 }
 
+/**
+ * @brief Test case for loading sparse data into the dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadSparseData) {
     DataSet<Float> dataset(examples, sparseDensity, datasetDim, false);
 
@@ -199,6 +231,9 @@ TEST_F(TestDataSetFixture, testLoadSparseData) {
     }
 }
 
+/**
+ * @brief Test case for loading sparse data with overflow into the dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadSparseData_Overflow) {
     DataSet<Float> dataset(examples, sparseDensity, datasetDim, false);
 
@@ -213,6 +248,9 @@ TEST_F(TestDataSetFixture, testLoadSparseData_Overflow) {
     EXPECT_THROW(dataset.LoadSparseData(sparseStart.data(), sparseEnd.data(), sparseData, sparseIndex), std::length_error);
 }
 
+/**
+ * @brief Test case for loading sparse data with non-zero indexed start into the dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadSparseData_SparseStartNotZeroIndexed) {
     DataSet<Float> dataset(examples, sparseDensity, datasetDim, false);
 
@@ -227,6 +265,9 @@ TEST_F(TestDataSetFixture, testLoadSparseData_SparseStartNotZeroIndexed) {
     EXPECT_THROW(dataset.LoadSparseData(sparseStart.data(), sparseEnd.data(), sparseData, sparseIndex), std::runtime_error);
 }
 
+/**
+ * @brief Test case for loading sparse data on a dense dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadSparseData_OnDenseDataset) {
     DataSet<Float> dataset(examples, datasetDim);
     std::span<uint64_t> sparseStart(new uint64_t[examples]);
@@ -236,6 +277,9 @@ TEST_F(TestDataSetFixture, testLoadSparseData_OnDenseDataset) {
     EXPECT_THROW(dataset.LoadSparseData(sparseStart.data(), sparseEnd.data(), sparseData, sparseIndex), std::runtime_error);
 }
 
+/**
+ * @brief Test case for loading indexed data into the dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadIndexedData) {
     DataSet<Float> dataset(examples, uniqueExamples, datasetDim);
     std::span<uint32_t> indexedData(new uint32_t[uniqueExamples]);
@@ -250,12 +294,18 @@ TEST_F(TestDataSetFixture, testLoadIndexedData) {
     }
 }
 
+/**
+ * @brief Test case for loading indexed data on a non-indexed dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadIndexedData_OotIndexedDataset) {
     DataSet<Float> dataset(examples, datasetDim);
     std::span<uint32_t> indexedData(new uint32_t[examples]);
     EXPECT_THROW(dataset.LoadIndexedData(indexedData.data()), std::runtime_error);
 }
 
+/**
+ * @brief Test case for loading data weights into the dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadDataWeights) {
     DataSet<uint32_t> dataset(examples, sparseDensity, datasetDim, true);
 
@@ -271,6 +321,9 @@ TEST_F(TestDataSetFixture, testLoadDataWeights) {
     }
 }
 
+/**
+ * @brief Test case for loading data weights on a non-weighted dataset.
+ */
 TEST_F(TestDataSetFixture, testLoadDataWeights_OotWeightedDataset) {
     DataSet<uint32_t> dataset(examples, sparseDensity, datasetDim, false);
 
@@ -278,6 +331,9 @@ TEST_F(TestDataSetFixture, testLoadDataWeights_OotWeightedDataset) {
     EXPECT_THROW(dataset.LoadDataWeight(dataWeights.data()), std::runtime_error);
 }
 
+/**
+ * @brief Test case for different dataset types.
+ */
 TEST_F(TestDataSetFixture, testDataSetTypes) {
     DataSet<Float> floatDataset(examples, datasetDim);
     DataSet<double> doubleDataset(examples, datasetDim);
@@ -289,6 +345,9 @@ TEST_F(TestDataSetFixture, testDataSetTypes) {
     DataSet<std::make_signed<int64_t>::type> longDataset(examples, datasetDim);
 }
 
+/**
+ * @brief Main function to run the tests.
+ */
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
