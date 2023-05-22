@@ -33,7 +33,7 @@ Context::Context(const std::string &networkFilename, uint32_t batchSize, int max
         {
             if (layer->GetNumDimensions() > 1)
             {
-                throw std::runtime_error("topK only supported on 1-D output layers");
+                throw std::runtime_error("Output only supported on 1-D output layers");
             }
             size_t outputBufferLength = maxK * batchSize;
             printf("Context::Context: Allocating output score and index buffers, each of size %zu for output layer %s\n",
