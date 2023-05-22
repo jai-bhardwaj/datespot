@@ -1,0 +1,36 @@
+{
+    "Version": 0.8,
+    "Name": "Regression Model",
+    "Type": "FeedForward",
+    "ShuffleIndices": false,
+    "Layers": [
+        {
+            "Name": "InputLayer",
+            "Type": "Input",
+            "N": 2,
+            "DataSet": "input_data",
+            "Sparse": true
+        },
+        {
+            "Name": "HiddenLayer",
+            "Type": "Hidden",
+            "Architecture": "FullyConnected",
+            "Source": "InputLayer",
+            "N": 2,
+            "Activation": "LeakyReLU",
+            "Slope": 0.5,
+            "Sparse": true
+        },
+        {
+            "Name": "OutputLayer",
+            "Type": "Output",
+            "Architecture": "FullyConnected",
+            "DataSet": "output_data",
+            "N": 2,
+            "Source": ["InputLayer"],
+            "Activation": "Linear",
+            "Sparse": true
+        }
+    ],
+    "ErrorFunction": "Mean Squared Error"
+}
