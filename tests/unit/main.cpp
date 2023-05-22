@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <gtest/gtest.h>
-#include "NetCDFhelper.cpp"
+#include "CDFhelper.cpp"
 #include "TestUtils.cpp"
 
 int main(int argc, char* argv[])
