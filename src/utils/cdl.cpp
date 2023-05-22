@@ -19,7 +19,7 @@ static const std::map<std::string, TrainingMode> sOptimizationMap = {
 };
 
 CDL::CDL()
-    : _randomSeed(std::chrono::system_clock::now().time_since_epoch().count()),
+    : _randomSeed(std::chrono::steady_clock::now().time_since_epoch().count()),
       _alphaInterval(0),
       _alphaMultiplier(0.5f),
       _batch(1024),
@@ -56,62 +56,56 @@ int CDL::Load_JSON(const std::string& fname)
     // Opens the JSON file for reading.
     std::ifstream stream(fname, std::ifstream::binary);
     if (!stream.is_open()) {
-        std::cout << "CDL::Load_JSON: Failed to open JSON file: " << fname << '\n';
+        std::cout << std::format("CDL::Load_JSON: Failed to open JSON file: {}\n", fname);
         return -1;
     }
 
     // Performs parsing and stores the result in the `index` variable.
     std::string errors;
     if (!reader->parse(stream, stream, &index, &errors)) {
-        std::cout << "CDL::Load_JSON: Failed to parse JSON file: " << fname << ", error: " << errors << '\n';
+        std::cout << std::format("CDL::Load_JSON: Failed to parse JSON file: {}, error: {}\n", fname, errors);
         return -1;
     }
 
     // Iterates over the values in the JSON object.
-    for (const auto& itr : index)
+    for (const auto& [name, value] : index)
     {
-        // Retrieves the name from the JSON iterator and converts it to lowercase.
-        std::string name = itr.name();
-        std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+        // Converts the name to lowercase.
+        std::string lname = name;
+        std::transform(lname.begin(), lname.end(), lname.begin(), ::tolower);
 
-        // Retrieves the key from the JSON iterator.
-        const Json::Value& key = itr.key();
-
-        // Retrieves the value from the JSON iterator.
-        const Json::Value& value = itr;
-
-        // Retrieves the string representation of the value, converted to lowercase.
+        // Converts the string value to lowercase.
         std::string vstring = value.isString() ? value.asString() : "";
         std::transform(vstring.begin(), vstring.end(), vstring.begin(), ::tolower);
 
         // Compares the name with "version" and assigns the float value.
-        if (name == "version")
+        if (lname == "version")
         {
             float version = value.asFloat();
         }
         // Compares the name with "network" and assigns the network file name.
         // Sets the networkSet flag to true.
-        else if (name == "network")
+        else if (lname == "network")
         {
             _networkFileName = value.asString();
             networkSet = true;
         }
         // Compares the name with "data" and assigns the data file name.
         // Sets the dataSet flag to true.
-        else if (name == "data")
+        else if (lname == "data")
         {
             _dataFileName = value.asString();
             dataSet = true;
         }
         // Compares the name with "randomseed" and assigns the random seed value.
-        else if (name == "randomseed")
+        else if (lname == "randomseed")
         {
             _randomSeed = value.asInt();
         }
         // Compares the name with "command" and assigns the appropriate mode based on the string value.
         // Sets the commandSet flag to true.
         // If the string value is not recognized, displays an error message and returns -1.
-        else if (name == "command")
+        else if (lname == "command")
         {
             if (vstring == "train")
                 _mode = Mode::Training;
@@ -121,84 +115,77 @@ int CDL::Load_JSON(const std::string& fname)
                 _mode = Mode::Validation;
             else
             {
-                std::cout << "CDL::Load_JSON: Failed to parse JSON file: " << fname << ", error: Invalid command\n";
+                std::cout << std::format("CDL::Load_JSON: Failed to parse JSON file: {}, error: Invalid command\n", fname);
                 return -1;
             }
             commandSet = true;
         }
-        else if (name == "trainingparameters")
+        else if (lname == "trainingparameters")
         {
-            for (const auto& pitr : value)
+            for (const auto& [pname, pvalue] : value)
             {
-                // Retrieves the name from the JSON iterator and converts it to lowercase.
-                std::string pname = pitr.name();
-                std::transform(pname.begin(), pname.end(), pname.begin(), ::tolower);
+                // Converts the pname to lowercase.
+                std::string lpname = pname;
+                std::transform(lpname.begin(), lpname.end(), lpname.begin(), ::tolower);
 
-                // Retrieves the value from the JSON iterator.
-                const Json::Value& pvalue = pitr;
-
-                if (pname == "epochs")
+                if (lpname == "epochs")
                 {
                     _epochs = pvalue.asInt();
                     epochsSet = true;
                 }
-                else if (pname == "alpha")
+                else if (lpname == "alpha")
                 {
                     _alpha = pvalue.asFloat();
                 }
-                else if (pname == "alphainterval")
+                else if (lpname == "alphainterval")
                 {
                     _alphaInterval = pvalue.asFloat();
                 }
-                else if (pname == "alphamultiplier")
+                else if (lpname == "alphamultiplier")
                 {
                     _alphaMultiplier = pvalue.asFloat();
                 }
-                else if (pname == "mu")
+                else if (lpname == "mu")
                 {
                     _mu = pvalue.asFloat();
                 }
-                else if (pname == "lambda")
+                else if (lpname == "lambda")
                 {
                     _lambda = pvalue.asFloat();
                 }
-                else if (pname == "checkpointinterval")
+                else if (lpname == "checkpointinterval")
                 {
                     _checkpointInterval = pvalue.asFloat();
                 }
-                else if (pname == "checkpointname")
+                else if (lpname == "checkpointname")
                 {
                     _checkpointFileName = pvalue.asString();
                 }
-                else if (pname == "optimizer")
+                else if (lpname == "optimizer")
                 {
-                    // Retrieves the string value from the JSON iterator, converts it to lowercase, and assigns it to pstring.
+                    // Converts the string value to lowercase.
                     std::string pstring = pvalue.isString() ? pvalue.asString() : "";
                     std::transform(pstring.begin(), pstring.end(), pstring.begin(), ::tolower);
 
-                    // Searches for the lowercase pstring in the optimization map.
+                    // Checks if the optimization map contains the lowercase pstring.
                     // If found, assigns the corresponding optimizer value to _optimizer.
                     // If not found, displays an error message and returns -1.
-                    auto it = sOptimizationMap.find(pstring);
-                    if (it != sOptimizationMap.end())
-                        _optimizer = it->second;
+                    if (sOptimizationMap.contains(pstring))
+                        _optimizer = sOptimizationMap.at(pstring);
                     else
                     {
-                        std::cout << "CDL::Load_JSON: Invalid TrainingParameter Optimizer: " << pstring << '\n';
+                        std::cout << std::format("CDL::Load_JSON: Invalid TrainingParameter Optimizer: {}\n", pstring);
                         return -1;
                     }
                 }
-                else if (pname == "results")
+                else if (lpname == "results")
                 {
                     _resultsFileName = pvalue.asString();
                 }
                 else
                 {
-                    // Retrieves the name from the JSON iterator.
-                    name = pitr.name();
-
                     // Displays an error message indicating an invalid TrainingParameter.
-                    std::cout << "CDL::Load_JSON: Invalid TrainingParameter: " << name << '\n';
+                    std::cout << std::format("CDL::Load_JSON: Invalid TrainingParameter: {}\n", pname);
                     return -1;
                 }
             }
@@ -206,7 +193,7 @@ int CDL::Load_JSON(const std::string& fname)
         else
         {
             // Displays an error message indicating an unknown keyword.
-            std::cout << "*** CDL::Load_JSON: Unknown keyword: " << name << '\n';
+            std::cout << std::format("*** CDL::Load_JSON: Unknown keyword: {}\n", name);
             return -1;
         }
     }
@@ -252,6 +239,6 @@ int CDL::Load_JSON(const std::string& fname)
     }
 
     // Displays a success message indicating the successful parsing of the JSON file.
-    std::cout << "CDL::Load_JSON: " << fname << " successfully parsed\n";
+    std::cout << std::format("CDL::Load_JSON: {} successfully parsed\n", fname);
     return 0;
 }
