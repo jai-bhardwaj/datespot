@@ -2,18 +2,8 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
-#include <format>
-#include <span>
-#include <filesystem>
-#include <ranges>
-
 
 #include "DataReader.h"
-
-namespace {
-    constexpr int success = 0;
-    constexpr int failure = 1;
-}
 
 /**
  * @brief Get the number of rows in the data.
@@ -42,7 +32,6 @@ int DataReader::getColumns() const {
  */
 TextFileDataReader::TextFileDataReader(const std::string& fileName, char keyValueDelimiter, char vectorDelimiter)
     : fileName(fileName),
-      fileStream(fileName),
       keyValueDelimiter(keyValueDelimiter),
       vectorDelimiter(vectorDelimiter) {
     findDataDimensions(rows, columns);
@@ -84,16 +73,28 @@ void TextFileDataReader::findDataDimensions(uint32_t& rows, int& columns) {
         std::string vectorStr;
 
         if (splitKeyVector(line, key, vectorStr, keyValueDelimiter)) {
-            throw std::invalid_argument(std::format("Malformed line. key-value delimiter [{}] not found in: {}", keyValueDelimiter, line));
+            throw std::invalid_argument("Malformed line. key-value delimiter [" + std::string(1, keyValueDelimiter) + "] not found in: " + line);
         }
 
-        int columnsInRow = std::ranges::distance(std::ranges::istream_view<std::string>(vectorStr) | std::views::split(vectorDelimiter));
+        int columnsInRow = 0;
+        std::stringstream vectorStrStream(vectorStr);
+        std::string element;
+        while (std::getline(vectorStrStream, element, vectorDelimiter)) {
+            if (columnsInRow == 0) {
+                columnsInRow = 1;
+            }
+            else {
+                if (columnsInRow != 1) {
+                    throw std::invalid_argument("Inconsistent num columns detected. Expected: 1 Actual: " + std::to_string(columnsInRow));
+                }
+            }
+        }
 
         if (columns == 0) {
             columns = columnsInRow;
         } else {
             if (columns != columnsInRow) {
-                throw std::invalid_argument(std::format("Inconsistent num columns detected. Expected: {} Actual: {}", columns, columnsInRow));
+                throw std::invalid_argument("Inconsistent num columns detected. Expected: " + std::to_string(columns) + " Actual: " + std::to_string(columnsInRow));
             }
         }
     }
@@ -119,15 +120,15 @@ bool TextFileDataReader::readRow(std::string* key, std::span<float> vector) {
         splitKeyVector(line, *key, vectorStr, keyValueDelimiter);
 
         std::stringstream vectorStrStream(vectorStr);
-
-        for (int i = 0; std::getline(vectorStrStream, vector[i], vectorDelimiter); ++i) {
+        int i = 0;
+        std::string element;
+        while (std::getline(vectorStrStream, element, vectorDelimiter)) {
             try {
-                if (auto [p, ec] = std::from_chars(vector[i].data(), vector[i].data() + vector[i].size(), vector[i]); ec != std::errc()) {
-                    throw std::invalid_argument(std::format("Malformed vector element: {}", vector[i]));
-                }
+                vector[i] = std::stof(element);
             } catch (const std::exception& e) {
-                throw std::invalid_argument(std::format("ERROR: {} cannot be parsed as float. Column {} of: {}", vector[i], i, line));
+                throw std::invalid_argument("ERROR: " + element + " cannot be parsed as float. Column " + std::to_string(i) + " of: " + line);
             }
+            ++i;
         }
 
         return true;
