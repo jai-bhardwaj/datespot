@@ -1,63 +1,64 @@
-#include <json/json.h>
 #include <cstdio>
-#include <iostream>
-#include <fstream>
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <stdexcept>
 #include <chrono>
+#include <fstream>
 #include <filesystem>
+#include <iostream>
+#include <format>
+#include <array>
+#include <memory>
+#include <span>
+
+#include <json/json.h>
 
 #include "Filters.h"
 #include "Utils.h"
 
 using namespace Json;
+using namespace std::chrono;
 
-const static int gSamplesLoggingInterval = 10000;
+constexpr int gSamplesLoggingInterval = 10000;
 
 /**
  * @brief Updates the records in an array using a filter.
- * 
+ *
  * @param xArray Pointer to the array of records.
  * @param xFilter Pointer to the filter map.
  */
-void AbstractFilter::updateRecords(float* xArray, const std::unordered_map<int, float>* xFilter) const
+void AbstractFilter::updateRecords(std::span<float> xArray, const std::unordered_map<int, float>& xFilter) const
 {
-    if (xFilter && !xFilter->empty())
+    for (const auto& [index, value] : xFilter)
     {
-        for (const auto& [index, value] : *xFilter)
-        {
-            xArray[index] = value * xArray[index];
-        }
+        xArray[index] = value * xArray[index];
     }
 }
 
 /**
  * @brief Updates a portion of the records in an array using a filter.
- * 
+ *
  * @param xArray Pointer to the array of records.
  * @param xFilter Pointer to the filter map.
  * @param offset Starting index of the portion to update.
  * @param width Width of the portion to update.
  */
-void AbstractFilter::updateRecords(float* xArray, const std::unordered_map<int, float>* xFilter, int offset, int width) const
+void AbstractFilter::updateRecords(std::span<float> xArray, const std::unordered_map<int, float>& xFilter,
+                                   int offset, int width) const
 {
-    if (xFilter && !xFilter->empty())
+    for (const auto& [index, value] : xFilter)
     {
-        for (const auto& [index, value] : *xFilter)
+        if (index >= offset && index < offset + width)
         {
-            if (index >= offset && index < offset + width)
-            {
-                xArray[index - offset] = value * xArray[index - offset];
-            }
+            xArray[index - offset] = value * xArray[index - offset];
         }
     }
 }
 
 /**
  * @brief Loads a single filter from a file.
- * 
+ *
  * @param xMInput Reference to the input map.
  * @param xMSamples Reference to the samples map.
  * @param sampleFilters Reference to the vector of sample filters.
@@ -69,8 +70,8 @@ void SamplesFilter::loadSingleFilter(std::unordered_map<std::string, unsigned in
                                      const std::string& filePath)
 {
     std::ifstream samplesFile(filePath);
-    auto start = std::chrono::steady_clock::now();
-    std::unordered_map<int, float>* sampleFilter = nullptr;
+    auto start = steady_clock::now();
+    std::unordered_map<int, float> sampleFilter;
     int samplesFilterCount = 0;
     std::vector<std::string> filters;
     if (samplesFile.good())
@@ -101,7 +102,7 @@ void SamplesFilter::loadSingleFilter(std::unordered_map<std::string, unsigned in
                 }
             }
 
-            sampleFilter = new std::unordered_map<int, float>();
+            sampleFilter.clear();
             for (const std::string& filter : filters)
             {
                 std::vector<std::string> vals = split(filter, ',');
@@ -115,7 +116,7 @@ void SamplesFilter::loadSingleFilter(std::unordered_map<std::string, unsigned in
                         {
                             value = std::stof(vals[1]);
                         }
-                        (*sampleFilter)[key] = value;
+                        sampleFilter[key] = value;
                     }
                     catch (const std::out_of_range& oor)
                     {
@@ -125,14 +126,14 @@ void SamplesFilter::loadSingleFilter(std::unordered_map<std::string, unsigned in
             }
             if (sample != -1)
             {
-                sampleFilters[sample].reset(sampleFilter);
+                sampleFilters[sample] = std::make_unique<std::unordered_map<int, float>>(sampleFilter);
                 ++samplesFilterCount;
                 if (samplesFilterCount % gSamplesLoggingInterval == 0)
                 {
-                    auto const end = std::chrono::steady_clock::now();
-                    std::cout << "Progress Parsing Filter " << samplesFilterCount;
-                    std::cout << "Time " << elapsed_seconds(start, end) << std::endl;
-                    start = std::chrono::steady_clock::now();
+                    const auto end = steady_clock::now();
+                    std::cout << std::format("Progress Parsing Filter {}: Time {}\n",
+                                             samplesFilterCount, elapsed_seconds(start, end));
+                    start = steady_clock::now();
                 }
             }
         }
@@ -146,7 +147,7 @@ void SamplesFilter::loadSingleFilter(std::unordered_map<std::string, unsigned in
 
 /**
  * @brief Loads filters from a directory.
- * 
+ *
  * @param xMInput Reference to the input map.
  * @param xMSamples Reference to the samples map.
  * @param filterFilePath Path to the directory containing filter files.
@@ -155,7 +156,7 @@ void SamplesFilter::loadFilter(std::unordered_map<std::string, unsigned int>& xM
                                std::unordered_map<std::string, unsigned int>& xMSamples,
                                const std::string& filterFilePath)
 {
-    samplefilters.reset(new std::vector<std::unique_ptr<std::unordered_map<int, float>>>(xMSamples.size()));
+    samplefilters = std::make_unique<std::vector<std::unique_ptr<std::unordered_map<int, float>>>>(xMSamples.size());
 
     std::vector<std::string> files;
     for (const auto& entry : std::filesystem::directory_iterator(filterFilePath))
@@ -171,7 +172,7 @@ void SamplesFilter::loadFilter(std::unordered_map<std::string, unsigned int>& xM
     for (const auto& file : files)
     {
         std::cout << "\tLoading filter: " << file << std::endl;
-        loadSingleFilter(xMInput, xMSamples, *samplefilters.get(), file);
+        loadSingleFilter(xMInput, xMSamples, *samplefilters, file);
     }
 
     std::cout << "Info:SamplesFilter " << samplefilters->size() << std::endl;
@@ -179,33 +180,33 @@ void SamplesFilter::loadFilter(std::unordered_map<std::string, unsigned int>& xM
 
 /**
  * @brief Applies a filter to a portion of the records in an array.
- * 
+ *
  * @param xArray Pointer to the array of records.
  * @param xSamplesIndex Index of the sample filter to apply.
  * @param offset Starting index of the portion to update.
  * @param width Width of the portion to update.
  */
-void SamplesFilter::applyFilter(float* xArray, int xSamplesIndex, int offset, int width) const
+void SamplesFilter::applyFilter(std::span<float> xArray, int xSamplesIndex, int offset, int width) const
 {
-    std::unordered_map<int, float>* filter = (*samplefilters)[xSamplesIndex].get();
+    const auto& filter = *(*samplefilters)[xSamplesIndex];
     updateRecords(xArray, filter, offset, width);
 }
 
 /**
  * @brief Applies a filter to all records in an array.
- * 
+ *
  * @param xArray Pointer to the array of records.
  * @param xSamplesIndex Index of the sample filter to apply.
  */
-void SamplesFilter::applyFilter(float* xArray, int xSamplesIndex) const
+void SamplesFilter::applyFilter(std::span<float> xArray, int xSamplesIndex) const
 {
-    std::unordered_map<int, float>* filter = (*samplefilters)[xSamplesIndex].get();
+    const auto& filter = *(*samplefilters)[xSamplesIndex];
     updateRecords(xArray, filter);
 }
 
 /**
  * @brief Loads filters and creates a FilterConfig object.
- * 
+ *
  * @param samplesFilterFileName Path to the samples filter file.
  * @param outputFileName Output file name.
  * @param xMInput Reference to the input map.
@@ -220,9 +221,9 @@ FilterConfig* loadFilters(const std::string& samplesFilterFileName,
     Json::Value index;
     Json::Reader reader;
     FilterConfig* filterConfig = new FilterConfig();
-    SamplesFilter* samplesFilter = new SamplesFilter();
+    std::unique_ptr<SamplesFilter> samplesFilter = std::make_unique<SamplesFilter>();
     samplesFilter->loadFilter(xMInput, xMSamples, samplesFilterFileName);
-    filterConfig->setSamplesFilter(samplesFilter);
+    filterConfig->setSamplesFilter(std::move(samplesFilter));
     filterConfig->setOutputFileName(outputFileName);
     std::ofstream ofs(outputFileName);
     ofs.close();
