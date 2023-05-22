@@ -1,13 +1,15 @@
 import sys
 import tensorhub
 
-def load_dataset(cdl_file):
+# Load the dataset from a CDL file
+def load_dataset(cdl_file: str):
     try:
         return tensorhub.CreateCDLFromJSON(cdl_file)
     except Exception as e:
         print(f"**** error: {sys.argv[0]} could not parse CDL file {cdl_file}")
         sys.exit()
 
+# Create the neural network based on the CDL mode and dataset list
 def create_network(cdl, dataset_list):
     cdl_mode = tensorhub.GetCDLMode(cdl)
     network_filename = tensorhub.GetCDLNetworkFileName(cdl)
@@ -18,20 +20,18 @@ def create_network(cdl, dataset_list):
     else:
         return tensorhub.LoadNeuralNetworkJSON(network_filename, batch_size, dataset_list)
 
+# Train the neural network using the given CDL configuration
 def train_network(network, cdl):
     checkpoint_file_name, checkpoint_interval = tensorhub.GetCheckpoint(network)
     print(f"**** checkpoint filename = {checkpoint_file_name}")
     print(f"**** checkpoint interval = {checkpoint_interval}")
 
-    optimizer = tensorhub.GetCDLOptimizer(cdl)
     alpha = tensorhub.GetCDLAlpha(cdl)
-    lambda1 = 0.0
-    mu1 = 0.0
     epochs = 0
 
     while epochs < tensorhub.GetCDLEpochs(cdl):
         alpha_interval = tensorhub.GetCDLAlphaInterval(cdl)
-        tensorhub.Train(network, alpha_interval, alpha, tensorhub.GetCDLLambda(cdl), lambda1, tensorhub.GetCDLMu(cdl), mu1)
+        tensorhub.Train(network, alpha_interval, alpha, tensorhub.GetCDLLambda(cdl), 0.0, tensorhub.GetCDLMu(cdl), 0.0)
         alpha *= tensorhub.GetCDLAlphaMultiplier(cdl)
         epochs += alpha_interval
 
@@ -39,6 +39,7 @@ def train_network(network, cdl):
     print(f"**** saving training results to file: {results_filename}")
     tensorhub.SaveNetCDF(network, results_filename)
 
+# Perform prediction using the neural network
 def predict_output(network, dataset_list, cdl, K=10):
     output = tensorhub.PredictOutput(network, dataset_list, cdl, K)
     print(f"**** top {K} results follow:")
@@ -48,8 +49,12 @@ def predict_output(network, dataset_list, cdl, K=10):
             print(format(x, '.3f'), end=' ')
         print()
 
+# Main function to run the program
 def main():
+    # Start the tensorhub framework
     tensorhub.Startup(sys.argv)
+
+    # Ensure a CDL file is provided as an argument
     if len(sys.argv) != 2:
         print(f"**** error: you must provide a CDL file to {sys.argv[0]} (typically either train.cdl or predict.cdl)")
         sys.exit()
