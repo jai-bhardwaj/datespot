@@ -1,0 +1,32 @@
+{
+    "Version": 0.8,
+    "Name": "Scaled Marginal Cross Entropy Model",
+    "Type": "FeedForward",
+    "ShuffleIndices": false,
+    "ScaledMarginalCrossEntropy": {
+        "oneTarget": 1.0,
+        "zeroTarget": 0.0,
+        "oneScale": 30.0,
+        "zeroScale": 1.0
+    },
+    "Layers": [
+        {
+            "Name": "InputLayer",
+            "Type": "Input",
+            "N": 2,
+            "DataSet": "input_data",
+            "Sparse": true
+        },
+        {
+            "Name": "OutputLayer",
+            "Type": "Output",
+            "Architecture": "FullyConnected",
+            "DataSet": "output_data",
+            "N": 2,
+            "Source": ["InputLayer"],
+            "Activation": "Sigmoid",
+            "Sparse": true
+        }
+    ],
+    "ErrorFunction": "Scaled Marginal Cross Entropy"
+}
