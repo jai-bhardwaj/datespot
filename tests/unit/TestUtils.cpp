@@ -1,32 +1,36 @@
 #include <iostream>
-#include <cassert>
-
+#include <gtest/gtest.h>
 #include "Utils.h"
 
 /**
- * @brief Test class for Utils.
+ * @brief Test fixture for Utils.
  */
-[[test_suite("TestUtils")]]
-class TestUtils
+class TestUtils : public ::testing::Test
 {
-public:
+protected:
     /**
-     * @brief Test case for isNetCDFfile function.
+     * @brief Test case setup.
      */
-    [[test_case("TestIsNetCDFfile")]]
-    void TestIsNetCDFfile()
+    void SetUp() override
     {
-        /**
-         * @test Check if isNetCDFfile returns true for valid NetCDF file.
-         */
-        bool result = isNetCDFfile("network.nc");
-        assert(result);
-
-        /**
-         * @test Check if isNetCDFfile returns false for invalid NetCDF file.
-         */
-        result = isNetCDFfile("network.nic");
-        assert(!result);
+        // Any necessary setup for the test cases
     }
 };
 
+/**
+ * @brief Test case for isNetCDFfile function.
+ */
+TEST_F(TestUtils, TestIsNetCDFfile)
+{
+    /**
+     * @test Check if isNetCDFfile returns true for valid NetCDF file.
+     */
+    bool result = isNetCDFfile("network.nc");
+    ASSERT_TRUE(result);
+
+    /**
+     * @test Check if isNetCDFfile returns false for invalid NetCDF file.
+     */
+    result = isNetCDFfile("network.nic");
+    ASSERT_FALSE(result);
+}
