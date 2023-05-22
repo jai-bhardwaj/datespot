@@ -17,8 +17,9 @@ __global__ void kCalculateOutput_kernel(float* pOutputBuffer, float* pKeyBuffer,
                                         unsigned int batch, unsigned int width, unsigned int widthPadding,
                                         unsigned int k)
 {
-    __shared__ volatile float sKey[160 * 4];
-    __shared__ volatile unsigned int sValue[160 * 4];
+    constexpr int sharedMemorySize = 160 * 4;
+    __shared__ volatile float sKey[sharedMemorySize];
+    __shared__ volatile unsigned int sValue[sharedMemorySize];
 
     unsigned int dataWidth = width - widthPadding;
     unsigned int pos = (blockIdx.x * blockDim.x + threadIdx.x) >> 5;
@@ -28,17 +29,17 @@ __global__ void kCalculateOutput_kernel(float* pOutputBuffer, float* pKeyBuffer,
     {
         float* pOutput = pOutputBuffer + pos * width;
         unsigned int offset = threadIdx.x >> 5;
-        volatile float* psKey = &sKey[160 * offset];
-        volatile unsigned int* psValue = &sValue[160 * offset];
+        volatile float* psKey = &sKey[sharedMemorySize * offset];
+        volatile unsigned int* psValue = &sValue[sharedMemorySize * offset];
 
-        float k0 = -std::numeric_limits<float>::max();
-        float k1 = -std::numeric_limits<float>::max();
-        float k2 = -std::numeric_limits<float>::max();
-        float k3 = -std::numeric_limits<float>::max();
-        unsigned int v0 = 0;
-        unsigned int v1 = 0;
-        unsigned int v2 = 0;
-        unsigned int v3 = 0;
+        constexpr float minValue = -std::numeric_limits<float>::max();
+        constexpr int bufferSizeLimit = 128;
+        constexpr int warpSize = 32;
+        constexpr int fullWarpSize = 32;
+        constexpr int halfWarpSize = 16;
+
+        float k0 = minValue, k1 = minValue, k2 = minValue, k3 = minValue;
+        unsigned int v0 = 0, v1 = 0, v2 = 0, v3 = 0;
 
         unsigned int wpos = tgx;
         if (wpos < dataWidth)
@@ -46,33 +47,32 @@ __global__ void kCalculateOutput_kernel(float* pOutputBuffer, float* pKeyBuffer,
             k0 = pOutput[wpos];
             v0 = wpos;
         }
-        wpos += 32;
+        wpos += warpSize;
         if (wpos < dataWidth)
         {
             k1 = pOutput[wpos];
             v1 = wpos;
         }
-        wpos += 32;
+        wpos += warpSize;
         if (wpos < dataWidth)
         {
             k2 = pOutput[wpos];
             v2 = wpos;
         }
-        wpos += 32;
+        wpos += warpSize;
         if (wpos < dataWidth)
         {
             k3 = pOutput[wpos];
             v3 = wpos;
         }
 
-        float minValue = -std::numeric_limits<float>::max();
-        unsigned int rpos = 128;
-        unsigned int bufferSize = 0;
+        unsigned int rpos = fullWarpSize;
+        int bufferSize = 0;
 
         while (rpos < dataWidth)
         {
             unsigned int wpos = rpos + tgx;
-            float key = -std::numeric_limits<float>::max();
+            float key = minValue;
             unsigned int value = wpos;
             if (wpos < dataWidth)
             {
@@ -83,7 +83,7 @@ __global__ void kCalculateOutput_kernel(float* pOutputBuffer, float* pKeyBuffer,
 
             if (key > minValue)
             {
-                unsigned int mask = 0xffffffff >> (32 - tgx);
+                unsigned int mask = 0xffffffff >> (warpSize - tgx);
                 unsigned int offset = __popc_sync(0xffffffff, count & mask) + bufferSize;
                 psKey[offset] = key;
                 psValue[offset] = value;
@@ -91,32 +91,32 @@ __global__ void kCalculateOutput_kernel(float* pOutputBuffer, float* pKeyBuffer,
 
             bufferSize += __popc_sync(0xffffffff, count);
 
-            if (bufferSize >= 128)
+            if (bufferSize >= bufferSizeLimit)
             {
-                k2 = psKey[tgx + 2 * 32];
-                v2 = psValue[tgx + 2 * 32];
-                k3 = psKey[tgx + 3 * 32];
-                v3 = psValue[tgx + 3 * 32];
+                k2 = psKey[tgx + 2 * warpSize];
+                v2 = psValue[tgx + 2 * warpSize];
+                k3 = psKey[tgx + 3 * warpSize];
+                v3 = psValue[tgx + 3 * warpSize];
 
-                BITONICSORT256_256();
+                BITONICSORT256_256(psKey, psValue, tgx);
 
-                minValue = __shfl_sync(0xffffffff, k3, 31);
+                minValue = __shfl_down_sync(0xffffffff, k3, halfWarpSize);
 
-                bufferSize -= 128;
+                bufferSize -= bufferSizeLimit;
                 if (tgx < bufferSize)
                 {
-                    psKey[tgx] = psKey[tgx + 128];
-                    psValue[tgx] = psValue[tgx + 128];
+                    psKey[tgx] = psKey[tgx + bufferSizeLimit];
+                    psValue[tgx] = psValue[tgx + bufferSizeLimit];
                 }
             }
 
-            rpos += 32;
+            rpos += warpSize;
         }
 
-        if ((bufferSize > 0) || (dataWidth <= 128))
+        if (bufferSize > 0 || dataWidth <= bufferSizeLimit)
         {
-            k2 = -std::numeric_limits<float>::max();
-            k3 = -std::numeric_limits<float>::max();
+            k2 = minValue;
+            k3 = minValue;
             v2 = 0;
             v3 = 0;
 
@@ -125,13 +125,13 @@ __global__ void kCalculateOutput_kernel(float* pOutputBuffer, float* pKeyBuffer,
                 k2 = psKey[tgx];
                 v2 = psValue[tgx];
             }
-            if (tgx + 32 < bufferSize)
+            if (tgx + warpSize < bufferSize)
             {
-                k3 = psKey[tgx + 32];
-                v3 = psValue[tgx + 32];
+                k3 = psKey[tgx + warpSize];
+                v3 = psValue[tgx + warpSize];
             }
 
-            BITONICSORT256_256();
+            BITONICSORT256_256(psKey, psValue, tgx);
         }
 
         float* pKey = pKeyBuffer + pos * k;
@@ -142,19 +142,19 @@ __global__ void kCalculateOutput_kernel(float* pOutputBuffer, float* pKeyBuffer,
             pKey[wpos] = k0;
             pValue[wpos] = v0;
         }
-        wpos += 32;
+        wpos += warpSize;
         if (wpos < k)
         {
             pKey[wpos] = k1;
             pValue[wpos] = v1;
         }
-        wpos += 32;
+        wpos += warpSize;
         if (wpos < k)
         {
             pKey[wpos] = k2;
             pValue[wpos] = v2;
         }
-        wpos += 32;
+        wpos += warpSize;
         if (wpos < k)
         {
             pKey[wpos] = k3;
