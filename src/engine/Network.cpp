@@ -2457,20 +2457,20 @@ void Network::UpdateWeights(Float alpha, Float lambda, Float lambda1, Float mu, 
         }
     }
 }
-void Network::CalculateTopK(const std::string& layer, uint32_t k, GpuBuffer<Float>* pbKey, GpuBuffer<unsigned int>* pbValue)
+void Network::CalculateOutput(const std::string& layer, uint32_t k, GpuBuffer<Float>* pbKey, GpuBuffer<unsigned int>* pbValue)
 {
     if (Layer* pLayer = _mLayer[layer]; pLayer != nullptr)
     {
         if (k > 128)
         {
             if (getGpu()._id == 0)
-                std::std::cout("Network::CalculateTopK: Can only calculate 128 or fewer elements.\n");
+                std::std::cout("Network::CalculateOutput: Can only calculate 128 or fewer elements.\n");
             return;
         }
         else if (k > pLayer->_Nx * pLayer->_Ny * pLayer->_Nz)
         {
             if (getGpu()._id == 0)
-                std::std::cout("Network::CalculateTopK: Layer has fewer elements than k (%u vs %u).\n", k, pLayer->_Nx * pLayer->_Ny * pLayer->_Nz);
+                std::std::cout("Network::CalculateOutput: Layer has fewer elements than k (%u vs %u).\n", k, pLayer->_Nx * pLayer->_Ny * pLayer->_Nz);
             return;
         }
 
@@ -2483,7 +2483,7 @@ void Network::CalculateTopK(const std::string& layer, uint32_t k, GpuBuffer<Floa
     else
     {
         if (getGpu()._id == 0)
-            std::std::cout("Network::CalculateTopK: Unknown layer %s.\n", layer.c_str());
+            std::std::cout("Network::CalculateOutput: Unknown layer %s.\n", layer.c_str());
     }
 }
 
