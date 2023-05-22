@@ -14,10 +14,26 @@
 namespace astdl {
 namespace knn {
 
+    /**
+     * @brief Constructor for the Knn class.
+     * @param data Pointer to the KnnData object.
+     */
     Knn::Knn(KnnData* data) : data(data) {}
 
+    /**
+     * @brief Constructor for the KnnExactGpu class.
+     * @param data Pointer to the KnnData object.
+     */
     KnnExactGpu::KnnExactGpu(KnnData* data) : Knn(data) {}
 
+    /**
+     * @brief Performs k-nearest neighbor search on the GPU.
+     * @param k Number of nearest neighbors to retrieve.
+     * @param inputs Pointer to the input data.
+     * @param size Size of the input data.
+     * @param keys Pointer to store the keys of the nearest neighbors.
+     * @param scores Pointer to store the scores of the nearest neighbors.
+     */
     void KnnExactGpu::search(int k, const float* inputs, int size, std::string* keys, float* scores) {
         int maxK = data->maxK;
         int batchSize = data->batchSize;
@@ -129,6 +145,18 @@ namespace knn {
         mergeKnn(k, batchSize, maxK, numGpus, allScores, allIndexes, data->hKeys, scores, keys);
     }
 
+    /**
+     * @brief Merges the results from multiple GPUs into the final k-nearest neighbors.
+     * @param k Number of nearest neighbors to retrieve.
+     * @param batchSize Batch size.
+     * @param width Width of the results.
+     * @param numGpus Number of GPUs.
+     * @param allScores Array of score pointers from all GPUs.
+     * @param allIndexes Array of index pointers from all GPUs.
+     * @param allKeys Vector of key vectors from all GPUs.
+     * @param scores Pointer to store the final scores.
+     * @param keys Pointer to store the final keys.
+     */
     void mergeKnn(int k, int batchSize, int width, int numGpus, const std::array<float*, numGpus>& allScores,
         const std::array<uint32_t*, numGpus>& allIndexes, const std::vector<std::vector<std::string>>& allKeys, float* scores,
         std::string* keys) {
@@ -164,4 +192,3 @@ namespace knn {
 
 } // namespace knn
 } // namespace astdl
-
