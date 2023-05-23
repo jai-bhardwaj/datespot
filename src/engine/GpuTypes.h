@@ -17,12 +17,9 @@
 #include <mpi.h>
 #include <memory>
 
-#define VALIDATION
-
-#if defined(CUDA_VERSION) && (CUDA_VERSION < 5000)
-#error "CUDA support requires the use of a 5.0 or later CUDA toolkit. Aborting compilation."
-#endif
-
+/**
+ * @brief Defines the precision mode for the GPU calculations.
+ */
 #define use_SPFP
 
 #if !(defined(use_DPFP) && !defined(use_HPFP) && !defined(use_SPFP)) && \
@@ -32,78 +29,369 @@
 #endif
 
 #define ESCALE  (1ll << 30)
-static const double ERRORSCALE              = ESCALE;
-static const float ERRORSCALEF              = ESCALE;
-static const double ONEOVERERRORSCALE       = 1.0 / static_cast<double>(ERRORSCALE);
-static const float ONEOVERERRORSCALEF       = static_cast<float>(1.0 / static_cast<double>(ERRORSCALE));
+/**
+ * @brief Scaling factor for error calculations.
+ *
+ * This constant is a static double value representing the scaling factor for error calculations.
+ */
+static const double ERRORSCALE = ESCALE;
 
+/**
+ * @brief Scaling factor for error calculations as a float.
+ *
+ * This constant is a static float value representing the scaling factor for error calculations.
+ */
+static const float ERRORSCALEF = ESCALE;
+
+/**
+ * @brief Inverse of the scaling factor for error calculations as a double.
+ *
+ * This constant is a static double value representing the inverse of the scaling factor for error calculations.
+ */
+static const double ONEOVERERRORSCALE = 1.0 / static_cast<double>(ERRORSCALE);
+
+/**
+ * @brief Inverse of the scaling factor for error calculations as a float.
+ *
+ * This constant is a static float value representing the inverse of the scaling factor for error calculations.
+ */
+static const float ONEOVERERRORSCALEF = static_cast<float>(1.0 / static_cast<double>(ERRORSCALE));
+
+/**
+ * @brief Custom type for aligned double values.
+ */
 typedef double                  __align__(8)    aligned_double;
+
+/**
+ * @brief Custom type for aligned unsigned long int values.
+ */
 typedef unsigned long int       __align__(8)    aligned_uli;
+
+/**
+ * @brief Custom type for aligned long long int values.
+ */
 typedef long long int           __align__(8)    aligned_lli;
+
+/**
+ * @brief Custom type for aligned unsigned long long int values.
+ */
 typedef unsigned long long int  __align__(8)    UllInt;
 
+/**
+ * @brief Definition of the double precision type based on the precision mode.
+ */
 #if defined(use_DPFP)
-typedef double                  __align__(8)    NNAccumulator;
-typedef double                  __align__(8)    NNDouble;
-typedef double                  __align__(8)    Float;
-typedef double2                 __align__(16)   NNDouble2;
-typedef double4                 __align__(32)   NNDouble4;
-typedef double2                 __align__(16)   Float2;
-typedef double4                 __align__(16)   Float4;
-static const MPI_Datatype MPI_NNDOUBLE          = MPI_DOUBLE_PRECISION;
-static const MPI_Datatype MPI_Float           = MPI_DOUBLE_PRECISION;
-static const MPI_Datatype MPI_NNACCUMULATOR     = MPI_FLOAT;
+/**
+ * @typedef NNAccumulator
+ * @brief Alias for the double data type with an alignment of 8, representing an accumulator in a neural network.
+ */
+typedef double __align__(8) NNAccumulator;
+
+/**
+ * @typedef NNDouble
+ * @brief Alias for the double data type with an alignment of 8.
+ */
+typedef double __align__(8) NNDouble;
+
+/**
+ * @typedef Float
+ * @brief Alias for the double data type with an alignment of 8.
+ */
+typedef double __align__(8) Float;
+
+/**
+ * @typedef NNDouble2
+ * @brief Alias for the double2 data type with an alignment of 16.
+ */
+typedef double2 __align__(16) NNDouble2;
+
+/**
+ * @typedef NNDouble4
+ * @brief Alias for the double4 data type with an alignment of 32.
+ */
+typedef double4 __align__(32) NNDouble4;
+
+/**
+ * @typedef Float2
+ * @brief Alias for the double2 data type with an alignment of 16.
+ */
+typedef double2 __align__(16) Float2;
+
+/**
+ * @typedef Float4
+ * @brief Alias for the double4 data type with an alignment of 16.
+ */
+typedef double4 __align__(16) Float4;
+
+/**
+ * @brief MPI data type for NNDouble, equivalent to MPI_DOUBLE_PRECISION.
+ */
+static const MPI_Datatype MPI_NNDOUBLE = MPI_DOUBLE_PRECISION;
+
+/**
+ * @brief MPI data type for Float, equivalent to MPI_DOUBLE_PRECISION.
+ */
+static const MPI_Datatype MPI_Float = MPI_DOUBLE_PRECISION;
+
+/**
+ * @brief MPI data type for NNAccumulator, equivalent to MPI_FLOAT.
+ */
+static const MPI_Datatype MPI_NNACCUMULATOR = MPI_FLOAT;
 #elif defined(use_SPFP)
-typedef float                                   NNAccumulator;
-typedef double                  __align__(8)    NNDouble;
-typedef float                                   Float;
-typedef double2                 __align__(16)   NNDouble2;
-typedef double4                 __align__(32)   NNDouble4;
-typedef float2                  __align__(8)    Float2;
-typedef float4                  __align__(16)   Float4;
-static const MPI_Datatype MPI_NNDOUBLE          = MPI_DOUBLE_PRECISION;
-static const MPI_Datatype MPI_Float           = MPI_FLOAT;
-static const MPI_Datatype MPI_NNACCUMULATOR     = MPI_LONG_LONG_INT;
+/**
+ * @typedef NNAccumulator
+ * @brief Alias for the float data type representing an accumulator in a neural network.
+ */
+typedef float NNAccumulator;
+
+/**
+ * @typedef NNDouble
+ * @brief Alias for the double data type with an alignment of 8.
+ */
+typedef double __align__(8) NNDouble;
+
+/**
+ * @typedef Float
+ * @brief Alias for the float data type.
+ */
+typedef float Float;
+
+/**
+ * @typedef NNDouble2
+ * @brief Alias for the double2 data type with an alignment of 16.
+ */
+typedef double2 __align__(16) NNDouble2;
+
+/**
+ * @typedef NNDouble4
+ * @brief Alias for the double4 data type with an alignment of 32.
+ */
+typedef double4 __align__(32) NNDouble4;
+
+/**
+ * @typedef Float2
+ * @brief Alias for the float2 data type with an alignment of 8.
+ */
+typedef float2 __align__(8) Float2;
+
+/**
+ * @typedef Float4
+ * @brief Alias for the float4 data type with an alignment of 16.
+ */
+typedef float4 __align__(16) Float4;
+
+/**
+ * @brief MPI data type for NNDouble.
+ */
+static const MPI_Datatype MPI_NNDOUBLE = MPI_DOUBLE_PRECISION;
+
+/**
+ * @brief MPI data type for Float.
+ */
+static const MPI_Datatype MPI_Float = MPI_FLOAT;
+
+/**
+ * @brief MPI data type for NNAccumulator.
+ */
+static const MPI_Datatype MPI_NNACCUMULATOR = MPI_LONG_LONG_INT;
 #else
-typedef float                                   NNAccumulator;
-typedef double                  __align(8)__    NNDouble;
-typedef float                                   Float;
-typedef double2                 __align(16)__   NNDouble2;
-typedef double4                 __align(32)__   NNDouble4;
-typedef float2                  __align(8)__    Float2;
-typedef float4                  __align(16)__   Float4;
-static const MPI_Datatype MPI_NNDOUBLE          = MPI_DOUBLE_PRECISION;
-static const MPI_Datatype MPI_Float           = MPI_FLOAT;
-static const MPI_Datatype MPI_NNACCUMULATOR     = MPI_LONG_LONG_INT;
+/**
+ * @typedef NNAccumulator
+ * @brief Alias for the float data type representing an accumulator in a neural network.
+ */
+typedef float NNAccumulator;
+
+/**
+ * @typedef NNDouble
+ * @brief Alias for the double data type with an alignment of 8.
+ */
+typedef double __align(8)__ NNDouble;
+
+/**
+ * @typedef Float
+ * @brief Alias for the float data type.
+ */
+typedef float Float;
+
+/**
+ * @typedef NNDouble2
+ * @brief Alias for the double2 data type with an alignment of 16.
+ */
+typedef double2 __align(16)__ NNDouble2;
+
+/**
+ * @typedef NNDouble4
+ * @brief Alias for the double4 data type with an alignment of 32.
+ */
+typedef double4 __align(32)__ NNDouble4;
+
+/**
+ * @typedef Float2
+ * @brief Alias for the float2 data type with an alignment of 8.
+ */
+typedef float2 __align(8)__ Float2;
+
+/**
+ * @typedef Float4
+ * @brief Alias for the float4 data type with an alignment of 16.
+ */
+typedef float4 __align(16)__ Float4;
+
+/**
+ * @brief MPI data type for NNDouble.
+ */
+static const MPI_Datatype MPI_NNDOUBLE = MPI_DOUBLE_PRECISION;
+
+/**
+ * @brief MPI data type for Float.
+ */
+static const MPI_Datatype MPI_Float = MPI_FLOAT;
+
+/**
+ * @brief MPI data type for NNAccumulator.
+ */
+static const MPI_Datatype MPI_NNACCUMULATOR = MPI_LONG_LONG_INT;
 #endif
 
+/**
+ * @brief Maximum number of threads per block for SM 3.x architecture.
+ */
 static const int SM_3X_THREADS_PER_BLOCK                        = 128;
+
+/**
+ * @brief Maximum number of threads per block for SM 5.x architecture.
+ */
 static const int SM_5X_THREADS_PER_BLOCK                        = 128;
+
+/**
+ * @brief Maximum number of threads per block for SM 6.x architecture.
+ */
 static const int SM_6X_THREADS_PER_BLOCK                        = 128;
 
+/**
+ * @brief Macro to define launch bounds based on the current SM architecture.
+ */
 #if (__CUDA_ARCH__ >= 600)
+/**
+ * @def LAUNCH_BOUNDS
+ * @brief Macro that sets the launch bounds to a specified number of threads per block.
+ *
+ * This macro sets the launch bounds for CUDA kernels to a specified number of threads per block,
+ * as defined by the constant SM_6X_THREADS_PER_BLOCK, with a maximum of 8 threads per multiprocessor.
+ */
 #define LAUNCH_BOUNDS() __launch_bounds__(SM_6X_THREADS_PER_BLOCK, 8)
+
+/**
+ * @def LAUNCH_BOUNDS256
+ * @brief Macro that sets the launch bounds to 256 threads with 5 threads per warp.
+ *
+ * This macro sets the launch bounds for CUDA kernels to 256 threads with 5 threads per warp.
+ */
 #define LAUNCH_BOUNDS256() __launch_bounds__(256, 5)
+
 #elif (__CUDA_ARCH__ >= 500)
+/**
+ * @def LAUNCH_BOUNDS
+ * @brief Macro that sets the launch bounds to a specified number of threads per block.
+ *
+ * This macro sets the launch bounds for CUDA kernels to a specified number of threads per block,
+ * as defined by the constant SM_5X_THREADS_PER_BLOCK, with a maximum of 8 threads per multiprocessor.
+ */
 #define LAUNCH_BOUNDS() __launch_bounds__(SM_5X_THREADS_PER_BLOCK, 8)
+
+/**
+ * @def LAUNCH_BOUNDS256
+ * @brief Macro that sets the launch bounds to 256 threads with 5 threads per warp.
+ *
+ * This macro sets the launch bounds for CUDA kernels to 256 threads with 5 threads per warp.
+ */
 #define LAUNCH_BOUNDS256() __launch_bounds__(256, 5)
+
 #else
+/**
+ * @def LAUNCH_BOUNDS
+ * @brief Macro that sets the launch bounds to a specified number of threads per block.
+ *
+ * This macro sets the launch bounds for CUDA kernels to a specified number of threads per block,
+ * as defined by the constant SM_3X_THREADS_PER_BLOCK, with a maximum of 10 threads per multiprocessor.
+ */
 #define LAUNCH_BOUNDS() __launch_bounds__(SM_3X_THREADS_PER_BLOCK, 10)
+
+/**
+ * @def LAUNCH_BOUNDS256
+ * @brief Macro that sets the launch bounds to 256 threads with 4 threads per warp.
+ *
+ * This macro sets the launch bounds for CUDA kernels to 256 threads with 4 threads per warp.
+ */
 #define LAUNCH_BOUNDS256() __launch_bounds__(256, 4)
 #endif
+/**
+ * @def LAUNCH_BOUNDS512
+ * @brief Macro that sets the launch bounds to 512 threads with 2 threads per warp.
+ *
+ * This macro sets the launch bounds for CUDA kernels to 512 threads with 2 threads per warp.
+ */
 #define LAUNCH_BOUNDS512() __launch_bounds__(512, 2)
+
+/**
+ * @def LAUNCH_BOUNDS1024
+ * @brief Macro that sets the launch bounds to 1024 threads with 1 thread per warp.
+ *
+ * This macro sets the launch bounds for CUDA kernels to 1024 threads with 1 thread per warp.
+ */
 #define LAUNCH_BOUNDS1024() __launch_bounds__(1024, 1)
 
+/**
+ * @brief Maximum number of sparse elements for SM 6.x architecture.
+ */
 static const uint32_t SM_6X_MAXSPARSE = 4608;
+
+/**
+ * @brief Maximum number of sparse analog elements for SM 6.x architecture.
+ */
 static const uint32_t SM_6X_MAXSPARSEANALOG = 2304;
+
+/**
+ * @brief Maximum number of sparse elements for SM 5.x architecture.
+ */
 static const uint32_t SM_5X_MAXSPARSE = 4608;
+
+/**
+ * @brief Maximum number of sparse analog elements for SM 5.x architecture.
+ */
 static const uint32_t SM_5X_MAXSPARSEANALOG = 2304;
+
+/**
+ * @brief Maximum number of sparse elements for SM 3.x architecture.
+ */
 static const uint32_t SM_3X_MAXSPARSE = 2304;
+
+/**
+ * @brief Maximum number of sparse analog elements for SM 3.x architecture.
+ */
 static const uint32_t SM_3X_MAXSPARSEANALOG = 1152;
 
-static const bool bShadowedOutputBuffers                        = false;
+/**
+ * @brief Flag indicating whether shadowed output buffers are enabled.
+ */
+static const bool bShadowedOutputBuffers = false;
 
+/**
+ * @def FPSCALE
+ * @brief Macro that represents a scaling factor for floating-point values.
+ *
+ * This macro represents a scaling factor for floating-point values, defined as (1ll << 40).
+ * The scaling factor is 2^40, which is commonly used for various numerical computations.
+ */
 #define FPSCALE  (1ll << 40)
+
+/**
+ * @def DFSCALE
+ * @brief Macro that represents a scaling factor for double-precision floating-point values.
+ *
+ * This macro represents a scaling factor for double-precision floating-point values, defined as (1ll << 44).
+ * The scaling factor is 2^44, which is commonly used for various numerical computations requiring higher precision.
+ */
 #define DFSCALE (1ll << 44)
 
 #ifdef GVERBOSE
@@ -112,6 +400,13 @@ static const bool bShadowedOutputBuffers                        = false;
 #endif
 
 #ifdef SYNCHRONOUS
+/**
+ * @def LAUNCHERROR(s)
+ * @brief Macro that launches a CUDA kernel with error handling and synchronous device synchronization.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU. It also performs synchronous device synchronization after the kernel.
+ */
 #define LAUNCHERROR(s) \
     { \
         std::cerr << "Launched " << s << " on node " << getGpu()._id << std::endl; \
@@ -124,6 +419,13 @@ static const bool bShadowedOutputBuffers                        = false;
         cudaDeviceSynchronize(); \
     }
 #else
+/**
+ * @def LAUNCHERROR(s)
+ * @brief Macro that launches a CUDA kernel with error handling.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU.
+ */
 #define LAUNCHERROR(s) \
     { \
         std::cerr << "Launched " << s << " on node " << getGpu()._id << std::endl; \
@@ -136,6 +438,13 @@ static const bool bShadowedOutputBuffers                        = false;
     }
 #endif
 
+/**
+ * @def LAUNCHERROR_BLOCKING(s)
+ * @brief Macro that launches a CUDA kernel with error handling and synchronous device synchronization.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU. It also performs synchronous device synchronization after the kernel.
+ */
 #define LAUNCHERROR_BLOCKING(s) \
     { \
         std::cerr << "Launched " << s << " on node " << getGpu()._id << std::endl; \
@@ -147,6 +456,14 @@ static const bool bShadowedOutputBuffers                        = false;
         } \
         cudaDeviceSynchronize(); \
     }
+
+/**
+ * @def LAUNCHERROR_NONBLOCKING(s)
+ * @brief Macro that launches a CUDA kernel with error handling.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU.
+ */
 #define LAUNCHERROR_NONBLOCKING(s) \
     { \
         std::cerr << "Launched " << s << " on node " << getGpu()._id << std::endl; \
@@ -161,6 +478,13 @@ static const bool bShadowedOutputBuffers                        = false;
 #else
 
 #ifdef SYNCHRONOUS
+/**
+ * @def LAUNCHERROR(s)
+ * @brief Macro that launches a CUDA kernel with error handling and synchronous device synchronization.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU. It also performs synchronous device synchronization after the kernel.
+ */
 #define LAUNCHERROR(s) \
     { \
         cudaError_t status = cudaGetLastError(); \
@@ -172,6 +496,13 @@ static const bool bShadowedOutputBuffers                        = false;
         cudaDeviceSynchronize(); \
     }
 #else
+/**
+ * @def LAUNCHERROR(s)
+ * @brief Macro that launches a CUDA kernel with error handling.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU.
+ */
 #define LAUNCHERROR(s) \
     { \
         cudaError_t status = cudaGetLastError(); \
@@ -183,6 +514,13 @@ static const bool bShadowedOutputBuffers                        = false;
     }
 #endif
 
+/**
+ * @def LAUNCHERROR_BLOCKING(s)
+ * @brief Macro that launches a CUDA kernel with error handling and synchronous device synchronization.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU. It also performs synchronous device synchronization after the kernel.
+ */
 #define LAUNCHERROR_BLOCKING(s) \
     { \
         cudaError_t status = cudaGetLastError(); \
@@ -193,6 +531,14 @@ static const bool bShadowedOutputBuffers                        = false;
         } \
         cudaDeviceSynchronize(); \
     }
+
+/**
+ * @def LAUNCHERROR_NONBLOCKING(s)
+ * @brief Macro that launches a CUDA kernel with error handling.
+ *
+ * This macro launches a CUDA kernel specified by the parameter `s`. If an error occurs during kernel launch,
+ * it prints an error message and shuts down the GPU.
+ */
 #define LAUNCHERROR_NONBLOCKING(s) \
     { \
         cudaError_t status = cudaGetLastError(); \
@@ -205,6 +551,14 @@ static const bool bShadowedOutputBuffers                        = false;
 
 #endif
 
+/**
+ * @def RTERROR(status, s)
+ * @brief Macro that checks and handles a CUDA runtime error.
+ *
+ * This macro checks the CUDA runtime `status` for an error. If an error is detected,
+ * it prints an error message, asserts, exits the program, and performs necessary cleanup.
+ * The error message includes the provided string `s` and the error description.
+ */
 #define RTERROR(status, s) \
     if (status != cudaSuccess) { \
         std::cerr << s << " " << cudaGetErrorString(status) << std::endl; \
@@ -213,6 +567,14 @@ static const bool bShadowedOutputBuffers                        = false;
         exit(-1); \
     }
 
+/**
+ * @def CUDNNERROR(status, s)
+ * @brief Macro that checks and handles a cuDNN error.
+ *
+ * This macro checks the cuDNN `status` for an error. If an error is detected,
+ * it prints an error message, asserts, exits the program, and performs necessary cleanup.
+ * The error message includes the provided string `s` and the error description.
+ */
 #define CUDNNERROR(status, s) \
     if (status != CUDNN_STATUS_SUCCESS) { \
         std::cerr << s << " " << cudnnGetErrorString(status) << std::endl; \
@@ -221,51 +583,187 @@ static const bool bShadowedOutputBuffers                        = false;
         exit(-1); \
     }
 
+/**
+ * @struct GpuData
+ * @brief Structure containing GPU data and parameters.
+ */
 struct GpuData {
-    unsigned int            _warpSize;
-    unsigned int            _warpBits;
-    unsigned int            _warpMask;
+    /**
+     * @brief Size of a warp in threads.
+     */
+    unsigned int _warpSize;
+
+    /**
+     * @brief Number of bits used to represent a warp.
+     */
+    unsigned int _warpBits;
+
+    /**
+     * @brief Bit mask used to identify threads within a warp.
+     */
+    unsigned int _warpMask;
+
+    /**
+     * @brief Pointer to an array of unsigned long long integers representing accumulators.
+     */
     unsigned long long int* _pAccumulator;
 
-    float                   _LRN_k;
-    int                     _LRN_n;
-    float                   _LRN_alpha;
-    float                   _LRN_beta;
+    /**
+     * @brief Constant value for the k parameter in LRN (Local Response Normalization).
+     */
+    float _LRN_k;
 
-    int                     _maxout_k;
+    /**
+     * @brief Value for the n parameter in LRN (Local Response Normalization).
+     */
+    int _LRN_n;
 
-    float                   _deltaBoost_one;
-    float                   _deltaBoost_zero;
+    /**
+     * @brief Constant value for the alpha parameter in LRN (Local Response Normalization).
+     */
+    float _LRN_alpha;
 
-    float                   _SMCE_oneTarget;
-    float                   _SMCE_zeroTarget;
-    float                   _SMCE_oneScale;
-    float                   _SMCE_zeroScale;
+    /**
+     * @brief Constant value for the beta parameter in LRN (Local Response Normalization).
+     */
+    float _LRN_beta;
 
-    bool                    _bSparsenessPenalty;
-    float                   _sparsenessPenalty_p;
-    float                   _sparsenessPenalty_beta;
+    /**
+     * @brief Value for the k parameter in Maxout activation.
+     */
+    int _maxout_k;
 
-    bool                    _bDenoising;
-    float                   _denoising_p;
-    float                   _denoising_q;
+    /**
+     * @brief Constant value used for boosting in deltaBoost regularization.
+     */
+    float _deltaBoost_one;
 
-    bool                    _bShuffleIndices;
-    unsigned int*           _pShuffleIndex;
+    /**
+     * @brief Constant value used for boosting in deltaBoost regularization.
+     */
+    float _deltaBoost_zero;
 
-    uint32_t                _maxUint32_t;
-    int32_t                 _maxInt32_t;
-    uint64_t                _maxUint64_t;
-    int64_t                 _maxInt64_t;
-    float                   _maxFloat;
-    float                   _minFloat;
+    /**
+     * @brief Constant target value for calculating Smoothed Multiclass Cross-Entropy (SMCE) loss.
+     */
+    float _SMCE_oneTarget;
+
+    /**
+     * @brief Constant target value for calculating Smoothed Multiclass Cross-Entropy (SMCE) loss.
+     */
+    float _SMCE_zeroTarget;
+
+    /**
+     * @brief Scaling factor applied to the positive class in SMCE loss.
+     */
+    float _SMCE_oneScale;
+
+    /**
+     * @brief Scaling factor applied to the negative class in SMCE loss.
+     */
+    float _SMCE_zeroScale;
+
+    /**
+     * @brief Flag indicating whether sparseness penalty is enabled.
+     */
+    bool _bSparsenessPenalty;
+
+    /**
+     * @brief Probability used in sparseness penalty calculation.
+     */
+    float _sparsenessPenalty_p;
+
+    /**
+     * @brief Beta value used in sparseness penalty calculation.
+     */
+    float _sparsenessPenalty_beta;
+
+    /**
+     * @brief Flag indicating whether denoising is enabled.
+     */
+    bool _bDenoising;
+
+    /**
+     * @brief Probability used in denoising calculation.
+     */
+    float _denoising_p;
+
+    /**
+     * @brief Parameter used in denoising calculation.
+     */
+    float _denoising_q;
+
+    /**
+     * @brief Flag indicating whether shuffle indices are enabled.
+     */
+    bool _bShuffleIndices;
+
+    /**
+     * @brief Pointer to an array of unsigned integers representing shuffled indices.
+     */
+    unsigned int* _pShuffleIndex;
+
+    /**
+     * @brief Maximum value for the uint32_t data type.
+     */
+    uint32_t _maxUint32_t;
+
+    /**
+     * @brief Maximum value for the int32_t data type.
+     */
+    int32_t _maxInt32_t;
+
+    /**
+     * @brief Maximum value for the uint64_t data type.
+     */
+    uint64_t _maxUint64_t;
+
+    /**
+     * @brief Maximum value for the int64_t data type.
+     */
+    int64_t _maxInt64_t;
+
+    /**
+     * @brief Maximum representable value for the float data type.
+     */
+    float _maxFloat;
+
+    /**
+     * @brief Minimum representable positive value for the float data type.
+     */
+    float _minFloat;
+
 };
 
+/**
+ * @class GpuBuffer
+ * @brief Template class representing a GPU buffer.
+ * @tparam T The type of data stored in the buffer.
+ */
 template <typename T> struct GpuBuffer;
+
+/**
+ * @class MultiGpuBuffer
+ * @brief Template class representing a buffer that spans multiple GPUs.
+ * @tparam T The type of data stored in the buffer.
+ */
 template <typename T> struct MultiGpuBuffer;
+
+/**
+ * @class Network
+ * @brief Forward declaration of the Network class.
+ */
 class Network;
 
+/**
+ * @struct GpuContext
+ * @brief Structure representing the GPU context.
+ */
 struct GpuContext {
+    /**
+     * @enum SM_VERSION
+     * @brief Enumeration for different SM versions.
+     */
     enum SM_VERSION
     {
         SM_3X,
@@ -273,267 +771,142 @@ struct GpuContext {
         SM_6X,
     };
 
-   enum {
+    enum {
         PADDING                     = 32,
         PADDINGBITS                 = 5,
         PADDINGMASK                 = 0xffffffff - (PADDING - 1),
     };
 
-    GpuData                             _data;
-    bool                                _bECCSupport;
-    bool                                _bCanMapHostMemory;
-    aligned_lli                         _totalMemory;
-    aligned_lli                         _totalCPUMemory;
-    aligned_lli                         _totalGPUMemory;
-    bool                                _bUnifiedMemory;
+    /**
+     * @brief GPU data container.
+     */
+    GpuData _data;
 
-    SM_VERSION                          _sm_version;
-    unsigned int                        _sm_major;
-    unsigned int                        _threadsPerBlock;
-    unsigned int                        _warpSize;
-    unsigned int                        _warpBits;
-    unsigned int                        _warpMask;
-    int                                 _numprocs;
-    int                                 _id;
-    int                                 _device;
+    /**
+     * @brief Flag indicating whether ECC (Error-Correcting Code) support is available.
+     */
+    bool _bECCSupport;
 
-    uint32_t                            _maxSparse;
-    uint32_t                            _maxSparseAnalog;
+    /**
+     * @brief Flag indicating whether host memory can be mapped to the GPU.
+     */
+    bool _bCanMapHostMemory;
 
-    cublasHandle_t                      _cuBLASHandle;
+    /**
+     * @brief Aligned total memory size.
+     */
+    aligned_lli _totalMemory;
 
-    curandGenerator_t                   _RNG;
+    /**
+     * @brief Aligned total CPU memory size.
+     */
+    aligned_lli _totalCPUMemory;
 
-    cudnnHandle_t                       _cuDNNHandle;
+    /**
+     * @brief Aligned total GPU memory size.
+     */
+    aligned_lli _totalGPUMemory;
 
-    Network*                          _pNetwork;
+    /**
+     * @brief Flag indicating whether unified memory is supported.
+     */
+    bool _bUnifiedMemory;
+
+    /**
+     * @brief SM (Streaming Multiprocessor) version of the GPU.
+     */
+    SM_VERSION _sm_version;
+
+    /**
+     * @brief Major version number of the SM (Streaming Multiprocessor) architecture.
+     */
+    unsigned int _sm_major;
+
+    /**
+     * @brief Number of threads per block.
+     */
+    unsigned int _threadsPerBlock;
+
+    /**
+     * @brief Size of a warp in threads.
+     */
+    unsigned int _warpSize;
+
+    /**
+     * @brief Number of bits used to represent a warp.
+     */
+    unsigned int _warpBits;
+
+    /**
+     * @brief Bit mask used to identify threads within a warp.
+     */
+    unsigned int _warpMask;
+
+    /**
+     * @brief Number of processes.
+     */
+    int _numprocs;
+
+    /**
+     * @brief Process ID.
+     */
+    int _id;
+
+    /**
+     * @brief Device ID.
+     */
+    int _device;
+
+    /**
+     * @brief Maximum value for sparse storage.
+     */
+    uint32_t _maxSparse;
+
+    /**
+     * @brief Maximum value for sparse analog storage.
+     */
+    uint32_t _maxSparseAnalog;
+
+    /**
+     * @brief cuBLAS library handle.
+     */
+    cublasHandle_t _cuBLASHandle;
+
+    /**
+     * @brief cuRAND generator handle.
+     */
+    curandGenerator_t _RNG;
+
+    /**
+     * @brief cuDNN library handle.
+     */
+    cudnnHandle_t _cuDNNHandle;
+
+    /**
+     * @brief Pointer to the neural network object.
+     */
+    Network* _pNetwork;
+
+    /**
+     * @brief Unique pointer to a GPU buffer of unsigned long long integers representing accumulators.
+     */
     std::unique_ptr<GpuBuffer<unsigned long long int>> _pbAccumulator;
-    bool                                _bCPUValidate;
-    float                               _acceptableError;
 
-    bool                                _bSingleNode;
-    bool                                _bP2P;
+    /**
+     * @brief Flag indicating whether CPU validation is enabled.
+     */
+    bool _bCPUValidate;
 
-    GpuContext();
-    ~GpuContext();
-    void GetMemoryUsage(int* gpuMemory, int* cpuMemory);
-    void SetRandomSeed(unsigned long seed);
-    void SetNeuralNetwork(Network* pNetwork);
-    void SetFastMath(bool flag);
-    void Startup(int argc, char** argv);
+
+    /**
+     * @brief Initialize the GPU context.
+     */
+    void Init();
+
+    /**
+     * @brief Shutdown the GPU context.
+     */
     void Shutdown();
-    void CopyConstants();
-    void SetCPUValidate(bool bCPUValidate);
-
-    static unsigned int Pad(unsigned int x) { return (x + PADDING - 1) & PADDINGMASK; }
 };
 
-extern struct GpuContext& getGpu();
-
-template <typename T>
-struct GpuBuffer
-{
-    size_t                  _length;
-    bool                    _bSysMem;
-    bool                    _bManaged;
-    T*                      _pSysData;
-    T*                      _pDevData;
-    GpuBuffer(int length, bool bSysMem = false, bool bManaged = false);
-    GpuBuffer(unsigned int length, bool bSysMem = false, bool bManaged = false);
-    GpuBuffer(unsigned long long int length, bool bSysMem = false, bool bManaged = false);
-    GpuBuffer(size_t length, bool bSysMem = false, bool bManaged = false);
-    virtual ~GpuBuffer();
-
-    void Allocate();
-
-    void Resize(size_t length);
-
-    void Deallocate();
-
-    void Upload(const T* pBuff = nullptr) const;
-
-    void Download(T * pBuff = nullptr);
-
-    void Copy(T* pBuff);
-
-    size_t GetLength();
-
-    size_t GetSize();
-};
-
-template <typename T>
-GpuBuffer<T>::GpuBuffer(int length, bool bSysMem, bool bManaged) : _length(length), _bSysMem(bSysMem), _bManaged(bManaged), _pSysData(nullptr), _pDevData(nullptr)
-{
-    Allocate();
-}
-
-template <typename T>
-GpuBuffer<T>::GpuBuffer(unsigned int length, bool bSysMem, bool bManaged) : _length(length), _bSysMem(bSysMem), _bManaged(bManaged), _pSysData(nullptr), _pDevData(nullptr)
-{
-    Allocate();
-}
-
-template <typename T>
-GpuBuffer<T>::GpuBuffer(unsigned long long int length, bool bSysMem, bool bManaged) : _length(length), _bSysMem(bSysMem), _bManaged(bManaged), _pSysData(nullptr), _pDevData(nullptr)
-{
-    Allocate();
-}
-
-template <typename T>
-GpuBuffer<T>::GpuBuffer(size_t length, bool bSysMem, bool bManaged) : _length(length), _bSysMem(bSysMem), _bManaged(bManaged), _pSysData(nullptr), _pDevData(nullptr)
-{
-    Allocate();
-}
-
-template <typename T>
-GpuBuffer<T>::~GpuBuffer()
-{
-    Deallocate();
-}
-
-template <typename T>
-void GpuBuffer<T>::Allocate()
-{
-    cudaError_t status;
-
-    if (_bManaged)
-        _bSysMem    = true;
-
-#ifdef MEMTRACKING
-    std::cerr << "Allocating " << _length * sizeof(T) << " bytes of GPU memory";
-    if (!_bSysMem)
-    {
-        std::cerr << ", unshadowed";
-    }
-    else if (_bManaged)
-    {
-        std::cerr << ", managed";
-    }
-    std::cerr << std::endl;
-#endif
-
-    if (_bManaged)
-    {
-        status = cudaMallocManaged((void **) &_pDevData, _length * sizeof(T), cudaMemAttachGlobal);
-        getGpu()._totalGPUMemory           +=  _length * sizeof(T);
-        _pSysData = _pDevData;
-        RTERROR(status, "GpuBuffer::Allocate failed (cudaMallocManaged)");
-        memset(_pSysData, 0, _length * sizeof(T));
-    }
-    else
-    {
-        status = cudaMalloc((void **) &_pDevData, _length * sizeof(T));
-        getGpu()._totalGPUMemory           +=  _length * sizeof(T);
-        RTERROR(status, "GpuBuffer::Allocate failed (cudaMalloc)");
-        status = cudaMemset((void *) _pDevData, 0, _length * sizeof(T));
-        RTERROR(status, "GpuBuffer::Allocate failed (cudaMemset)");
-
-        if (_bSysMem)
-        {
-            _pSysData                           =  new T[_length];
-            getGpu()._totalCPUMemory           +=  _length * sizeof(T);
-            memset(_pSysData, 0, _length * sizeof(T));
-        }
-    }
-
-#ifdef MEMTRACKING
-    std::cerr << "Mem++: " << getGpu()._totalGPUMemory << " " << getGpu()._totalCPUMemory << std::endl;
-#endif
-}
-
-template<typename T> void GpuBuffer<T>::Resize(size_t length)
-{
-    if(length > _length)
-    {
-        Deallocate();
-        _length = length;
-        Allocate();
-    }
-}
-
-template <typename T>
-void GpuBuffer<T>::Deallocate()
-{
-    cudaError_t status;
-
-    status = cudaFree(_pDevData);
-    RTERROR(status, "GpuBuffer::Deallocate failed (cudaFree)");
-    getGpu()._totalGPUMemory           -=  _length * sizeof(T);
-
-    if (_bSysMem && !_bManaged)
-    {
-        delete[] _pSysData;
-        getGpu()._totalCPUMemory           -=  _length * sizeof(T);
-    }
-
-    _pSysData = nullptr;
-    _pDevData = nullptr;
-    _length = 0;
-#ifdef MEMTRACKING
-    std::cerr << "Mem--: " << getGpu()._totalGPUMemory << " " << getGpu()._totalCPUMemory << std::endl;
-#endif
-}
-
-template <typename T>
-void GpuBuffer<T>::Copy(T* pBuff)
-{
-    cudaError_t status;
-    status = cudaMemcpy(_pDevData, pBuff, _length * sizeof(T), cudaMemcpyDeviceToDevice);
-    RTERROR(status, "cudaMemcpy GpuBuffer::Upload failed");
-}
-
-template <typename T>
-void GpuBuffer<T>::Upload(const T* pBuff) const
-{
-    if (pBuff)
-    {
-        cudaError_t status;
-        status = cudaMemcpy(_pDevData, pBuff, _length * sizeof(T), cudaMemcpyHostToDevice);
-        RTERROR(status, "cudaMemcpy GpuBuffer::Upload failed");
-    }
-    else if (_bSysMem && !_bManaged)
-    {
-        cudaError_t status;
-        status = cudaMemcpy(_pDevData, _pSysData, _length * sizeof(T), cudaMemcpyHostToDevice);
-        RTERROR(status, "cudaMemcpy GpuBuffer::Upload failed");
-    }
-}
-
-template <typename T>
-void GpuBuffer<T>::Download(T* pBuff)
-{
-    if (pBuff)
-    {
-        cudaError_t status;
-        status = cudaMemcpy(pBuff, _pDevData, _length * sizeof(T), cudaMemcpyDeviceToHost);
-        RTERROR(status, "cudaMemcpy GpuBuffer::Download failed");
-    }
-    else if (_bSysMem && !_bManaged)
-    {
-        cudaError_t status;
-        status = cudaMemcpy(_pSysData, _pDevData, _length * sizeof(T), cudaMemcpyDeviceToHost);
-        RTERROR(status, "cudaMemcpy GpuBuffer::Download failed");
-    }
-}
-
-template<typename T> size_t GpuBuffer<T>::GetLength()
-{
-    return _length;
-}
-
-template<typename T> size_t GpuBuffer<T>::GetSize()
-{
-    return _length * sizeof(T);
-}
-
-void verifySGEMM(GpuBuffer<Float>* pbA, GpuBuffer<Float>* pbB, GpuBuffer<Float>* pbC, uint32_t m, uint32_t k, uint32_t n);
-void verifySGEMMNT(GpuBuffer<Float>* pbA, GpuBuffer<Float>* pbB, GpuBuffer<Float>* pbC, uint32_t m, uint32_t k, uint32_t n);
-void verifySGEMMTN(GpuBuffer<Float>* pbA, GpuBuffer<Float>* pbB, GpuBuffer<Float>* pbC, uint32_t m, uint32_t k, uint32_t n);
-
-#define SGEMM(A,B,C,m,n,k,alpha,beta,transf_A,transf_B) \
-        cublasSgemm(getGpu()._cuBLASHandle, transf_B, transf_A, n, m, k, alpha, B, n, A, k, beta, C, n)
-
-#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 200)
-#define printf(f,...)
-#endif
-#endif
+#endif  // __GPUTYPES_H__
