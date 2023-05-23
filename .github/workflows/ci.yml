@@ -18,87 +18,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-              build-essential \
-              cmake \
-              libatlas-base-dev \
-              libhdf5-dev \
-              libjsoncpp-dev \
-              libnetcdf-c++4-dev \
-              libnetcdf-dev \
-              libopenmpi-dev \
-              pkg-config \
-              python3 \
-              software-properties-common \
-              unzip \
-              wget \
-              zlib1g-dev
-          sudo rm -rf /var/lib/apt/lists/*
-
-      - name: Cache CUDA Toolkit
-        id: cache-cuda-toolkit
+      - name: Cache CUDA Docker Image
         uses: actions/cache@v2
         with:
-          path: /usr/local/cuda
-          key: ${{ runner.os }}-cuda-toolkit-${{ hashFiles('cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb') }}
-      
-      - name: Install CUDA toolkit
-        run: |
-          if [ -z "${{ steps.cache-cuda-toolkit.outputs.cache-hit }}" ]; then
-            wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
-            sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
-            wget https://developer.download.nvidia.com/compute/cuda/12.1.1/local_installers/cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb
-            sudo dpkg -i cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb
-            sudo cp /var/cuda-repo-ubuntu2204-12-1-local/cuda-*-keyring.gpg /usr/share/keyrings/
-            sudo apt-get update
-            sudo apt-get -y install cuda
-          else
-            echo "CUDA toolkit is already cached."
-          fi
-          
-      - name: Cache CUDA CUBG
-        id: cache-cubg
-        uses: actions/cache@v2
-        with:
-          path: /usr/local/include/cub
-          key: ${{ runner.os }}-cubg-${{ hashFiles('cub-2.1.0.zip') }}
+          path: /var/lib/docker
+          key: ${{ runner.os }}-cuda-docker-${{ hashFiles('cuda-docker-image-cache-key.txt') }}
           restore-keys: |
-            ${{ runner.os }}-cubg-
-      
-      - name: Install CUDA CUBG
-        run: |
-          if [ -z "${{ steps.cache-cubg.outputs.cache-hit }}" ]; then
-            mkdir /tmp/cub
-            cd /tmp/cub
-            wget https://github.com/NVlabs/cub/archive/2.1.0.zip
-            unzip 2.1.0.zip
-            sudo cp -rf cub-2.1.0/cub/ /usr/local/include/
-            rm -rf /tmp
-          else
-            echo "CUDA CUBG is already cached."
-          fi
-  
-      - name: Ensure OpenMPI is available on path
-        run: |
-          echo "export PATH=/usr/local/openmpi/bin/:${PATH}" >> $GITHUB_ENV
-          echo "export LD_LIBRARY_PATH=/usr/local/lib/:/usr/local/openmpi/lib/:${LD_LIBRARY_PATH}" >> $GITHUB_ENV
-      
-      - name: Build latest version of tensorhub from source
-        run: |
-          cp -R . /opt
-          cd /opt
-          make install
-      
-      - name: Cleanup
-        run: |
-          sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-      
-      - name: Add tensorhub binaries to PATH
-        run: |
-          echo "export PATH=/opt/bin/:${PATH}" >> $GITHUB_ENV
+            ${{ runner.os }}-cuda-docker-
+      - name: Pull Docker Image
+        run: docker pull nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+      - name: Build CUDA Target
+        run: docker build . --target build
 
   test-model:
     runs-on: ubuntu-latest
@@ -129,9 +60,3 @@ jobs:
           else
             echo "Google Test Framework is already cached."
           fi
-      
-      - name: Run Tests
-        run: |
-          cd /github/workspace/tests
-          $(MAKE) run-tests
-
