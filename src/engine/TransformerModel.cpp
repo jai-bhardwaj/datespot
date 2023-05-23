@@ -2,7 +2,10 @@
 
 TransformerModel::TransformerModel(int numLayers, int numHeads, int hiddenSize, int feedForwardSize)
     : transformerEncoderLayers_(numLayers), positionalEncoding_(1000, hiddenSize) {
-    // Implementation of the constructor
+    // Initialize the transformer encoder layers
+    for (int i = 0; i < numLayers; ++i) {
+        transformerEncoderLayers_[i] = TransformerEncoderLayer(numHeads, hiddenSize, feedForwardSize);
+    }
 }
 
 void TransformerModel::initialize() {
