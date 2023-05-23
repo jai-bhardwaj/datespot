@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - master
+      - v0.1.0-alpha
   pull_request:
     branches:
       - master
+      - v0.1.0-alpha
 
 jobs:
   build-model:
