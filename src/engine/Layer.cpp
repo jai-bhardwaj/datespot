@@ -9,6 +9,9 @@
 #include <cstring>
 #include <cstddef>
 #include <cinttypes>
+#include <iostream>
+#include <iomanip>
+#include <format>
 
 using namespace netCDF;
 using namespace netCDF::exceptions;
@@ -3264,26 +3267,65 @@ std::map<Layer::Parallelization, string> Layer::_sParallelizationMap =
 std::map<Layer::Parallelization, string>(_sParallelizationPair, _sParallelizationPair + sizeof(_sParallelizationPair) / sizeof(_sParallelizationPair[0]));
 
 
-ostream& operator<< (ostream& out, Layer::Kind& k)
+#include <iostream>
+#include <unordered_map>
+
+std::ostream& operator<< (std::ostream& out, Layer::Kind& k)
 {
-    out << Layer::_sKindMap[k];
-    return out;
-}
-ostream& operator<< (ostream& out, Layer::Type& t)
-{
-    out << Layer::_sTypeMap[t];
+    static const std::unordered_map<Layer::Kind, std::string> sKindMap {
+        { Layer::Kind::Hidden, "Hidden" },
+        { Layer::Kind::Input, "Input" },
+        { Layer::Kind::Output, "Output" }
+    };
+
+    if (sKindMap.contains(k))
+    {
+        out << sKindMap.at(k);
+    }
     return out;
 }
 
-ostream& operator<< (ostream& out, Layer::Parallelization& p)
+std::ostream& operator<< (std::ostream& out, Layer::Type& t)
 {
-    out << Layer::_sParallelizationMap[p];
+    static const std::unordered_map<Layer::Type, std::string> sTypeMap {
+        { Layer::Type::Convolutional, "Convolutional" },
+        { Layer::Type::FullyConnected, "FullyConnected" },
+        { Layer::Type::Pooling, "Pooling" }
+    };
+
+    if (sTypeMap.contains(t))
+    {
+        out << sTypeMap.at(t);
+    }
     return out;
 }
 
-ostream& operator<< (ostream& out, Layer::Attributes& a)
+std::ostream& operator<< (std::ostream& out, Layer::Parallelization& p)
 {
-    out << Layer::_sAttributesMap[a];
+    static const std::unordered_map<Layer::Parallelization, std::string> sParallelizationMap {
+        { Layer::Parallelization::Data, "Data" },
+        { Layer::Parallelization::Model, "Model" },
+        { Layer::Parallelization::ModelData, "ModelData" }
+    };
+
+    if (sParallelizationMap.contains(p))
+    {
+        out << sParallelizationMap.at(p);
+    }
+    return out;
+}
+
+std::ostream& operator<< (std::ostream& out, Layer::Attributes& a)
+{
+    static const std::unordered_map<Layer::Attributes, std::string> sAttributesMap {
+        { Layer::Attributes::BatchNormalization, "BatchNormalization" },
+        { Layer::Attributes::Sparse, "Sparse" }
+    };
+
+    if (sAttributesMap.contains(a))
+    {
+        out << sAttributesMap.at(a);
+    }
     return out;
 }
 
@@ -3327,275 +3369,90 @@ _attributes(Layer::Attributes::None)
 
 }
 
-bool LoadLayerDescriptorNetCDF(const string& fname, netCDF::NcFile& nc, uint32_t index, LayerDescriptor& ld)
+bool LoadLayerDescriptorNetCDF(const std::string& fname, netCDF::NcFile& nc, uint32_t index, LayerDescriptor& ld)
 {
-    bool bResult                                = true; 
+    bool bResult = true;
 
     if (getGpu()._id == 0)
     {
         try {
-            string lstring                      = "layer" + std::to_string(index) + "_";
-            NcGroupAtt nameAtt                  = nc.getAtt(lstring + "name");
-            if (nameAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No name supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            nameAtt.getValues(ld._name);
+            std::string lstring = "layer" + std::to_string(index) + "_";
+            auto [nameAtt, kindAtt, typeAtt, poolingFunctionAtt, dataSetAtt, NxAtt, NyAtt, NzAtt, NwAtt, dimensionsAtt, kernelXAtt,
+                  kernelYAtt, kernelZAtt, kernelStrideXAtt, kernelStrideYAtt, kernelStrideZAtt, kernelPaddingXAtt, kernelPaddingYAtt,
+                  kernelPaddingZAtt, kernelDimensionsAtt, weightInitAtt, weightInitScaleAtt, biasInitAtt, weightNormAtt, deltaNormAtt,
+                  pDropoutAtt, activationAtt, RELUSlopeAtt, ELUAlphaAtt, SELULambdaAtt, sparsenessPenalty_pAtt, sparsenessPenalty_betaAtt,
+                  attributesAtt, sourcesAtt, skipsAtt] = std::make_tuple(nc.getAtt(lstring + "name"), nc.getAtt(lstring + "kind"),
+                  nc.getAtt(lstring + "type"), nc.getAtt(lstring + "poolingfunction"), nc.getAtt(lstring + "dataSet"), nc.getAtt(lstring + "Nx"),
+                  nc.getAtt(lstring + "Ny"), nc.getAtt(lstring + "Nz"), nc.getAtt(lstring + "Nw"), nc.getAtt(lstring + "dimensions"),
+                  nc.getAtt(lstring + "kernelX"), nc.getAtt(lstring + "kernelY"), nc.getAtt(lstring + "kernelZ"), nc.getAtt(lstring + "kernelStrideX"),
+                  nc.getAtt(lstring + "kernelStrideY"), nc.getAtt(lstring + "kernelStrideZ"), nc.getAtt(lstring + "kernelPaddingX"),
+                  nc.getAtt(lstring + "kernelPaddingY"), nc.getAtt(lstring + "kernelPaddingZ"), nc.getAtt(lstring + "kernelDimensions"),
+                  nc.getAtt(lstring + "weightInit"), nc.getAtt(lstring + "weightInitScale"), nc.getAtt(lstring + "biasInit"),
+                  nc.getAtt(lstring + "weightNorm"), nc.getAtt(lstring + "deltaNorm"), nc.getAtt(lstring + "pDropout"),
+                  nc.getAtt(lstring + "activation"), nc.getAtt(lstring + "RELUSlope"), nc.getAtt(lstring + "ELUAlpha"),
+                  nc.getAtt(lstring + "SELULambda"), nc.getAtt("sparsenessPenalty_p"), nc.getAtt("sparsenessPenalty_beta"),
+                  nc.getAtt(lstring + "attributes"), nc.getAtt(lstring + "sources"), nc.getAtt(lstring + "skips"));
 
-            NcGroupAtt kindAtt                  = nc.getAtt(lstring + "kind");
-            if (kindAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kind supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kindAtt.getValues(&ld._kind);
+            auto getAttributeValue = [&](const auto& attribute, const std::string& attributeName, auto& target) {
+                if (attribute.isNull()) {
+                    throw NC_EXCEPTION("NcException", "Layer::Layer: No " + attributeName + " supplied in NetCDF input file " + fname, __FILE__, __LINE__);
+                }
+                attribute.getValues(&target);
+            };
 
-            NcGroupAtt typeAtt                  = nc.getAtt(lstring + "type");
-            if (typeAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No type supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            typeAtt.getValues(&ld._type);
-            
-            NcGroupAtt poolingFunctionAtt       = nc.getAtt(lstring + "poolingfunction");
-            if (poolingFunctionAtt.isNull())
-            {
-                if (ld._type == Layer::Type::Pooling)
+            std::string name;
+            getAttributeValue(nameAtt, "name", name);
+            ld._name = name;
+
+            getAttributeValue(kindAtt, "kind", ld._kind);
+            getAttributeValue(typeAtt, "type", ld._type);
+
+            if (poolingFunctionAtt.isNull()) {
+                if (ld._type == Layer::Type::Pooling) {
                     throw NC_EXCEPTION("NcException", "Layer::Layer: No pooling function supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-                ld._poolingFunction             = None;
-            }
-            else
-                poolingFunctionAtt.getValues(&ld._poolingFunction);
-
-            NcGroupAtt dataSetAtt               = nc.getAtt(lstring + "dataSet");
-            if (dataSetAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No dataSet supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            dataSetAtt.getValues(ld._dataSet);
-
-            NcGroupAtt NxAtt                    = nc.getAtt(lstring + "Nx");
-            if (NxAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No Nx supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            NxAtt.getValues(&ld._Nx);
-
-            NcGroupAtt NyAtt                    = nc.getAtt(lstring + "Ny");
-            if (NyAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No Ny supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            NyAtt.getValues(&ld._Ny);
-
-            NcGroupAtt NzAtt                    = nc.getAtt(lstring + "Nz");
-            if (NzAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No Nz supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            NzAtt.getValues(&ld._Nz);
-
-            NcGroupAtt NwAtt                    = nc.getAtt(lstring + "Nw");
-            if (NwAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No Nw supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            NwAtt.getValues(&ld._Nw);
-
-            NcGroupAtt dimensionsAtt            = nc.getAtt(lstring + "dimensions");
-            if (dimensionsAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No dimensions supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            dimensionsAtt.getValues(&ld._dimensions);
-
-            NcGroupAtt kernelXAtt               = nc.getAtt(lstring + "kernelX");
-            if (kernelXAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelX supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelXAtt.getValues(&ld._kernelX);
-
-            NcGroupAtt kernelYAtt               = nc.getAtt(lstring + "kernelY");
-            if (kernelYAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelY supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelYAtt.getValues(&ld._kernelY);
-
-            NcGroupAtt kernelZAtt               = nc.getAtt(lstring + "kernelZ");
-            if (kernelZAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelZ supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelZAtt.getValues(&ld._kernelZ);
-
-            NcGroupAtt kernelStrideXAtt         = nc.getAtt(lstring + "kernelStrideX");
-            if (kernelStrideXAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelStrideX supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelStrideXAtt.getValues(&ld._kernelStrideX);
-
-            NcGroupAtt kernelStrideYAtt         = nc.getAtt(lstring + "kernelStrideY");
-            if (kernelStrideYAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelStrideY supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelStrideYAtt.getValues(&ld._kernelStrideY);
-
-            NcGroupAtt kernelStrideZAtt         = nc.getAtt(lstring + "kernelStrideZ");
-            if (kernelStrideZAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelStrideZ supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelStrideZAtt.getValues(&ld._kernelStrideZ);
-
-
-            NcGroupAtt kernelPaddingXAtt        = nc.getAtt(lstring + "kernelPaddingX");
-            if (kernelPaddingXAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelPaddingX supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelPaddingXAtt.getValues(&ld._kernelPaddingX);
-
-            NcGroupAtt kernelPaddingYAtt        = nc.getAtt(lstring + "kernelPaddingY");
-            if (kernelPaddingYAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelPaddingY supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelPaddingYAtt.getValues(&ld._kernelPaddingY);
-
-            NcGroupAtt kernelPaddingZAtt        = nc.getAtt(lstring + "kernelPaddingZ");
-            if (kernelPaddingZAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelPaddingZ supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelPaddingZAtt.getValues(&ld._kernelPaddingZ);          
-
-            NcGroupAtt kernelDimensionsAtt      = nc.getAtt(lstring + "kernelDimensions");
-            if (kernelDimensionsAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No kernelDimensions supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            kernelDimensionsAtt.getValues(&ld._kernelDimensions);
-            
-            NcGroupAtt weightInitAtt            = nc.getAtt(lstring + "weightInit");
-            if (weightInitAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No weightInit supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-                ld._weightInit                  = Xavier;
-            }
-            else
-                weightInitAtt.getValues(&ld._weightInit);      
-            
-            NcGroupAtt weightInitScaleAtt       = nc.getAtt(lstring + "weightInitScale");
-            if (weightInitScaleAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No weightInitScale supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-                ld._weightInitScale             = (Float)1.0;
-            }
-            else
-                weightInitScaleAtt.getValues(&ld._weightInitScale);   
-                
-            NcGroupAtt biasInitAtt              = nc.getAtt(lstring + "biasInit");
-            if (biasInitAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No biasInit supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-                ld._biasInit                    = (Float)0.0;
-            }
-            else
-                biasInitAtt.getValues(&ld._biasInit);       
-                      
-            NcGroupAtt weightNormAtt            = nc.getAtt(lstring + "weightNorm");
-            if (weightNormAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No weightNorm supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-                ld._weightNorm                  = (Float)0.0;
-            }
-            else
-                weightNormAtt.getValues(&ld._weightNorm);
-            
-            NcGroupAtt deltaNormAtt             = nc.getAtt(lstring + "deltaNorm");
-            if (deltaNormAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No deltaNorm supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-                ld._deltaNorm                   = (Float)0.0;
-            }
-            else
-                deltaNormAtt.getValues(&ld._deltaNorm);
-                
-            NcGroupAtt pDropoutAtt              = nc.getAtt(lstring + "pDropout");
-            if (pDropoutAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No pDropout supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            else
-                pDropoutAtt.getValues(&ld._pDropout);
-
-            NcGroupAtt activationAtt            = nc.getAtt(lstring + "activation");
-            if (activationAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No activation supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            activationAtt.getValues(&ld._activation);
-
-            NcGroupAtt RELUSlopeAtt             = nc.getAtt(lstring + "RELUSlope");
-            if (RELUSlopeAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No RELUSlope supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            RELUSlopeAtt.getValues(&(ld._RELUSlope));
-
-            
-            NcGroupAtt ELUAlphaAtt              = nc.getAtt(lstring + "ELUAlpha");
-            if (ELUAlphaAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No ELUAlpha supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            ELUAlphaAtt.getValues(&(ld._ELUAlpha));
-            
-            NcGroupAtt SELULambdaAtt            = nc.getAtt(lstring + "SELULambda");
-            if (SELULambdaAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No SELULambda supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            SELULambdaAtt.getValues(&(ld._SELULambda)); 
-            
-            NcGroupAtt sparsenessPenalty_pAtt   = nc.getAtt("sparsenessPenalty_p");   
-            if (sparsenessPenalty_pAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No sparsenessPenalty_p supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            else
-            {
-                sparsenessPenalty_pAtt.getValues(&(ld._sparsenessPenalty_p));
+                }
+                ld._poolingFunction = None;
+            } else {
+                getAttributeValue(poolingFunctionAtt, "pooling function", ld._poolingFunction);
             }
 
-            NcGroupAtt sparsenessPenalty_betaAtt= nc.getAtt("sparsenessPenalty_beta");
-            if (sparsenessPenalty_betaAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No sparsenessPenalty_beta supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-                ld._sparsenessPenalty_p = (Float)0.0;
-            }
-            else
-            {
-                sparsenessPenalty_betaAtt.getValues(&(ld._sparsenessPenalty_beta));
-            }
-
-            NcGroupAtt attributesAtt            = nc.getAtt(lstring + "attributes");
-            if (attributesAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No attributes supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            attributesAtt.getValues(&ld._attributes);
+            getAttributeValue(dataSetAtt, "dataSet", ld._dataSet);
+            getAttributeValue(NxAtt, "Nx", ld._Nx);
+            getAttributeValue(NyAtt, "Ny", ld._Ny);
+            getAttributeValue(NzAtt, "Nz", ld._Nz);
+            getAttributeValue(NwAtt, "Nw", ld._Nw);
+            getAttributeValue(dimensionsAtt, "dimensions", ld._dimensions);
+            getAttributeValue(kernelXAtt, "kernelX", ld._kernelX);
+            getAttributeValue(kernelYAtt, "kernelY", ld._kernelY);
+            getAttributeValue(kernelZAtt, "kernelZ", ld._kernelZ);
+            getAttributeValue(kernelStrideXAtt, "kernelStrideX", ld._kernelStrideX);
+            getAttributeValue(kernelStrideYAtt, "kernelStrideY", ld._kernelStrideY);
+            getAttributeValue(kernelStrideZAtt, "kernelStrideZ", ld._kernelStrideZ);
+            getAttributeValue(kernelPaddingXAtt, "kernelPaddingX", ld._kernelPaddingX);
+            getAttributeValue(kernelPaddingYAtt, "kernelPaddingY", ld._kernelPaddingY);
+            getAttributeValue(kernelPaddingZAtt, "kernelPaddingZ", ld._kernelPaddingZ);
+            getAttributeValue(kernelDimensionsAtt, "kernelDimensions", ld._kernelDimensions);
+            getAttributeValue(weightInitAtt, "weightInit", ld._weightInit);
+            getAttributeValue(weightInitScaleAtt, "weightInitScale", ld._weightInitScale);
+            getAttributeValue(biasInitAtt, "biasInit", ld._biasInit);
+            getAttributeValue(weightNormAtt, "weightNorm", ld._weightNorm);
+            getAttributeValue(deltaNormAtt, "deltaNorm", ld._deltaNorm);
+            getAttributeValue(pDropoutAtt, "pDropout", ld._pDropout);
+            getAttributeValue(activationAtt, "activation", ld._activation);
+            getAttributeValue(RELUSlopeAtt, "RELUSlope", ld._RELUSlope);
+            getAttributeValue(ELUAlphaAtt, "ELUAlpha", ld._ELUAlpha);
+            getAttributeValue(SELULambdaAtt, "SELULambda", ld._SELULambda);
+            getAttributeValue(sparsenessPenalty_pAtt, "sparsenessPenalty_p", ld._sparsenessPenalty_p);
+            getAttributeValue(sparsenessPenalty_betaAtt, "sparsenessPenalty_beta", ld._sparsenessPenalty_beta);
+            getAttributeValue(attributesAtt, "attributes", ld._attributes);
 
             if (ld._attributes & Layer::Attributes::BatchNormalization)
             {
-                NcDim bnDim                 = nc.getDim(lstring + "bnDim");
-                NcVar scaleBNVar            = nc.getVar(lstring + "scaleBN");
-                NcVar biasBNVar             = nc.getVar(lstring + "biasBN");
-                NcVar runningMeanBNVar      = nc.getVar(lstring + "runningMeanBN");
-                NcVar runningVarianceBNVar  = nc.getVar(lstring + "runningVarianceBN");
+                NcDim bnDim = nc.getDim(lstring + "bnDim");
+                NcVar scaleBNVar = nc.getVar(lstring + "scaleBN");
+                NcVar biasBNVar = nc.getVar(lstring + "biasBN");
+                NcVar runningMeanBNVar = nc.getVar(lstring + "runningMeanBN");
+                NcVar runningVarianceBNVar = nc.getVar(lstring + "runningVarianceBN");
 
                 ld._vScaleBN.resize(bnDim.getSize());
                 ld._vBiasBN.resize(bnDim.getSize());
@@ -3608,114 +3465,106 @@ bool LoadLayerDescriptorNetCDF(const string& fname, netCDF::NcFile& nc, uint32_t
                 runningVarianceBNVar.getVar(ld._vRunningVarianceBN.data());
             }
 
-            uint32_t sources                    = 0;
-            NcGroupAtt sourcesAtt               = nc.getAtt(lstring + "sources");
-            if (sourcesAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No sources supplied in NetCDF input file " + fname, __FILE__, __LINE__);
-            }
-            sourcesAtt.getValues(&sources);
+            uint32_t sources = 0;
+            getAttributeValue(sourcesAtt, "sources", sources);
 
             for (uint32_t i = 0; i < sources; i++)
             {
-                string nstring                  = std::to_string(i);
-                NcGroupAtt sourceAtt            = nc.getAtt(lstring + "source" + nstring);
-                if (sourcesAtt.isNull())
+                std::string nstring = std::to_string(i);
+                auto sourceAtt = nc.getAtt(lstring + "source" + nstring);
+                if (sourceAtt.isNull())
                 {
                     throw NC_EXCEPTION("NcException", "Layer::Layer: No source attributes supplied in NetCDF input file " + fname, __FILE__, __LINE__);
                 }
-                string source;
+                std::string source;
                 sourceAtt.getValues(source);
-                ld._vSource.push_back(source);        
-            }   
-            
-            uint32_t skips                      = 0;
-            NcGroupAtt skipsAtt                 = nc.getAtt(lstring + "skips");
-            if (skipsAtt.isNull())
-            {
-                throw NC_EXCEPTION("NcException", "Layer::Layer: No skips supplied in NetCDF input file " + fname, __FILE__, __LINE__);
+                ld._vSource.push_back(source);
             }
-            skipsAtt.getValues(&skips);
+
+            uint32_t skips = 0;
+            getAttributeValue(skipsAtt, "skips", skips);
 
             for (uint32_t i = 0; i < skips; i++)
             {
-                string nstring                  = std::to_string(i);
-                NcGroupAtt skipAtt              = nc.getAtt(lstring + "skip" + nstring);
+                std::string nstring = std::to_string(i);
+                auto skipAtt = nc.getAtt(lstring + "skip" + nstring);
                 if (skipAtt.isNull())
                 {
                     throw NC_EXCEPTION("NcException", "Layer::Layer: No skip attributes supplied in NetCDF input file " + fname, __FILE__, __LINE__);
                 }
-                string skip;
+                std::string skip;
                 skipAtt.getValues(skip);
-                ld._vSkip.push_back(skip);        
-            }                    
+                ld._vSkip.push_back(skip);
+            }
         }
         catch (NcException& e)
         {
-            cout << "Exception: " << e.what() << endl;
-            bResult                             = false;
+            std::cout << "Exception: " << e.what() << std::endl;
+            bResult = false;
         }
     }
-   
+
     return bResult;
 }
 
-ostream& operator<< (ostream& out, LayerDescriptor& d)
+std::ostream& operator<<(std::ostream& out, LayerDescriptor& d)
 {
-    out << "Name:                  " << d._name << endl;
-    out << "Kind:                  " << d._kind << endl;
-    out << "Type:                  " << d._type << endl;
+    using namespace std::format;
+
+    out << format("Name:                  {}\n", d._name);
+    out << format("Kind:                  {}\n", d._kind);
+    out << format("Type:                  {}\n", d._type);
     if (d._type != Layer::Type::Pooling)
-        out << "Pooling Function:      " << d._poolingFunction << endl;
-    out << "Nx:                    " << d._Nx << endl;
-    out << "Ny:                    " << d._Ny << endl;
-    out << "Nz:                    " << d._Nz << endl;
-    out << "Nw:                    " << d._Nw << endl;
+        out << format("Pooling Function:      {}\n", d._poolingFunction);
+    out << format("Nx:                    {}\n", d._Nx);
+    out << format("Ny:                    {}\n", d._Ny);
+    out << format("Nz:                    {}\n", d._Nz);
+    out << format("Nw:                    {}\n", d._Nw);
     if (d._type != Layer::Type::FullyConnected)
     {
-        out << "kernelX:               " << d._kernelX << endl;
-        out << "kernelY:               " << d._kernelY << endl;
-        out << "kernelZ:               " << d._kernelZ << endl;
-        out << "kernelStrideX:         " << d._kernelStrideX << endl;
-        out << "kernelStrideY:         " << d._kernelStrideY << endl;
-        out << "kernelStrideZ:         " << d._kernelStrideZ << endl;
-        out << "kernelPaddingX:        " << d._kernelPaddingX << endl;
-        out << "kernelPaddingY:        " << d._kernelPaddingY << endl;
-        out << "kernelPaddingZ:        " << d._kernelPaddingZ << endl;
-        out << "kernelDimensions:      " << d._kernelDimensions << endl;
+        out << format("kernelX:               {}\n", d._kernelX);
+        out << format("kernelY:               {}\n", d._kernelY);
+        out << format("kernelZ:               {}\n", d._kernelZ);
+        out << format("kernelStrideX:         {}\n", d._kernelStrideX);
+        out << format("kernelStrideY:         {}\n", d._kernelStrideY);
+        out << format("kernelStrideZ:         {}\n", d._kernelStrideZ);
+        out << format("kernelPaddingX:        {}\n", d._kernelPaddingX);
+        out << format("kernelPaddingY:        {}\n", d._kernelPaddingY);
+        out << format("kernelPaddingZ:        {}\n", d._kernelPaddingZ);
+        out << format("kernelDimensions:      {}\n", d._kernelDimensions);
     }
     if (d._type != Layer::Type::Pooling)
     {
-        out << "pDropout:              " << d._pDropout << endl;
-        out << "weightInit:            " << d._weightInit << endl;
-        out << "weightInitScale:       " << d._weightInitScale << endl;
-        out << "biasInit:              " << d._biasInit << endl;
-        out << "weightNorm:            " << d._weightNorm << endl;
-        out << "deltaNorm:             " << d._deltaNorm << endl;
-        out << "activation:            " << d._activation << endl;
-        out << "RELUSlope:             " << d._RELUSlope << endl;
-        out << "ELUAlpha:              " << d._ELUAlpha << endl;
-        out << "SELULambda:            " << d._SELULambda << endl; 
-        out << "Sparse:                " << ((d._attributes & Layer::Attributes::Sparse) != 0) << endl;
-        out << "batchNormalization:    " << ((d._attributes & Layer::Attributes::BatchNormalization) != 0) << endl;
+        out << format("pDropout:              {}\n", d._pDropout);
+        out << format("weightInit:            {}\n", d._weightInit);
+        out << format("weightInitScale:       {}\n", d._weightInitScale);
+        out << format("biasInit:              {}\n", d._biasInit);
+        out << format("weightNorm:            {}\n", d._weightNorm);
+        out << format("deltaNorm:             {}\n", d._deltaNorm);
+        out << format("activation:            {}\n", d._activation);
+        out << format("RELUSlope:             {}\n", d._RELUSlope);
+        out << format("ELUAlpha:              {}\n", d._ELUAlpha);
+        out << format("SELULambda:            {}\n", d._SELULambda);
+        out << format("Sparse:                {}\n", (d._attributes & Layer::Attributes::Sparse) != 0);
+        out << format("batchNormalization:    {}\n", (d._attributes & Layer::Attributes::BatchNormalization) != 0);
         if (d._type == Layer::Type::FullyConnected)
         {
-            if (d._sparsenessPenalty_p > (Float)0.0)
-                out << "sparsenessPenalty_p    " << d._sparsenessPenalty_p << endl;
-            if (d._sparsenessPenalty_beta > (Float)0.0)
-                out << "sparsenessPenalty_beta " << d._sparsenessPenalty_beta << endl;
+            if (d._sparsenessPenalty_p > static_cast<Float>(0.0))
+                out << format("sparsenessPenalty_p:    {}\n", d._sparsenessPenalty_p);
+            if (d._sparsenessPenalty_beta > static_cast<Float>(0.0))
+                out << format("sparsenessPenalty_beta: {}\n", d._sparsenessPenalty_beta);
         }
         if (d._kind != Layer::Kind::Hidden)
-            out << "DataSet:               " << d._dataSet << endl;
+            out << format("DataSet:               {}\n", d._dataSet);
     }
-    for (size_t i = 0 ; i < d._vSource.size(); i++)
+    for (size_t i = 0; i < d._vSource.size(); i++)
     {
-        out << "source " << setw(3) << i << ":            " << d._vSource[i] << endl;
+        out << format("source {:<3}:            {}\n", i, d._vSource[i]);
     }
-    for (size_t i = 0 ; i < d._vSkip.size(); i++)
+    for (size_t i = 0; i < d._vSkip.size(); i++)
     {
-        out << "skip " << setw(3) << i << ":            " << d._vSkip[i] << endl;
-    }     
+        out << format("skip {:<3}:            {}\n", i, d._vSkip[i]);
+    }
     return out;
 }
 
