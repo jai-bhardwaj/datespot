@@ -1,672 +1,188 @@
-#ifndef LAYER_H
-#define LAYER_H
+#ifndef Layer_H
+#define Layer_H
+
 #ifndef __NVCC__
 #include <memory>
-#include <string>
 #include <array>
+#include <string_view>
 #include <map>
 #include <vector>
-#include <tuple>
-#include <iostream>
-#include <string_view>
+#include <ostream>
+#include <netcdf>
 
-class LayerDescriptor;
+class DataSetBase;
+class Network;
+class Weight;
+class GpuBuffer;
+
+using PoolingFunction = /* define the type of PoolingFunction */;
+using Activation = /* define the type of Activation */;
+using ErrorFunction = /* define the type of ErrorFunction */;
+
 /**
- * @brief Class representing a Layer in a neural network.
+ * @brief Class representing a layer in a neural network.
  */
 class Layer {
-protected:
-    std::vector<float> input_;
-    std::vector<float> output_;
 public:
-    // @brief Creates a new layer with the given name.
-    Layer(const std::string& name);
-
-    // @brief Initializes the layer. This function must be implemented by derived classes.
-    virtual void initialize() = 0;
-
-    // @brief Performs a forward pass through the layer. This function must be implemented by derived classes.
-    virtual void forward() = 0;
-
-    // @brief Sets the input to the layer.
-    void setInput(const std::vector<float>& input);
-
-    // @brief Gets the output from the layer.
-    const std::vector<float>& getOutput() const;
-    /**
-     * @brief Friend class declaration for Network.
-     *
-     * Network class is a friend of Layer class, allowing access to its private and protected members.
-     */
     friend class Network;
-
-    /**
-     * @brief Friend class declaration for Weight.
-     *
-     * Weight class is a friend of Layer class, allowing access to its private and protected members.
-     */
     friend class Weight;
+    friend Network* LoadNeuralNetworkNetCDF(const std::string& fname, int batch);
 
     /**
-     * @brief Friend function declaration for LoadNeuralNetworkNetCDF.
-     *
-     * LoadNeuralNetworkNetCDF function is a friend of Layer class, allowing access to its private and protected members.
-     *
-     * @param fname The file name of the neural network in NetCDF format.
-     * @param batch The batch size for the neural network.
-     * @return A pointer to the loaded neural network.
+     * @brief Enum defining the kind of layer.
      */
-    friend Network* LoadNeuralNetworkNetCDF(const std::string_view fname, int batch);
-
-    /**
-     * @brief Enum representing the kind of layer.
-     */
-    enum class Kind {
-        /**
-         * @brief Input layer kind.
-         */
+    enum Kind
+    {
         Input,
-
-        /**
-         * @brief Hidden layer kind.
-         */
         Hidden,
-
-        /**
-         * @brief Output layer kind.
-         */
         Output,
-
-        /**
-         * @brief Target layer kind.
-         */
         Target,
     };
 
     /**
-     * @brief Array of pairs mapping Layer::Kind enumeration to string representation.
+     * @brief Enum defining the type of layer.
      */
-    static std::array<std::pair<Kind, std::string>, 4> _sKindPair;
-
-    /**
-     * @brief Map mapping Layer::Kind enumeration to string representation.
-     */
-    static std::map<Kind, std::string> _sKindMap;
-
-    /**
-     * @brief Enum representing the type of layer.
-     */
-    enum class Type {
-        /**
-         * @brief Fully connected layer type.
-         */
+    enum Type
+    {
         FullyConnected,
-
-        /**
-         * @brief Convolutional layer type.
-         */
         Convolutional,
-
-        /**
-         * @brief Pooling layer type.
-         */
-        Pooling,
+        Pooling
     };
 
     /**
-     * @brief Array of pairs mapping Layer::Type enumeration to string representation.
+     * @brief Enum defining additional attributes of the layer.
      */
-    static std::array<std::pair<Type, std::string>, 3> _sTypePair;
-
-    /**
-     * @brief Map mapping Layer::Type enumeration to string representation.
-     */
-    static std::map<Type, std::string> _sTypeMap;
-
-    /**
-     * @brief Enum representing the attributes of a layer.
-     */
-    enum class Attributes {
-        /**
-         * @brief No additional attributes.
-         */
+    enum Attributes
+    {
         None                = 0x0,
-
-        /**
-         * @brief Sparse attribute.
-         */
         Sparse              = 0x1,
-
-        /**
-         * @brief Denoising attribute.
-         */
         Denoising           = 0x2,
-
-        /**
-         * @brief Batch normalization attribute.
-         */
         BatchNormalization  = 0x4,
     };
 
     /**
-     * @brief Array of pairs mapping Layer::Attributes enumeration to string representation.
+     * @brief Enum defining the parallelization strategy for the layer.
      */
-    static std::array<std::pair<Attributes, std::string>, 5> _sAttributesPair;
-
-    /**
-     * @brief Map mapping Layer::Attributes enumeration to string representation.
-     */
-    static std::map<Attributes, std::string> _sAttributesMap;
-
-    /**
-     * @brief Enum representing the parallelization options for a layer.
-     */
-    enum class Parallelization {
-        /**
-         * @brief File containing data.
-         */
+    enum Parallelization {
         Data,
-
-        /**
-         * @brief File containing model.
-         */
         Model,
-
-        /**
-         * @brief Serial file.
-         */
         Serial,
     };
 
-    /**
-     * @brief Array of pairs mapping Layer::Parallelization enumeration to string representation.
-     */
-    static std::array<std::pair<Parallelization, std::string>, 3> _sParallelizationPair;
-
-    /**
-     * @brief Map mapping Layer::Parallelization enumeration to string representation.
-     */
-    static std::map<Parallelization, std::string> _sParallelizationMap;
-
 private:
-    /**
-     * @brief The name of the class.
-     */
-    const std::string _name;
-
-    /**
-     * @brief The kind of the class.
-     */
-    const Kind _kind;
-
-    /**
-     * @brief The type of the class.
-     */
-    const Type _type;
-
-    /**
-     * @brief The attributes of the class.
-     */
-    const uint32_t _attributes;
-
-    /**
-     * @brief The pooling function used by the class.
-     */
-    PoolingFunction _poolingFunction;
-
-    /**
-     * @brief The data set associated with the class.
-     */
-    std::string _dataSet;
-
-    /**
-     * @brief A pointer to the base data set.
-     */
-    DataSetBase* _pDataSet;
-
-    /**
-     * @brief A vector of source strings.
-     */
-    std::vector<std::string> _vSource;
-
-    /**
-     * @brief A vector of strings to skip.
-     */
-    std::vector<std::string> _vSkip;
-
-    /**
-     * @brief The value of Nx.
-     */
-    uint32_t _Nx;
-
-    /**
-     * @brief The value of Ny.
-     */
-    uint32_t _Ny;
-
-    /**
-     * @brief The value of Nz.
-     */
-    uint32_t _Nz;
-
-    /**
-     * @brief The value of Nw.
-     */
-    uint32_t _Nw;
-
-    /**
-     * @brief The stride value.
-     */
-    uint32_t _stride;
-
-    /**
-     * @brief The local stride value.
-     */
-    uint32_t _localStride;
-
-    /**
-     * @brief The maximum local stride value.
-     */
-    uint32_t _maxLocalStride;
-
-    /**
-     * @brief The stride value used for batch normalization.
-     */
-    uint32_t _strideBN;
-
-    /**
-     * @brief The batch value.
-     */
-    uint32_t _batch;
-
-    /**
-     * @brief The local batch value.
-     */
-    uint32_t _localBatch;
-
-    /**
-     * @brief The delta update count value.
-     */
-    uint32_t _deltaUpdateCount;
-
-    /**
-     * @brief The unit update count value.
-     */
-    uint32_t _unitUpdateCount;
-
-    /**
-     * @brief The number of dimensions.
-     */
-    uint32_t _dimensions;
-
-    /**
-     * @brief The minimum value of X.
-     */
-    uint32_t _minX;
-
-    /**
-     * @brief The maximum value of X.
-     */
-    uint32_t _maxX;
-
-    /**
-     * @brief The weight initialization method.
-     */
-    WeightInitialization _weightInit;
-
-    /**
-     * @brief The weight initialization scale.
-     */
-    float _weightInitScale;
-    /**
-     * @brief The bias initialization value.
-     */
-    float _biasInit;
-
-    /**
-     * @brief The slope for the rectified linear unit (ReLU) activation function.
-     */
-    float _RELUSlope;
-
-    /**
-     * @brief The alpha value for the exponential linear unit (ELU) activation function.
-     */
-    float _ELUAlpha;
-
-    /**
-     * @brief The lambda value for the scaled exponential linear unit (SELU) activation function.
-     */
-    float _SELULambda;
-
-    /**
-     * @brief Indicates whether batch normalization is enabled.
-     */
-    bool _bBatchNormalization;
-
-    /**
-     * @brief The X dimension of the kernel.
-     */
-    const uint32_t _kernelX;
-
-    /**
-     * @brief The Y dimension of the kernel.
-     */
-    const uint32_t _kernelY;
-
-    /**
-     * @brief The Z dimension of the kernel.
-     */
-    const uint32_t _kernelZ;
-
-    /**
-     * @brief The stride value along the X dimension of the kernel.
-     */
-    const uint32_t _kernelStrideX;
-
-    /**
-     * @brief The stride value along the Y dimension of the kernel.
-     */
-    const uint32_t _kernelStrideY;
-
-    /**
-     * @brief The stride value along the Z dimension of the kernel.
-     */
-    const uint32_t _kernelStrideZ;
-
-    /**
-     * @brief The padding value along the X dimension of the kernel.
-     */
-    const uint32_t _kernelPaddingX;
-
-    /**
-     * @brief The padding value along the Y dimension of the kernel.
-     */
-    const uint32_t _kernelPaddingY;
-
-    /**
-     * @brief The padding value along the Z dimension of the kernel.
-     */
-    const uint32_t _kernelPaddingZ;
-
-    /**
-     * @brief The number of dimensions in the kernel.
-     */
-    const uint32_t _kernelDimensions;
-
-    /**
-     * @brief The activation function used by the layer.
-     */
-    const Activation _activation;
-
-    /**
-     * @brief The dropout probability value.
-     */
-    const float _pDropout;
-
-    /**
-     * @brief Indicates whether the layer is sparse.
-     */
-    bool _bSparse;
-
-    /**
-     * @brief Indicates whether fast sparsity is enabled.
-     */
-    bool _bFastSparse;
-
-    /**
-     * @brief The p value for sparseness penalty.
-     */
-    float _sparsenessPenalty_p;
-
-    /**
-     * @brief The beta value for sparseness penalty.
-     */
-    float _sparsenessPenalty_beta;
-
-    /**
-     * @brief Indicates whether denoising is enabled.
+    const std::string              _name; /**< Name of the layer. */
+    const Kind                     _kind; /**< Kind of the layer. */
+    const Type                     _type; /**< Type of the layer. */
+    const uint32_t                 _attributes; /**< Additional attributes of the layer. */
+    PoolingFunction                _poolingFunction; /**< Pooling function for the layer. */
+    std::string                    _dataSet; /**< Data set associated with the layer. */
+    DataSetBase*                 _pDataSet; /**< Pointer to the data set object. */
+    std::vector<std::string>       _vSource; /**< Vector of source strings. */
+    std::vector<std::string>       _vSkip; /**< Vector of skip strings. */
+    uint32_t                       _Nx; /**< Size of dimension X. */
+    uint32_t                       _Ny; /**< Size of dimension Y. */
+    uint32_t                       _Nz; /**< Size of dimension Z. */
+    uint32_t                       _Nw; /**< Size of dimension W. */
+    uint32_t                       _stride; /**< Stride of the layer. */
+    uint32_t                       _localStride; /**< Local stride of the layer. */
+    uint32_t                       _maxLocalStride; /**< Maximum local stride of the layer. */
+    uint32_t                       _strideBN; /**< Stride for batch normalization. */
+    uint32_t                       _batch; /**< Batch size. */
+    uint32_t                       _localBatch; /**< Local batch size. */
+    uint32_t                       _deltaUpdateCount; /**< Delta update count. */
+    uint32_t                       _unitUpdateCount; /**< Unit update count. */
+    uint32_t                       _dimensions; /**< Number of dimensions of the layer. */
+    uint32_t                       _minX; /**< Minimum value of dimension X. */
+    uint32_t                       _maxX; /**< Maximum value of dimension X. */
+    WeightInitialization           _weightInit; /**< Weight initialization strategy. */
+    float                          _weightInitScale; /**< Weight initialization scale. */
+    float                          _biasInit; /**< Bias initialization value. */
+    float                          _RELUSlope; /**< Slope value for ReLU activation. */
+    float                          _ELUAlpha; /**< Alpha value for ELU activation. */
+    float                          _SELULambda; /**< Lambda value for SELU activation. */
+    bool                           _bBatchNormalization; /**< Flag indicating batch normalization. */
+    const uint32_t                 _kernelX; /**< Size of kernel in dimension X. */
+    const uint32_t                 _kernelY; /**< Size of kernel in dimension Y. */
+    const uint32_t                 _kernelZ; /**< Size of kernel in dimension Z. */
+    const uint32_t                 _kernelStrideX; /**< Kernel stride in dimension X. */
+    const uint32_t                 _kernelStrideY; /**< Kernel stride in dimension Y. */
+    const uint32_t                 _kernelStrideZ; /**< Kernel stride in dimension Z. */
+    const uint32_t                 _kernelPaddingX; /**< Kernel padding in dimension X. */
+    const uint32_t                 _kernelPaddingY; /**< Kernel padding in dimension Y. */
+    const uint32_t                 _kernelPaddingZ; /**< Kernel padding in dimension Z. */
+    const uint32_t                 _kernelDimensions; /**< Number of kernel dimensions. */
+    const Activation               _activation; /**< Activation function for the layer. */
+    const float                    _pDropout; /**< Dropout probability. */
+    bool                           _bSparse; /**< Flag indicating sparsity. */
+    bool                           _bFastSparse; /**< Flag indicating fast sparsity. */
+    float                          _sparsenessPenalty_p; /**< Sparseness penalty p value. */
+    float                          _sparsenessPenalty_beta; /**< Sparseness penalty beta value. */
+    const bool                     _bDenoising; /**< Flag indicating denoising. */
+    float                          _weightNorm; /**< Weight norm value. */
+    float                          _deltaNorm; /**< Delta norm value. */
+    Parallelization                _parallelization; /**< Parallelization strategy. */
+    bool                           _bTransposeParallelization; /**< Flag indicating transpose parallelization. */
+    bool                           _bDirty; /**< Flag indicating if the layer is dirty. */
+    cudnnTensorDescriptor_t        _scaleBiasMeanVarDescBN; /**< Descriptor for scale, bias, mean, and variance for batch normalization. */
+    cudnnTensorDescriptor_t        _tensorDescriptorBN; /**< Tensor descriptor for batch normalization. */
+    cudnnTensorDescriptor_t        _tensorDescriptor; /**< Tensor descriptor for the layer. */
+    cudnnTensorDescriptor_t        _oddBatchTensorDescriptor; /**< Tensor descriptor for odd batch size. */
+    uint32_t                       _oddBatch; /**< Odd batch size. */
+    cudnnPoolingDescriptor_t       _poolingDescriptor; /**< Pooling descriptor for the layer. */
+    cudnnLRNDescriptor_t           _LRNDescriptor; /**< Local Response Normalization (LRN) descriptor for the layer. */
+    std::vector<Layer*>          _vIncomingLayer; /**< Vector of incoming layers. */
+    std::vector<Weight*>         _vIncomingWeight; /**< Vector of incoming weights. */
+    std::vector<Layer*>          _vOutgoingLayer; /**< Vector of outgoing layers. */
+    std::vector<Weight*>         _vOutgoingWeight; /**< Vector of outgoing weights. */
+    std::vector<Layer*>          _vIncomingLargerLayer; /**< Vector of incoming larger layers. */
+    std::vector<Weight*>         _vIncomingLargerWeight; /**< Vector of incoming larger weights. */
+    std::vector<Layer*>          _vOutgoingLargerLayer; /**< Vector of outgoing larger layers. */
+    std::vector<Weight*>         _vOutgoingLargerWeight; /**< Vector of outgoing larger weights. */
+    std::vector<Layer*>          _vIncomingSkip; /**< Vector of incoming skip layers. */
+    std::vector<Layer*>          _vOutgoingSkip; /**< Vector of outgoing skip layers. */
+    std::vector<float>             _vUnit; /**< Vector of unit values. */
+    std::vector<float>             _vDelta; /**< Vector of delta values. */
+    std::vector<float>             _vBuffer1; /**< Vector of buffer values 1. */
+    std::vector<float>             _vBuffer2; /**< Vector of buffer values 2. */
+    std::unique_ptr<GpuBuffer<float>> _pbUnit; /**< Pointer to GPU buffer for unit values. */
+    std::unique_ptr<GpuBuffer<float>> _pbDelta; /**< Pointer to GPU buffer for delta values. */
+    std::unique_ptr<GpuBuffer<float>> _pbDropout; /**< Pointer to GPU buffer for dropout values. */
+    std::unique_ptr<GpuBuffer<float>> _pbBuffer1; /**< Pointer to GPU buffer for buffer values 1. */
+    std::unique_ptr<GpuBuffer<float>> _pbBuffer2; /**< Pointer to GPU buffer for buffer values 2. */
+    std::unique_ptr<GpuBuffer<float>> _pbDeltaBN; /**< Pointer to GPU buffer for batch normalized delta values. */
+    std::unique_ptr<GpuBuffer<float>> _pbScaleGradientBN; /**< Pointer to GPU buffer for batch normalization scale gradient. */
+    std::unique_ptr<GpuBuffer<float>> _pbBiasGradientBN; /**< Pointer to GPU buffer for batch normalization bias gradient. */
+    std::unique_ptr<GpuBuffer<float>> _pbUnitBN; /**< Pointer to GPU buffer for batch normalized unit values. */
+    std::unique_ptr<GpuBuffer<float>> _pbScaleBN; /**< Pointer to GPU buffer for batch normalization scale values. */
+    std::unique_ptr<GpuBuffer<float>> _pbBiasBN; /**< Pointer to GPU buffer for batch normalization bias values. */
+    std::unique_ptr<GpuBuffer<float>> _pbScaleVelocityBN; /**< Pointer to GPU buffer for batch normalization scale velocity. */
+    std::unique_ptr<GpuBuffer<float>> _pbBiasVelocityBN; /**< Pointer to GPU buffer for batch normalization bias velocity. */
+    std::unique_ptr<GpuBuffer<float>> _pbScaleGradientVelocityBN; /**< Pointer to GPU buffer for batch normalization scale gradient velocity. */
+    std::unique_ptr<GpuBuffer<float>> _pbBiasGradientVelocityBN; /**< Pointer to GPU buffer for batch normalization bias gradient velocity. */
+    std::unique_ptr<GpuBuffer<float>> _pbRunningMeanBN; /**< Pointer to GPU buffer for running mean in batch normalization. */
+    std::unique_ptr<GpuBuffer<float>> _pbRunningVarianceBN; /**< Pointer to GPU buffer for running variance in batch normalization. */
+    std::unique_ptr<GpuBuffer<float>> _pbSaveMeanBN; /**< Pointer to GPU buffer for saved mean in batch normalization. */
+    std::unique_ptr<GpuBuffer<float>> _pbSaveInvVarianceBN; /**< Pointer to GPU buffer for saved inverse variance in batch normalization. */
+    uint32_t                       _bnCalls; /**< Number of batch normalization calls. */
+    int32_t                        _priority; /**< Priority of the layer. */
+
+public:
+    /**
+     * @brief Constructor for the Layer class.
+     *
+     * @param l LayerDescriptor object containing the layer information.
+     * @param batch Batch size.
      */
-    const bool _bDenoising;
-
-    /**
-     * @brief The weight normalization value.
-     */
-    float _weightNorm;
-
-    /**
-     * @brief The delta normalization value.
-     */
-    float _deltaNorm;
-
-    /**
-     * @brief The parallelization type.
-     */
-    Parallelization _parallelization;
-
-    /**
-     * @brief Indicates whether transpose parallelization is enabled.
-     */
-    bool _bTransposeParallelization;
-
-    /**
-     * @brief Indicates whether the layer is dirty and needs updating.
-     */
-    bool _bDirty;
-
-    /**
-     * @brief The descriptor for scale, bias, mean, and variance in batch normalization.
-     */
-    cudTensorDescriptor_t _scaleBiasMeanVarDescBN;
-
-    /**
-     * @brief The tensor descriptor for batch normalization.
-     */
-    cudTensorDescriptor_t _tensorDescriptorBN;
-
-    /**
-     * @brief The tensor descriptor for the layer.
-     */
-    cudTensorDescriptor_t _tensorDescriptor;
-
-    /**
-     * @brief The tensor descriptor for handling odd-sized batches.
-     */
-    cudTensorDescriptor_t _oddBatchTensorDescriptor;
-
-    /**
-     * @brief The number of odd-sized batches.
-     */
-    uint32_t _oddBatch;
-
-    /**
-     * @brief The descriptor for the pooling operation.
-     */
-    cudPoolingDescriptor_t _poolingDescriptor;
-
-    /**
-     * @brief The descriptor for the local response normalization (LRN) operation.
-     */
-    cudLRNDescriptor_t _LRNDescriptor;
-
-    /**
-     * @brief The vector of incoming layers.
-     */
-    std::vector<Layer*> _vIncomingLayer;
-
-    /**
-     * @brief The vector of incoming weights.
-     */
-    std::vector<Weight*> _vIncomingWeight;
-
-    /**
-     * @brief The vector of outgoing layers.
-     */
-    std::vector<Layer*> _vOutgoingLayer;
-
-    /**
-     * @brief The vector of outgoing weights.
-     */
-    std::vector<Weight*> _vOutgoingWeight;
-
-    /**
-     * @brief The vector of incoming larger layers.
-     */
-    std::vector<Layer*> _vIncomingLargerLayer;
-
-    /**
-     * @brief The vector of incoming larger weights.
-     */
-    std::vector<Weight*> _vIncomingLargerWeight;
-
-    /**
-     * @brief The vector of outgoing larger layers.
-     */
-    std::vector<Layer*> _vOutgoingLargerLayer;
-
-    /**
-     * @brief The vector of outgoing larger weights.
-     */
-    std::vector<Weight*> _vOutgoingLargerWeight;
-
-    /**
-     * @brief The vector of incoming skip layers.
-     */
-    std::vector<Layer*> _vIncomingSkip;
-
-    /**
-     * @brief The vector of outgoing skip layers.
-     */
-    std::vector<Layer*> _vOutgoingSkip;
-
-    /**
-     * @brief The vector of unit values.
-     */
-    std::vector<float> _vUnit;
-
-    /**
-     * @brief The vector of delta values.
-     */
-    std::vector<float> _vDelta;
-
-    /**
-     * @brief The first buffer vector.
-     */
-    std::vector<float> _vBuffer1;
-
-    /**
-     * @brief The second buffer vector.
-     */
-    std::vector<float> _vBuffer2;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for unit values.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbUnit;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for delta values.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbDelta;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for dropout values.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbDropout;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for buffer1.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbBuffer1;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for buffer2.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbBuffer2;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for delta in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbDeltaBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for scale gradient in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbScaleGradientBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for bias gradient in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbBiasGradientBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for unit values in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbUnitBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for scale values in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbScaleBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for bias values in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbBiasBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for scale velocity in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbScaleVelocityBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for bias velocity in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbBiasVelocityBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for scale gradient velocity in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbScaleGradientVelocityBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for bias gradient velocity in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbBiasGradientVelocityBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for running mean in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbRuingMeanBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for running variance in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbRuingVarianceBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for saving mean in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbSaveMeanBN;
-
-    /**
-     * @brief The unique pointer to the GPU buffer for saving inverse variance in batch normalization.
-     */
-    std::unique_ptr<GpuBuffer<float>> _pbSaveInvVarianceBN;
-
-    /**
-     * @brief The number of batch normalization calls.
-     */
-    uint32_t _bnCalls;
-
-    /**
-     * @brief The priority of the layer.
-     */
-    int32_t _priority;
-
     Layer(LayerDescriptor& l, uint32_t batch);
+
+    /**
+     * @brief Destructor for the Layer class.
+     */
     ~Layer();
+
     /**
      * @brief Allocates memory for the layer.
+     *
      * @param validate Flag indicating whether to validate the allocation.
      */
     void Allocate(bool validate);
@@ -678,143 +194,162 @@ private:
 
     /**
      * @brief Sets the batch size for the layer.
-     * @param batch The batch size to set.
+     *
+     * @param batch Batch size.
      */
     void SetBatch(uint32_t batch);
 
     /**
-     * @brief Refreshes the parallelization settings of the layer.
+     * @brief Refreshes the parallelization strategy of the layer.
      */
     void RefreshParallelization();
 
     /**
      * @brief Refreshes the state of the layer.
-     * @param pNetwork Pointer to the network containing the layer.
-     * @param trainingMode The training mode.
-     * @param validate Flag indicating whether to validate the refreshed state.
+     *
+     * @param pNetwork Pointer to the Network object.
+     * @param trainingMode Training mode.
+     * @param validate Flag indicating whether to validate the state.
      */
     void RefreshState(Network* pNetwork, TrainingMode trainingMode, bool validate);
 
     /**
-     * @brief Loads the input batch for prediction.
-     * @param position The position of the batch.
-     * @param batch The batch size.
+     * @brief Loads the prediction batch for the layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
      */
     void LoadPredictionBatch(uint32_t position, uint32_t batch);
 
     /**
-     * @brief Loads the input batch for training.
-     * @param position The position of the batch.
-     * @param batch The batch size.
+     * @brief Loads the training batch for the layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
      */
     void LoadTrainingBatch(uint32_t position, uint32_t batch);
 
     /**
-     * @brief Loads the input batch for validation.
-     * @param position The position of the batch.
-     * @param batch The batch size.
+     * @brief Loads the validation batch for the layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
      */
     void LoadValidationBatch(uint32_t position, uint32_t batch);
 
     /**
      * @brief Performs forward propagation for the layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
-     * @param bTraining Flag indicating whether it is a training mode.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
+     * @param bTraining Flag indicating whether training is being performed.
      */
     void ForwardPropagate(uint32_t position, uint32_t batch, bool bTraining = false);
 
     /**
-     * @brief Performs forward propagation for the fully connected layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
-     * @param bTraining Flag indicating whether it is a training mode.
+     * @brief Performs forward propagation for a fully connected layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
+     * @param bTraining Flag indicating whether training is being performed.
      */
     void ForwardPropagateFullyConnected(uint32_t position, uint32_t batch, bool bTraining);
 
     /**
-     * @brief Performs forward propagation for the convolutional layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
-     * @param bTraining Flag indicating whether it is a training mode.
+     * @brief Performs forward propagation for a convolutional layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
+     * @param bTraining Flag indicating whether training is being performed.
      */
     void ForwardPropagateConvolutional(uint32_t position, uint32_t batch, bool bTraining);
 
     /**
-     * @brief Performs forward propagation for the pooling layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
-     * @param bTraining Flag indicating whether it is a training mode.
+     * @brief Performs forward propagation for a pooling layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
+     * @param bTraining Flag indicating whether training is being performed.
      */
     void ForwardPropagatePooling(uint32_t position, uint32_t batch, bool bTraining);
 
     /**
-     * @brief Calculates the activation values for the layer.
-     * @param batch The batch size.
+     * @brief Calculates the activation for the layer.
+     *
+     * @param batch Batch size.
      */
     void CalculateActivation(uint32_t batch);
 
     /**
-     * @brief Calculates the dropout values for the layer.
-     * @param batch The batch size.
+     * @brief Calculates the dropout for the layer.
+     *
+     * @param batch Batch size.
      */
     void CalculateDropout(uint32_t batch);
 
     /**
      * @brief Calculates the error for the layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
-     * @param ef The error function to use.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
+     * @param ef Error function.
+     *
      * @return The calculated error.
      */
     float CalculateError(uint32_t position, uint32_t batch, ErrorFunction ef);
 
     /**
      * @brief Performs backpropagation for the layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
      */
     void BackPropagate(uint32_t position, uint32_t batch);
 
     /**
-     * @brief Performs backpropagation for the fully connected layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
+     * @brief Performs backpropagation for a fully connected layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
      */
     void BackPropagateFullyConnected(uint32_t position, uint32_t batch);
 
     /**
-     * @brief Performs backpropagation for the convolutional layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
+     * @brief Performs backpropagation for a convolutional layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
      */
     void BackPropagateConvolutional(uint32_t position, uint32_t batch);
 
     /**
-     * @brief Performs backpropagation for the pooling layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
+     * @brief Performs backpropagation for a pooling layer.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
      */
     void BackPropagatePooling(uint32_t position, uint32_t batch);
 
     /**
      * @brief Calculates the output delta for the layer.
-     * @param position The position of the input batch.
-     * @param batch The batch size.
-     * @param ef The error function to use.
+     *
+     * @param position Position of the batch.
+     * @param batch Batch size.
+     * @param ef Error function.
      */
     void CalculateOutputDelta(uint32_t position, uint32_t batch, ErrorFunction ef);
 
     /**
      * @brief Updates the weights of the layer.
-     * @param trainingMode The training mode.
-     * @param batch The batch size.
-     * @param alpha The learning rate.
-     * @param lambda The weight decay factor.
-     * @param lambda1 The L1 regularization factor.
-     * @param mu The momentum factor.
-     * @param mu1 The Nesterov momentum factor.
-     * @param t The time step.
+     *
+     * @param trainingMode Training mode.
+     * @param batch Batch size.
+     * @param alpha Learning rate.
+     * @param lambda L2 regularization factor.
+     * @param lambda1 L1 regularization factor.
+     * @param mu Momentum factor.
+     * @param mu1 Nesterov momentum factor.
+     * @param t Time step.
      */
     void UpdateWeights(TrainingMode trainingMode, uint32_t batch, float alpha, float lambda, float lambda1, float mu, float mu1, float t);
 
@@ -824,466 +359,236 @@ private:
     void GenerateDenoisingData();
 
     /**
-     * @brief Reduces the data for parallelization.
-     * @param batch The batch size.
-     * @param stride The stride value.
-     * @param pBuffer The data buffer.
-     * @param localStride The local stride value.
-     * @param updateCount The update count.
+     * @brief Reduces the size of the layer.
+     *
+     * @param batch Batch size.
+     * @param stride Stride of the layer.
+     * @param pBuffer Pointer to the buffer.
+     * @param localStride Local stride of the layer.
+     * @param updateCount Update count.
      */
     void Reduce(uint32_t batch, uint32_t stride, float* pBuffer, uint32_t localStride, uint32_t updateCount);
 
     /**
-     * @brief Gathers the data for parallelization.
-     * @param batch The batch size.
-     * @param stride The stride value.
-     * @param pBuffer The data buffer.
-     * @param localStride The local stride value.
+     * @brief Gathers the size of the layer.
+     *
+     * @param batch Batch size.
+     * @param stride Stride of the layer.
+     * @param pBuffer Pointer to the buffer.
+     * @param localStride Local stride of the layer.
      */
     void Gather(uint32_t batch, uint32_t stride, float* pBuffer, uint32_t localStride);
 
     /**
-     * @brief Clears the weight updates.
+     * @brief Clears the updates of the layer.
      */
     void ClearUpdates();
 
     /**
-     * @brief Dumps the layer's data to a file.
-     * @param fname The filename to dump the data.
-     * @param pData The data to be dumped.
+     * @brief Dumps the layer to a file.
+     *
+     * @param fname File name.
+     * @param pData Pointer to the data.
      */
     void Dump(std::string fname, float* pData);
 
     /**
-     * @brief Writes the layer's data to a netCDF file.
-     * @param nc The netCDF file object.
-     * @param index The index of the layer.
+     * @brief Writes the layer to a NetCDF file.
+     *
+     * @param nc NetCDF file object.
+     * @param index Index of the layer.
+     *
      * @return True if writing is successful, false otherwise.
      */
     bool WriteNetCDF(netCDF::NcFile& nc, uint32_t index);
 
     /**
-     * @brief Returns a pointer to the incoming unit buffer.
-     * @return A pointer to the incoming unit buffer.
+     * @brief Returns the buffer for incoming unit values.
+     *
+     * @return Pointer to the buffer.
      */
-    float* GetIncomingUnitBuffer() const;
+    float* GetIncomingUnitBuffer() 
+    { 
+        if (_bBatchNormalization)
+            return _pbUnitBN ? _pbUnitBN->_pDevData : nullptr;
+        else
+            return _pbUnit ? _pbUnit->_pDevData : nullptr;
+    }
 
     /**
-     * @brief Returns a pointer to the unit buffer.
-     * @return A pointer to the unit buffer.
+     * @brief Returns the buffer for unit values.
+     *
+     * @return Pointer to the buffer.
      */
-    float* GetUnitBuffer() const;
+    float* GetUnitBuffer() { return _pbUnit ? _pbUnit->_pDevData : nullptr; }
 
     /**
-     * @brief Returns a pointer to the incoming delta buffer.
-     * @return A pointer to the incoming delta buffer.
+     * @brief Returns the buffer for incoming delta values.
+     *
+     * @return Pointer to the buffer.
      */
-    float* GetIncomingDeltaBuffer() const;
+    float* GetIncomingDeltaBuffer() 
+    { 
+        if (_bBatchNormalization)
+            return _pbDeltaBN ? _pbDeltaBN->_pDevData : nullptr;
+        else
+            return _pbDelta ? _pbDelta->_pDevData : nullptr;
+    }
 
     /**
-     * @brief Returns a pointer to the delta buffer.
-     * @return A pointer to the delta buffer.
+     * @brief Returns the buffer for delta values.
+     *
+     * @return Pointer to the buffer.
      */
-    float* GetDeltaBuffer() const;
+    float* GetDeltaBuffer() { return _pbDelta ? _pbDelta->_pDevData : nullptr; }
 
     /**
-     * @brief Returns the size of the buffer used by the layer.
-     * @return The size of the buffer.
+     * @brief Returns the size of the buffer.
+     *
+     * @return Size of the buffer.
      */
-    uint64_t GetBufferSize() const;
+    uint64_t GetBufferSize() { return _batch * _stride; }
 
     /**
-     * @brief Returns the tensor descriptor for the given batch size.
-     * @param batch The batch size.
-     * @return The tensor descriptor for the batch.
+     * @brief Returns the tensor descriptor for the layer.
+     *
+     * @param batch Batch size.
+     *
+     * @return cudnnTensorDescriptor_t object.
      */
     cudnnTensorDescriptor_t getTensorDescriptor(uint32_t batch);
 
     /**
-     * @brief Returns the tensor descriptor for batch normalization for the given batch size.
-     * @param batch The batch size.
-     * @return The tensor descriptor for batch normalization for the batch.
+     * @brief Returns the tensor descriptor for batch normalization.
+     *
+     * @param batch Batch size.
+     *
+     * @return cudnnTensorDescriptor_t object.
      */
     cudnnTensorDescriptor_t getTensorDescriptorBN(uint32_t batch);
-
-public:
-    /**
-     * @brief Returns the name of the layer.
-     * @return The name of the layer.
-     */
-    const std::string& GetName() const;
-
-    /**
-     * @brief Returns the name of the associated data set.
-     * @return The name of the associated data set.
-     */
-    const std::string& GetDataSetName() const;
-
-    /**
-     * @brief Returns the kind of the layer.
-     * @return The kind of the layer.
-     */
-    Kind GetKind() const;
-
-    /**
-     * @brief Returns the type of the layer.
-     * @return The type of the layer.
-     */
-    Type GetType() const;
-
-    /**
-     * @brief Returns the attributes of the layer.
-     * @return The attributes of the layer.
-     */
-    uint32_t GetAttributes() const;
-
-    /**
-     * @brief Returns a pointer to the associated data set.
-     * @return A pointer to the associated data set.
-     */
-    DataSetBase* GetDataSet() const;
-
-    /**
-     * @brief Returns the number of dimensions for the layer.
-     * @return The number of dimensions for the layer.
-     */
-    uint32_t GetNumDimensions() const;
-
-    /**
-     * @brief Returns the dimensions of the layer.
-     * @return A tuple representing the dimensions (Nx, Ny, Nz, Nw) of the layer.
-     */
-    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetDimensions() const;
-
-    /**
-     * @brief Returns the local dimensions of the layer.
-     * @return A tuple representing the local dimensions (Nx, Ny, Nz, Nw) of the layer.
-     */
-    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> GetLocalDimensions() const;
-
-    /**
-     * @brief Returns the kernel dimensions of the layer.
-     * @return A tuple representing the kernel dimensions (kernelX, kernelY, kernelZ) of the layer.
-     */
-    std::tuple<uint32_t, uint32_t, uint32_t> GetKernelDimensions() const;
-
-    /**
-     * @brief Returns the kernel stride of the layer.
-     * @return A tuple representing the kernel stride (kernelStrideX, kernelStrideY, kernelStrideZ) of the layer.
-     */
-    std::tuple<uint32_t, uint32_t, uint32_t> GetKernelStride() const;
-
-    /**
-     * @brief Copies the unit values of the layer into a vector.
-     * @param vUnit The vector to store the unit values.
-     * @return True if the unit values were successfully copied, false otherwise.
-     */
-    bool GetUnits(std::vector<float>& vUnit) const;
-
-    /**
-     * @brief Copies the unit values of the layer into an array.
-     * @param pUnit The array to store the unit values.
-     * @return True if the unit values were successfully copied, false otherwise.
-     */
-    bool GetUnits(float* pUnit) const;
-
-    /**
-     * @brief Sets the unit values of the layer using a vector.
-     * @param vUnit The vector containing the new unit values.
-     * @return True if the unit values were successfully set, false otherwise.
-     */
-    bool SetUnits(const std::vector<float>& vUnit);
-
-    /**
-     * @brief Copies the delta values of the layer into a vector.
-     * @param vUnit The vector to store the delta values.
-     * @return True if the delta values were successfully copied, false otherwise.
-     */
-    bool GetDeltas(std::vector<float>& vUnit) const;
-
-    /**
-     * @brief Copies the delta values of the layer into an array.
-     * @param pUnit The array to store the delta values.
-     * @return True if the delta values were successfully copied, false otherwise.
-     */
-    bool GetDeltas(float* pUnit) const;
-
-    /**
-     * @brief Sets the delta values of the layer using a vector.
-     * @param vUnit The vector containing the new delta values.
-     * @return True if the delta values were successfully set, false otherwise.
-     */
-    bool SetDeltas(const std::vector<float>& vUnit);
-
 };
 
-    /**
-     * @brief Overloaded output stream operator for Layer::Kind enumeration.
-     * @param out The output stream.
-     * @param k The Layer::Kind value to be printed.
-     * @return The output stream after printing the Layer::Kind value.
-     */
-    std::ostream& operator<<(std::ostream& out, const Layer::Kind& k);
-
-    /**
-     * @brief Overloaded output stream operator for Layer::Type enumeration.
-     * @param out The output stream.
-     * @param t The Layer::Type value to be printed.
-     * @return The output stream after printing the Layer::Type value.
-     */
-    std::ostream& operator<<(std::ostream& out, const Layer::Type& t);
-
-    /**
-     * @brief Overloaded output stream operator for Layer::Parallelization enumeration.
-     * @param out The output stream.
-     * @param p The Layer::Parallelization value to be printed.
-     * @return The output stream after printing the Layer::Parallelization value.
-     */
-    std::ostream& operator<<(std::ostream& out, const Layer::Parallelization& p);
-
-    /**
-     * @brief Overloaded output stream operator for Layer::Attributes enumeration.
-     * @param out The output stream.
-     * @param a The Layer::Attributes value to be printed.
-     * @return The output stream after printing the Layer::Attributes value.
-     */
-    std::ostream& operator<<(std::ostream& out, const Layer::Attributes& a);
-
+/**
+ * @brief Overload of the output stream operator for Layer::Kind enum.
+ *
+ * @param out Reference to the output stream.
+ * @param k Layer::Kind value.
+ *
+ * @return Reference to the output stream.
+ */
+std::ostream& operator<< (std::ostream& out, Layer::Kind& k);
 
 /**
- * @brief Struct representing a Layer descriptor used for layer initialization.
+ * @brief Overload of the output stream operator for Layer::Type enum.
+ *
+ * @param out Reference to the output stream.
+ * @param t Layer::Type value.
+ *
+ * @return Reference to the output stream.
+ */
+std::ostream& operator<< (std::ostream& out, Layer::Type& t);
+
+/**
+ * @brief Overload of the output stream operator for Layer::Parallelization enum.
+ *
+ * @param out Reference to the output stream.
+ * @param p Layer::Parallelization value.
+ *
+ * @return Reference to the output stream.
+ */
+std::ostream& operator<< (std::ostream& out, Layer::Parallelization& p);
+
+/**
+ * @brief Overload of the output stream operator for Layer::Attributes enum.
+ *
+ * @param out Reference to the output stream.
+ * @param a Layer::Attributes value.
+ *
+ * @return Reference to the output stream.
+ */
+std::ostream& operator<< (std::ostream& out, Layer::Attributes& a);
+
+/**
+ * @brief Struct representing the descriptor of a layer.
  */
 struct LayerDescriptor
 {
-    /**
-     * @brief The name of the layer.
-     */
-    std::string _name;
+    std::string                  _name; /**< Name of the layer. */
+    Layer::Kind                _kind; /**< Kind of the layer. */
+    Layer::Type                _type; /**< Type of the layer. */
+    PoolingFunction              _poolingFunction; /**< Pooling function for the layer. */
+    std::string                  _dataSet; /**< Data set associated with the layer. */
+    std::vector<std::string>     _vSource; /**< Vector of source strings. */
+    std::vector<std::string>     _vSkip; /**< Vector of skip strings. */
+    uint32_t                     _Nx; /**< Size of the layer in dimension X. */
+    uint32_t                     _Ny; /**< Size of the layer in dimension Y. */
+    uint32_t                     _Nz; /**< Size of the layer in dimension Z. */
+    uint32_t                     _Nw; /**< Size of the layer in dimension W. */
+    uint32_t                     _dimensions; /**< Number of dimensions of the layer. */
+    bool                         _bDimensionsProvided; /**< Flag indicating whether dimensions are provided. */
+    WeightInitialization         _weightInit; /**< Weight initialization method. */
+    float                        _weightInitScale; /**< Weight initialization scale. */
+    float                        _biasInit; /**< Bias initialization value. */
+    uint32_t                     _kernelX; /**< Size of kernel in dimension X. */
+    uint32_t                     _kernelY; /**< Size of kernel in dimension Y. */
+    uint32_t                     _kernelZ; /**< Size of kernel in dimension Z. */
+    uint32_t                     _kernelStrideX; /**< Kernel stride in dimension X. */
+    uint32_t                     _kernelStrideY; /**< Kernel stride in dimension Y. */
+    uint32_t                     _kernelStrideZ; /**< Kernel stride in dimension Z. */
+    uint32_t                     _kernelPaddingX; /**< Kernel padding in dimension X. */
+    uint32_t                     _kernelPaddingY; /**< Kernel padding in dimension Y. */
+    uint32_t                     _kernelPaddingZ; /**< Kernel padding in dimension Z. */
+    uint32_t                     _kernelDimensions; /**< Number of kernel dimensions. */
+    std::vector<float>           _vScaleBN; /**< Vector of scale values for batch normalization. */
+    std::vector<float>           _vBiasBN; /**< Vector of bias values for batch normalization. */
+    std::vector<float>           _vRunningMeanBN; /**< Vector of running mean values for batch normalization. */
+    std::vector<float>           _vRunningVarianceBN; /**< Vector of running variance values for batch normalization. */
+    float                        _weightNorm; /**< Weight norm value. */
+    float                        _deltaNorm; /**< Delta norm value. */
+    float                        _pDropout; /**< Dropout probability. */
+    Activation                   _activation; /**< Activation function for the layer. */
+    float                        _sparsenessPenalty_p; /**< Sparseness penalty p value. */
+    float                        _sparsenessPenalty_beta; /**< Sparseness penalty beta value. */
+    uint32_t                     _attributes; /**< Attributes of the layer. */
+    float                        _RELUSlope; /**< Slope value for ReLU activation. */
+    float                        _ELUAlpha; /**< Alpha value for ELU activation. */
+    float                        _SELULambda; /**< Lambda value for SELU activation. */
 
     /**
-     * @brief The kind of the layer.
+     * @brief Default constructor for the LayerDescriptor struct.
      */
-    Layer::Kind _kind;
-
-    /**
-     * @brief The type of the layer.
-     */
-    Layer::Type _type;
-
-    /**
-     * @brief The pooling function for the layer.
-     */
-    PoolingFunction _poolingFunction;
-
-    /**
-     * @brief The name of the associated data set.
-     */
-    std::string _dataSet;
-
-    /**
-     * @brief The vector of source names.
-     */
-    std::vector<std::string> _vSource;
-
-    /**
-     * @brief The vector of skip names.
-     */
-    std::vector<std::string> _vSkip;
-
-    /**
-     * @brief The number of units in the X dimension.
-     */
-    uint32_t _Nx;
-
-    /**
-     * @brief The number of units in the Y dimension.
-     */
-    uint32_t _Ny;
-
-    /**
-     * @brief The number of units in the Z dimension.
-     */
-    uint32_t _Nz;
-
-    /**
-     * @brief The number of units in the W dimension.
-     */
-    uint32_t _Nw;
-
-    /**
-     * @brief The number of dimensions for the layer.
-     */
-    uint32_t _dimensions;
-
-    /**
-     * @brief Flag indicating whether dimensions were provided.
-     */
-    bool _bDimensionsProvided;
-
-    /**
-     * @brief The weight initialization method.
-     */
-    WeightInitialization _weightInit;
-
-    /**
-     * @brief The scale factor for weight initialization.
-     */
-    float _weightInitScale;
-
-    /**
-     * @brief The bias initialization value.
-     */
-    float _biasInit;
-
-    /**
-     * @brief The size of the kernel in the X dimension.
-     */
-    uint32_t _kernelX;
-
-    /**
-     * @brief The size of the kernel in the Y dimension.
-     */
-    uint32_t _kernelY;
-
-    /**
-     * @brief The size of the kernel in the Z dimension.
-     */
-    uint32_t _kernelZ;
-
-    /**
-     * @brief The stride of the kernel in the X dimension.
-     */
-    uint32_t _kernelStrideX;
-
-    /**
-     * @brief The stride of the kernel in the Y dimension.
-     */
-    uint32_t _kernelStrideY;
-
-    /**
-     * @brief The stride of the kernel in the Z dimension.
-     */
-    uint32_t _kernelStrideZ;
-
-    /**
-     * @brief The padding size in the X dimension for the kernel.
-     */
-    uint32_t _kernelPaddingX;
-
-    /**
-     * @brief The padding size in the Y dimension for the kernel.
-     */
-    uint32_t _kernelPaddingY;
-
-    /**
-     * @brief The padding size in the Z dimension for the kernel.
-     */
-    uint32_t _kernelPaddingZ;
-
-    /**
-     * @brief The number of dimensions for the kernel.
-     */
-    uint32_t _kernelDimensions;
-
-    /**
-     * @brief The vector of scale values for batch normalization.
-     */
-    std::vector<float> _vScaleBN;
-
-    /**
-     * @brief The vector of bias values for batch normalization.
-     */
-    std::vector<float> _vBiasBN;
-
-    /**
-     * @brief The vector of running mean values for batch normalization.
-     */
-    std::vector<float> _vRuingMeanBN;
-
-    /**
-     * @brief The vector of running variance values for batch normalization.
-     */
-    std::vector<float> _vRuingVarianceBN;
-
-    /**
-     * @brief The weight normalization factor.
-     */
-    float _weightNorm;
-
-    /**
-     * @brief The delta normalization factor.
-     */
-    float _deltaNorm;
-
-    /**
-     * @brief The dropout probability.
-     */
-    float _pDropout;
-
-    /**
-     * @brief The activation function.
-     */
-    Activation _activation;
-
-    /**
-     * @brief The p parameter for sparseness penalty.
-     */
-    float _sparsenessPenalty_p;
-
-    /**
-     * @brief The beta parameter for sparseness penalty.
-     */
-    float _sparsenessPenalty_beta;
-
-    /**
-     * @brief The attributes of the layer.
-     */
-    uint32_t _attributes;
-
-    /**
-     * @brief The slope for the Leaky ReLU activation function.
-     */
-    float _RELUSlope;
-
-    /**
-     * @brief The alpha parameter for the ELU activation function.
-     */
-    float _ELUAlpha;
-
-    /**
-     * @brief The lambda parameter for the SELU activation function.
-     */
-    float _SELULambda;
-
     LayerDescriptor();
 };
 
-    /**
-     * @brief Loads a layer descriptor from a NetCDF file.
-     * @param fname The filename of the NetCDF file.
-     * @param nc The netCDF::NcFile object representing the opened NetCDF file.
-     * @param index The index of the layer descriptor in the NetCDF file.
-     * @param ld The LayerDescriptor object to store the loaded layer descriptor.
-     * @return True if the layer descriptor was successfully loaded, false otherwise.
-     */
-    bool LoadLayerDescriptorNetCDF(const std::string_view fname, netCDF::NcFile& nc, uint32_t index, LayerDescriptor& ld);
+/**
+ * @brief Loads a layer descriptor from a NetCDF file.
+ *
+ * @param fname File name.
+ * @param nc NetCDF file object.
+ * @param index Index of the layer.
+ * @param ld Reference to the LayerDescriptor object.
+ *
+ * @return True if loading is successful, false otherwise.
+ */
+bool LoadLayerDescriptorNetCDF(const std::string& fname, netCDF::NcFile& nc, uint32_t index, LayerDescriptor& ld);
 
-    /**
-     * @brief Overloaded output stream operator for LayerDescriptor.
-     * @param out The output stream.
-     * @param d The LayerDescriptor object to be printed.
-     * @return The output stream after printing the LayerDescriptor object.
-     */
-    std::ostream& operator<<(std::ostream& out, const LayerDescriptor& d);
+/**
+ * @brief Overload of the output stream operator for LayerDescriptor struct.
+ *
+ * @param out Reference to the output stream.
+ * @param d LayerDescriptor object.
+ *
+ * @return Reference to the output stream.
+ */
+std::ostream& operator<< (std::ostream& out, LayerDescriptor& d);
 
-    /**
-     * @brief Broadcasts a LayerDescriptor object using MPI.
-     * @param d The LayerDescriptor object to be broadcasted.
-     * @return The rank of the process sending the broadcasted LayerDescriptor.
-     */
-    uint32_t MPI_Bcast_LayerDescriptor(LayerDescriptor& d);
+/**
+ * @brief Broadcasts a LayerDescriptor object using MPI.
+ *
+ * @param d Reference to the LayerDescriptor object.
+ *
+ * @return The size of the serialized data.
+ */
+uint32_t MPI_Bcast_LayerDescriptor(LayerDescriptor& d);
 
-
-#endif
-#endif
-
+#endif /* LAYER_H */
