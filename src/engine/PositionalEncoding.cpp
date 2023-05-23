@@ -1,5 +1,6 @@
 #include "PositionalEncoding.h"
 #include <cmath>
+#include <algorithm>
 
 PositionalEncoding::PositionalEncoding(int maxSeqLength, int hiddenSize) {
     encoding_ = generatePositionalEncoding(maxSeqLength, hiddenSize);
@@ -19,3 +20,13 @@ std::vector<std::vector<float>> PositionalEncoding::generatePositionalEncoding(i
     }
     return encoding;
 }
+
+int PositionalEncoding::reverseEncoding(const std::vector<float>& encodingVector) const {
+    auto iter = std::find(encoding_.begin(), encoding_.end(), encodingVector);
+    if (iter != encoding_.end()) {
+        int position = std::distance(encoding_.begin(), iter);
+        return position;
+    }
+    return -1; // Return -1 if the encoding vector is not found
+}
+
