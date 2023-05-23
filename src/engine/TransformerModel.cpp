@@ -179,6 +179,24 @@ public:
         }
     }
 
+    void setLayerNormalizationParameters(float epsilon, bool trackGlobalStats) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setLayerNormalizationParameters(epsilon, trackGlobalStats);
+        }
+    }
+
+    void enableMultiHeadAttention(bool enable) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.enableMultiHeadAttention(enable);
+        }
+    }
+
+    void setMultiHeadAttentionParameters(int numHeads, int headSize, float attentionDropoutRate) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setMultiHeadAttentionParameters(numHeads, headSize, attentionDropoutRate);
+        }
+    }
+
 private:
     std::vector<float> embeddingLayer(const std::vector<float>& input) {
         const int embeddingSize = 512;
@@ -235,6 +253,7 @@ private:
     std::vector<float> input_;
     std::vector<float> output_;
 };
+
 
 
 
