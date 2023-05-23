@@ -155,6 +155,30 @@ public:
         }
     }
 
+    void setAttentionMask(const std::vector<std::vector<float>>& attentionMask) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setAttentionMask(attentionMask);
+        }
+    }
+
+    void setMaskedAttention(bool maskedAttention) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setMaskedAttention(maskedAttention);
+        }
+    }
+
+    void setOutputProjectionSize(int outputSize) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setOutputProjectionSize(outputSize);
+        }
+    }
+
+    void setFeedForwardActivation(const std::function<float(float)>& activationFunction) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setFeedForwardActivation(activationFunction);
+        }
+    }
+
 private:
     std::vector<float> embeddingLayer(const std::vector<float>& input) {
         const int embeddingSize = 512;
@@ -211,5 +235,6 @@ private:
     std::vector<float> input_;
     std::vector<float> output_;
 };
+
 
 
