@@ -71,8 +71,34 @@ std::vector<float> TransformerModel::applyPositionalEncoding(const std::vector<f
 }
 
 std::vector<float> TransformerModel::layerNormalization_(const std::vector<float>& input) {
-    // Implementation of the layer normalization
-    std::vector<float> output;
-    // ... (apply layer normalization to the input)
+    const int inputSize = input.size();
+    const float epsilon = 1e-6; // Small value to avoid division by zero
+
+    std::vector<float> output(inputSize);
+
+    // Calculate the mean of the input sequence
+    float mean = 0.0f;
+    for (int i = 0; i < inputSize; ++i) {
+        mean += input[i];
+    }
+    mean /= inputSize;
+
+    // Calculate the variance of the input sequence
+    float variance = 0.0f;
+    for (int i = 0; i < inputSize; ++i) {
+        float diff = input[i] - mean;
+        variance += diff * diff;
+    }
+    variance /= inputSize;
+
+    // Calculate the standard deviation
+    float stdDev = sqrt(variance);
+
+    // Apply layer normalization to the input sequence
+    for (int i = 0; i < inputSize; ++i) {
+        float normalizedValue = (input[i] - mean) / (stdDev + epsilon);
+        output[i] = normalizedValue;
+    }
+
     return output;
 }
