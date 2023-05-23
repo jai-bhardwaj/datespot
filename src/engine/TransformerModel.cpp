@@ -2,6 +2,7 @@
 #include <cmath>
 #include <numeric>
 #include <algorithm>
+#include <ranges>
 #include <Masking.h>
 #include <TransformerEncoderLayer.h>
 #include <PositionalEncoding.h>
@@ -54,10 +55,10 @@ private:
         embeddedInput.reserve(input.size() * embeddingSize);
 
         for (float inputValue : input) {
-            for (int j = 0; j < embeddingSize; ++j) {
-                float embeddingValue = inputValue * j;
-                embeddedInput.push_back(embeddingValue);
-            }
+            std::ranges::transform(std::views::iota(0), std::back_inserter(embeddedInput),
+                [inputValue](int j) {
+                    return inputValue * j;
+                });
         }
 
         return embeddedInput;
@@ -67,7 +68,7 @@ private:
         std::vector<float> output(input.size());
         const std::vector<float>& positionalEncoding = positionalEncoding_();
 
-        std::transform(input.begin(), input.end(), positionalEncoding.begin(), output.begin(),
+        std::ranges::transform(input, positionalEncoding, output.begin(),
             [](float inputVal, float positionalEncodingVal) {
                 return inputVal + positionalEncodingVal;
             });
@@ -82,7 +83,7 @@ private:
 
         float mean = std::reduce(std::execution::par, input.begin(), input.end()) / input.size();
         float variance = std::transform_reduce(std::execution::par, input.begin(), input.end(), 0.0f,
-            [](float sum, float value) {
+            [mean](float sum, float value) {
                 float diff = value - mean;
                 return sum + diff * diff;
             });
@@ -90,7 +91,7 @@ private:
         variance /= input.size();
         float stdDev = std::sqrt(variance);
 
-        std::transform(std::execution::par, input.begin(), input.end(), output.begin(),
+        std::ranges::transform(input, output.begin(),
             [mean, stdDev, epsilon](float value) {
                 float normalizedValue = (value - mean) / (stdDev + epsilon);
                 return normalizedValue;
@@ -105,4 +106,3 @@ private:
     std::vector<float> input_;
     std::vector<float> output_;
 };
-
