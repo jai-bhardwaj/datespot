@@ -1,12 +1,12 @@
 #ifndef TRANSFORMER_MODEL_H
 #define TRANSFORMER_MODEL_H
 
-#include "FeedForwardNetwork.h"
+#include "FeedForwardNetworkLayer.h"
 #include "TransformerEncoderLayer.h"
 #include "PositionalEncoding.h"
 #include <vector>
 
-class TransformerModel : public FeedForwardNetwork {
+class TransformerModel : public FeedForwardNetworkLayer {
 private:
     std::vector<TransformerEncoderLayer> transformerEncoderLayers_;
     PositionalEncoding positionalEncoding_;
