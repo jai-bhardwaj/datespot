@@ -35,9 +35,26 @@ void TransformerModel::forward() {
 }
 
 std::vector<float> TransformerModel::embeddingLayer_(const std::vector<float>& input) {
-    // Implementation of the embedding layer
-    std::vector<float> embeddedInput(input.size());
-    // ... (embed the input sequence)
+    const int inputSize = input.size();
+    const int embeddingSize = 512; // Define the embedding size
+
+    std::vector<float> embeddedInput(inputSize * embeddingSize);
+
+    // Implement the embedding layer logic
+    for (int i = 0; i < inputSize; ++i) {
+        // Get the input value at index i
+        float inputValue = input[i];
+
+        // Perform embedding for the input value
+        for (int j = 0; j < embeddingSize; ++j) {
+            // Generate the embedding value based on the input value and index j
+            float embeddingValue = inputValue * j;
+
+            // Assign the embedding value to the corresponding position in the embeddedInput vector
+            embeddedInput[i * embeddingSize + j] = embeddingValue;
+        }
+    }
+
     return embeddedInput;
 }
 
