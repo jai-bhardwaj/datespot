@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libnetcdf-c++4-dev \
         libnetcdf-dev \
         libopenmpi-dev \
+        libeigen3-dev \
         pkg-config \
         python3 \
         software-properties-common \
@@ -56,6 +57,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy necessary files from the build stage
 COPY --from=build /usr/local/openmpi /usr/local/openmpi
 COPY --from=build /build/bin /opt/bin
+
+COPY --from=build /usr/include/eigen3 /usr/include/eigen3
 
 # Reduce image size by removing unnecessary packages and files
 RUN apt-get purge -y --auto-remove \
