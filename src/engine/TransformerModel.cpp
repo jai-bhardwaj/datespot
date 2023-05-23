@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <numeric>
@@ -102,6 +103,43 @@ public:
         for (int i = 0; i < transformerEncoderLayers_.size(); ++i) {
             std::cout << "Layer " << i << ": ";
             transformerEncoderLayers_[i].printLayerInfo();
+        }
+    }
+
+    void addLayer(const TransformerEncoderLayer& layer) {
+        transformerEncoderLayers_.emplace_back(layer);
+    }
+
+    void removeLayer(int layerIndex) {
+        if (layerIndex >= 0 && layerIndex < transformerEncoderLayers_.size()) {
+            transformerEncoderLayers_.erase(transformerEncoderLayers_.begin() + layerIndex);
+        }
+    }
+
+    void clearLayers() {
+        transformerEncoderLayers_.clear();
+    }
+
+    void setPosEncodingMethod(const PositionalEncodingMethod& method) {
+        positionalEncoding_.setMethod(method);
+    }
+
+    std::vector<std::vector<float>> getAttentionWeights(int layerIndex) const {
+        std::vector<std::vector<float>> attentionWeights;
+        if (layerIndex >= 0 && layerIndex < transformerEncoderLayers_.size()) {
+            attentionWeights = transformerEncoderLayers_[layerIndex].getAttentionWeights();
+        }
+        return attentionWeights;
+    }
+
+    void printAttentionWeights(int layerIndex) const {
+        std::cout << "Attention Weights for Layer " << layerIndex << ":" << std::endl;
+        const std::vector<std::vector<float>>& attentionWeights = getAttentionWeights(layerIndex);
+        for (const auto& weights : attentionWeights) {
+            for (float weight : weights) {
+                std::cout << weight << " ";
+            }
+            std::cout << std::endl;
         }
     }
 
