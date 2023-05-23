@@ -6,11 +6,120 @@
 #include <stdexcept>
 #include "Layer.h"
 #include "Neuron.h"
+#include <limits>
+#include <string>
 
 constexpr int kNumLayers = 6;
 constexpr int kNumHeads = 8;
 constexpr int kHiddenSize = 512;
 constexpr int kFeedForwardSize = 2048;
+
+class Layer {
+protected:
+    std::vector<float> input_;
+    std::vector<float> output_;
+
+public:
+    virtual ~Layer() {}
+
+    void setInput(const std::vector<float>& input) {
+        input_ = input;
+    }
+
+    const std::vector<float>& getOutput() const {
+        return output_;
+    }
+
+    virtual void initialize() = 0;
+    virtual void forward() = 0;
+};
+
+class Neuron : public Layer {
+protected:
+    std::vector<float> weights_;
+    float bias_;
+
+public:
+    Neuron(const std::string& name) {}
+
+    void initialize() override {
+    }
+};
+
+class LinearNeuron : public Neuron {
+public:
+    LinearNeuron(const std::string& name) : Neuron(name) {}
+
+    void forward() override {
+        const int inputSize = input_.size();
+        output_.resize(inputSize);
+
+        for (int i = 0; i < inputSize; ++i) {
+            output_[i] = input_[i] * weights_[i] + bias_;
+        }
+    }
+};
+
+class ActivationNeuron : public Neuron {
+public:
+    ActivationNeuron(const std::string& name) : Neuron(name) {}
+
+    void forward() override {
+        const int inputSize = input_.size();
+        output_.resize(inputSize);
+
+        for (int i = 0; i < inputSize; ++i) {
+            output_[i] = activate(input_[i]);
+        }
+    }
+
+private:
+    float activate(float x) {
+        return std::max(0.0f, x);
+    }
+};
+
+class LayerNormalization : public Layer {
+private:
+    std::vector<float> scale_;
+    std::vector<float> bias_;
+
+public:
+    LayerNormalization(const std::string& name) {}
+
+    void initialize() override {
+    }
+
+    void forward() override {
+        const int inputSize = input_.size();
+        output_.resize(inputSize);
+
+        for (int i = 0; i < inputSize; ++i) {
+            output_[i] = (input_[i] - mean()) / stdDev() * scale_[i] + bias_[i];
+        }
+    }
+
+private:
+    float mean() {
+        // Calculate the mean of input_
+        float sum = 0.0f;
+        for (float val : input_) {
+            sum += val;
+        }
+        return sum / input_.size();
+    }
+
+    float stdDev() {
+        // Calculate the standard deviation of input_
+        float meanVal = mean();
+        float sumSquares = 0.0f;
+        for (float val : input_) {
+            float diff = val - meanVal;
+            sumSquares += diff * diff;
+        }
+        return std::sqrt(sumSquares / input_.size());
+    }
+};
 
 class MultiHeadAttentionLayer : public Layer {
 private:
@@ -22,19 +131,13 @@ private:
     std::vector<float> biasValues_;
 
 public:
-    MultiHeadAttentionLayer(const std::string& name) : Layer(name) {}
+    MultiHeadAttentionLayer(const std::string& name) {}
 
     void initialize() override {
-        weightQueries_ = initializeWeights(kHiddenSize, kNumHeads, true);
-        weightKeys_ = initializeWeights(kHiddenSize, kNumHeads, true);
-        weightValues_ = initializeWeights(kHiddenSize, kNumHeads, true);
-        biasQueries_ = initializeBias(kNumHeads, true);
-        biasKeys_ = initializeBias(kNumHeads, true);
-        biasValues_ = initializeBias(kNumHeads, true);
     }
 
     void forward() override {
-        const std::vector<float>& input = getPrevLayerOutput();
+        const std::vector<float>& input = input_;
 
         const int inputSize = input.size();
         const int numHeads = kNumHeads;
@@ -44,12 +147,12 @@ public:
         std::vector<float> output;
 
         for (int head = 0; head < numHeads; ++head) {
-            std::vector<float> queries = linearTransform(input, weightQueries_[head], biasQueries_[head]);
-            std::vector<float> keys = linearTransform(input, weightKeys_[head], biasKeys_[head]);
-            std::vector<float> values = linearTransform(input, weightValues_[head], biasValues_[head]);
+            std::vector<float> queries = linearTransform(input, weightQueries_[head], biasQueries_);
+            std::vector<float> keys = linearTransform(input, weightKeys_[head], biasKeys_);
+            std::vector<float> values = linearTransform(input, weightValues_[head], biasValues_);
 
             std::vector<float> attentionScores = computeAttentionScores(queries, keys, headSize);
-            std::vector<float> attentionWeights = softmax(attentionScores);
+            std::vector<float> attentionWeights = maskedSoftmax(attentionScores, getAttentionMask(inputSize));
             std::vector<float> weightedSum = weightedSumValues(attentionWeights, values, headSize);
 
             attentionOutput = combineAttentionOutput(attentionOutput, weightedSum, head, numHeads);
@@ -57,40 +160,10 @@ public:
 
         output = linearTransform(attentionOutput, transpose(weightQueries_), transpose(biasQueries_));
 
-        setOutput(output);
+        output_ = output;
     }
 
 private:
-    std::vector<std::vector<float>> initializeWeights(int inputSize, int numHeads, bool random) {
-        std::vector<std::vector<float>> weights(numHeads, std::vector<float>(inputSize));
-        if (random) {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / inputSize));
-
-            for (auto& headWeights : weights) {
-                for (auto& weight : headWeights) {
-                    weight = distribution(gen);
-                }
-            }
-        }
-        return weights;
-    }
-
-    std::vector<float> initializeBias(int numHeads, bool random) {
-        std::vector<float> bias(numHeads);
-        if (random) {
-            std::random_device rd;
-           std::mt19937 gen(rd());
-            std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / kHiddenSize));
-
-            for (auto& b : bias) {
-                b = distribution(gen);
-            }
-        }
-        return bias;
-    }
-
     std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<std::vector<float>>& weights, const std::vector<float>& biases) {
         const int inputSize = input.size();
         const int numHeads = weights.size();
@@ -121,33 +194,40 @@ private:
         const int inputSize = queries.size();
         std::vector<float> attentionScores(inputSize, 0.0f);
 
-        // Compute attention scores using dot product
         for (int i = 0; i < inputSize; ++i) {
             for (int j = 0; j < inputSize; ++j) {
                 float score = 0.0f;
                 for (int k = 0; k < headSize; ++k) {
                     score += queries[i * headSize + k] * keys[j * headSize + k];
                 }
-                attentionScores[i] += score;
+                attentionScores[i] += score / std::sqrt(headSize);
             }
         }
 
         return attentionScores;
     }
 
-    std::vector<float> softmax(const std::vector<float>& input) {
+    std::vector<float> maskedSoftmax(const std::vector<float>& input, const std::vector<std::vector<float>>& mask) {
         std::vector<float> output = input;
         const int size = input.size();
 
         float maxVal = *std::max_element(input.begin(), input.end());
         float sum = 0.0f;
         for (int i = 0; i < size; ++i) {
-            output[i] = std::exp(output[i] - maxVal);
-            sum += output[i];
+            if (mask[i][i] == 0.0f) {
+                output[i] = -std::numeric_limits<float>::infinity();
+            } else {
+                output[i] = std::exp(output[i] - maxVal);
+                sum += output[i];
+            }
         }
 
         for (int i = 0; i < size; ++i) {
-            output[i] /= sum;
+            if (mask[i][i] == 0.0f) {
+                output[i] = 0.0f;
+            } else {
+                output[i] /= sum;
+            }
         }
         return output;
     }
@@ -175,6 +255,12 @@ private:
             output[i] = attentionOutput[i] + weightedSum[i] / std::sqrt(headSize);
         }
         return output;
+    }
+
+    std::vector<std::vector<float>> getAttentionMask(int inputSize) const {
+        std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
+
+        return attentionMask;
     }
 };
 
@@ -212,56 +298,22 @@ private:
     std::vector<float> bias2_;
 
 public:
-    FeedForwardNetworkLayer(const std::string& name) : Layer(name) {}
+    FeedForwardNetworkLayer(const std::string& name) {}
 
     void initialize() override {
-        weight1_ = initializeWeights(kHiddenSize, kFeedForwardSize, true);
-        bias1_ = initializeBias(kFeedForwardSize, true);
-        weight2_ = initializeWeights(kFeedForwardSize, kHiddenSize, true);
-        bias2_ = initializeBias(kHiddenSize, true);
     }
 
     void forward() override {
-        const std::vector<float>& input = getPrevLayerOutput();
+        const std::vector<float>& input = input_;
 
         std::vector<float> output = linearTransform(input, weight1_, bias1_);
         output = relu(output);
         output = linearTransform(output, weight2_, bias2_);
 
-        setOutput(output);
+        output_ = output;
     }
 
 private:
-    std::vector<std::vector<float>> initializeWeights(int inputSize, int outputSize, bool random) {
-        std::vector<std::vector<float>> weights(inputSize, std::vector<float>(outputSize));
-        if (random) {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / inputSize));
-
-            for (auto& inputWeights : weights) {
-                for (auto& weight : inputWeights) {
-                    weight = distribution(gen);
-                }
-            }
-        }
-        return weights;
-    }
-
-    std::vector<float> initializeBias(int size, bool random) {
-        std::vector<float> bias(size);
-        if (random) {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / size));
-
-            for (auto& b : bias) {
-                b = distribution(gen);
-            }
-        }
-        return bias;
-    }
-
     std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<std::vector<float>>& weights, const std::vector<float>& biases) {
         const int inputSize = input.size();
         const int outputSize = weights[0].size();
@@ -291,7 +343,7 @@ private:
     FeedForwardNetworkLayer feedForwardNetworkLayer_;
 
 public:
-    TransformerEncoderLayer(const std::string& name) : Layer(name) {}
+    TransformerEncoderLayer(const std::string& name) : multiHeadAttentionLayer_(name), feedForwardNetworkLayer_(name) {}
 
     void initialize() override {
         multiHeadAttentionLayer_.initialize();
@@ -299,21 +351,19 @@ public:
     }
 
     void forward() override {
-        const std::vector<float>& input = getPrevLayerOutput();
-        const std::vector<std::vector<float>>& attentionMask = getAttentionMask();
+        const std::vector<float>& input = input_;
 
-        std::vector<float> attentionOutput = multiHeadAttentionLayer_(input, attentionMask);
-        std::vector<float> output = feedForwardNetworkLayer_(attentionOutput);
+        std::vector<float> attentionOutput = multiHeadAttentionLayer_.getOutput();
+        std::vector<float> attentionOutputNorm = layerNormalization_(attentionOutput);
 
-        setOutput(output);
-    }
+        feedForwardNetworkLayer_.setInput(attentionOutputNorm);
+        feedForwardNetworkLayer_.forward();
+        std::vector<float> feedForwardOutput = feedForwardNetworkLayer_.getOutput();
+        std::vector<float> feedForwardOutputNorm = layerNormalization_(feedForwardOutput);
 
-    std::vector<std::vector<float>> getAttentionMask() const {
-        const std::vector<float>& input = getPrevLayerOutput();
-        const int inputSize = input.size();
-        std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
+        std::vector<float> output = ResidualConnection::add(attentionOutputNorm, feedForwardOutputNorm);
 
-        return attentionMask;
+        output_ = output;
     }
 };
 
@@ -323,60 +373,44 @@ private:
     PositionalEncoding positionalEncoding_;
 
 public:
-    TransformerModel() {
-        transformerEncoderLayers_.resize(kNumLayers);
-        positionalEncoding_ = PositionalEncoding(1000, kHiddenSize);
-    }
+    TransformerModel(int numLayers, int numHeads, int hiddenSize, int feedForwardSize)
+        : transformerEncoderLayers_(numLayers), positionalEncoding_(1000, hiddenSize) {}
 
     void initialize() override {
-        for (int i = 0; i < kNumLayers; ++i) {
-            transformerEncoderLayers_[i].initialize();
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.initialize();
         }
     }
 
     void forward() override {
-        const std::vector<float>& input = getInput();
+        const std::vector<float>& input = input_;
 
-        const int inputSize = input.size();
-        std::vector<std::vector<float>> attentionMask = getAttentionMask(inputSize);
-        std::vector<float> encoderOutput = applyPositionalEncoding(input);
+        std::vector<float> embeddedInput = embeddingLayer_(input);
+        std::vector<float> positionalEncodedInput = applyPositionalEncoding(embeddedInput);
+
+        std::vector<std::vector<float>> paddingMask = Masking::createPaddingMask(input);
 
         for (auto& layer : transformerEncoderLayers_) {
-            layer.setInput(encoderOutput);
-            layer.setAttentionMask(attentionMask);
+            layer.setInput(positionalEncodedInput);
+            layer.setAttentionMask(paddingMask);
             layer.forward();
-            encoderOutput = layer.getOutput();
+            positionalEncodedInput = layer.getOutput();
         }
 
-        setOutput(encoderOutput);
-    }
+        std::vector<float> output = layerNormalization_(positionalEncodedInput);
 
-    void printOutput() const {
-        const std::vector<float>& output = getOutput();
-        for (const auto& val : output) {
-            std::printf("%f ", val);
-        }
-        std::printf("\n");
-    }
-
-    std::vector<float> addVectors(const std::vector<float>& vec1, const std::vector<float>& vec2) const {
-        if (vec1.size() != vec2.size()) {
-            throw std::runtime_error("Error: Vector sizes do not match!");
-        }
-
-        std::vector<float> result(vec1.size());
-        std::transform(vec1.begin(), vec1.end(), vec2.begin(), result.begin(), std::plus<float>());
-        return result;
+        output_ = output;
     }
 
 private:
-    std::vector<std::vector<float>> getAttentionMask(int inputSize) const {
-        std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
-
-        return attentionMask;
+    std::vector<float> embeddingLayer_(const std::vector<float>& input) {
+        // Perform embedding layer operations
+        std::vector<float> embeddedInput;
+        // ...
+        return embeddedInput;
     }
 
-    std::vector<float> applyPositionalEncoding(const std::vector<float>& input) const {
+    std::vector<float> applyPositionalEncoding(const std::vector<float>& input) {
         const int inputSize = input.size();
         std::vector<float> output(inputSize);
 
@@ -386,5 +420,30 @@ private:
         }
 
         return output;
+    }
+
+    std::vector<float> layerNormalization_(const std::vector<float>& input) {
+        // Perform layer normalization operations
+        std::vector<float> output;
+        // ...
+        return output;
+    }
+};
+
+class Masking {
+public:
+    static std::vector<std::vector<float>> createPaddingMask(const std::vector<float>& input) {
+        std::vector<std::vector<float>> mask(input.size(), std::vector<float>(input.size(), 1.0f));
+
+        for (int i = 0; i < input.size(); ++i) {
+            if (input[i] == 0.0f) {
+                for (int j = 0; j < input.size(); ++j) {
+                    mask[i][j] = 0.0f;
+                    mask[j][i] = 0.0f;
+                }
+            }
+        }
+
+        return mask;
     }
 };
