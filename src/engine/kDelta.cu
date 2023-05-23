@@ -29,7 +29,7 @@ kCalculateSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * a * ((Float)1.0 - a);      
@@ -47,7 +47,7 @@ kCalculateSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * a * ((Float)1.0 - a);      
@@ -65,7 +65,7 @@ kCalculateSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * a * ((Float)1.0 - a);      
@@ -83,7 +83,7 @@ kCalculateTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((Float)1.0 - a * a);      
@@ -101,7 +101,7 @@ kCalculateTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((Float)1.0 - a * a);   
@@ -119,7 +119,7 @@ kCalculateTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((Float)1.0 - a * a);      
@@ -137,7 +137,7 @@ kCalculateLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -155,7 +155,7 @@ kCalculateLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -173,7 +173,7 @@ kCalculateLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -191,7 +191,7 @@ kCalculateRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * (a > (Float)0.0);      
@@ -209,7 +209,7 @@ kCalculateRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * (a > (Float)0.0);      
@@ -227,7 +227,7 @@ kCalculateRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * (a > (Float)0.0);      
@@ -245,7 +245,7 @@ kCalculateLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -263,7 +263,7 @@ kCalculateLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -281,7 +281,7 @@ kCalculateLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -299,7 +299,7 @@ kCalculateELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stri
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) + (a < (Float)0.0) * (a + alpha));
@@ -317,7 +317,7 @@ kCalculateELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stri
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) + (a < (Float)0.0) * (a + alpha));
@@ -335,7 +335,7 @@ kCalculateELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t stri
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) + (a < (Float)0.0) * (a + alpha));
@@ -353,7 +353,7 @@ kCalculateSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) * lambda + (a < (Float)0.0) * (lambda * alpha * exp(a)));
@@ -371,7 +371,7 @@ kCalculateSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) * lambda + (a < (Float)0.0) * (lambda * alpha * exp(a)));
@@ -389,7 +389,7 @@ kCalculateSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t str
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) * lambda + (a < (Float)0.0) * (lambda * alpha * exp(a)));
@@ -407,7 +407,7 @@ kCalculateSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -425,7 +425,7 @@ kCalculateSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -443,7 +443,7 @@ kCalculateSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -508,7 +508,7 @@ kCalculateIndexedSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];     
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * a * ((Float)1.0 - a);      
@@ -526,7 +526,7 @@ kCalculateIndexedSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * a * ((Float)1.0 - a);      
@@ -544,7 +544,7 @@ kCalculateIndexedSigmoidOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * a * ((Float)1.0 - a);      
@@ -562,7 +562,7 @@ kCalculateIndexedTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((Float)1.0 - a * a);      
@@ -580,7 +580,7 @@ kCalculateIndexedTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((Float)1.0 - a * a);   
@@ -600,7 +600,7 @@ kCalculateIndexedTanhOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((Float)1.0 - a * a);      
@@ -618,7 +618,7 @@ kCalculateIndexedLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -636,7 +636,7 @@ kCalculateIndexedLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -654,7 +654,7 @@ kCalculateIndexedLinearOutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -672,7 +672,7 @@ kCalculateIndexedRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * (a > (Float)0.0);      
@@ -690,7 +690,7 @@ kCalculateIndexedRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * (a > (Float)0.0);      
@@ -708,7 +708,7 @@ kCalculateIndexedRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * (a > (Float)0.0);      
@@ -726,7 +726,7 @@ kCalculateIndexedLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -744,7 +744,7 @@ kCalculateIndexedLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -762,7 +762,7 @@ kCalculateIndexedLRELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -780,7 +780,7 @@ kCalculateIndexedELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) + (a < (Float)0.0) * (a + alpha));
@@ -798,7 +798,7 @@ kCalculateIndexedELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) + (a < (Float)0.0) * (a + alpha));
@@ -816,7 +816,7 @@ kCalculateIndexedELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) + (a < (Float)0.0) * (a + alpha));
@@ -834,7 +834,7 @@ kCalculateIndexedSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) * lambda + (a < (Float)0.0) * (lambda * alpha * exp(a)));
@@ -852,7 +852,7 @@ kCalculateIndexedSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) * lambda + (a < (Float)0.0) * (lambda * alpha * exp(a)));
@@ -870,7 +870,7 @@ kCalculateIndexedSELUOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t) * ((a >= (Float)0.0) * lambda + (a < (Float)0.0) * (lambda * alpha * exp(a)));
@@ -888,7 +888,7 @@ kCalculateIndexedSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -906,7 +906,7 @@ kCalculateIndexedSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -924,7 +924,7 @@ kCalculateIndexedSoftMaxOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -989,7 +989,7 @@ kCalculateSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1009,7 +1009,7 @@ kCalculateSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1029,7 +1029,7 @@ kCalculateSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1049,7 +1049,7 @@ kCalculateTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1069,7 +1069,7 @@ kCalculateTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1089,7 +1089,7 @@ kCalculateTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1109,7 +1109,7 @@ kCalculateLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1129,7 +1129,7 @@ kCalculateLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1149,7 +1149,7 @@ kCalculateLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);    
         Float diff            = a - fabsf(t);
@@ -1168,7 +1168,7 @@ kCalculateRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1188,7 +1188,7 @@ kCalculateRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1208,7 +1208,7 @@ kCalculateRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1228,7 +1228,7 @@ kCalculateLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1248,7 +1248,7 @@ kCalculateLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1268,7 +1268,7 @@ kCalculateLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1288,7 +1288,7 @@ kCalculateELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1308,7 +1308,7 @@ kCalculateELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1329,7 +1329,7 @@ kCalculateELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1349,7 +1349,7 @@ kCalculateSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1369,7 +1369,7 @@ kCalculateSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1389,7 +1389,7 @@ kCalculateSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint3
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1409,7 +1409,7 @@ kCalculateSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1429,7 +1429,7 @@ kCalculateSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1449,7 +1449,7 @@ kCalculateSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1516,7 +1516,7 @@ kCalculateIndexedSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t ba
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1536,7 +1536,7 @@ kCalculateIndexedSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t ba
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1556,7 +1556,7 @@ kCalculateIndexedSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint32_t ba
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1576,7 +1576,7 @@ kCalculateIndexedTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1596,7 +1596,7 @@ kCalculateIndexedTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1616,7 +1616,7 @@ kCalculateIndexedTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1636,7 +1636,7 @@ kCalculateIndexedLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t bat
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1656,7 +1656,7 @@ kCalculateIndexedLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t bat
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1676,7 +1676,7 @@ kCalculateIndexedLinearL2HingeOutputDelta_kernel(uint32_t position, uint32_t bat
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1696,7 +1696,7 @@ kCalculateIndexedRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1716,7 +1716,7 @@ kCalculateIndexedRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1736,7 +1736,7 @@ kCalculateIndexedRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1756,7 +1756,7 @@ kCalculateIndexedLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batc
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1776,7 +1776,7 @@ kCalculateIndexedLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batc
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1796,7 +1796,7 @@ kCalculateIndexedLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batc
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1816,7 +1816,7 @@ kCalculateIndexedELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1836,7 +1836,7 @@ kCalculateIndexedELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1856,7 +1856,7 @@ kCalculateIndexedELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1876,7 +1876,7 @@ kCalculateIndexedSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1896,7 +1896,7 @@ kCalculateIndexedSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1916,7 +1916,7 @@ kCalculateIndexedSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t batch
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -1936,7 +1936,7 @@ kCalculateIndexedSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t ba
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float diff            = a - fabsf(t);
@@ -1956,7 +1956,7 @@ kCalculateIndexedSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t ba
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float diff            = a - fabsf(t);
@@ -1976,7 +1976,7 @@ kCalculateIndexedSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint32_t ba
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float diff            = a - fabsf(t);
@@ -2040,7 +2040,7 @@ kCalculateHingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
     uint64_t uOffset            = blockIdx.x * stride;
     uint64_t dpos               = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t dOffset            = dpos * stride;
-    Float w                   = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+    Float w                   = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
     pUnit                      += uOffset;
     pDelta                     += uOffset;
     pData                      += dOffset;
@@ -2062,7 +2062,7 @@ kCalculateHingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
     uint64_t uOffset            = blockIdx.x * stride;
     uint64_t dpos               = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t dOffset            = dpos * stride;
-    Float w                   = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+    Float w                   = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
     pUnit                      += uOffset;
     pDelta                     += uOffset;
     pData                      += dOffset;
@@ -2084,7 +2084,7 @@ kCalculateHingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
     uint64_t uOffset            = blockIdx.x * stride;
     uint64_t dpos               = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t dOffset            = dpos * stride;
-    Float w                   = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+    Float w                   = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
     pUnit                      += uOffset;
     pDelta                     += uOffset;
     pData                      += dOffset;
@@ -2114,7 +2114,7 @@ kCalculateIndexedHingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint
     uint64_t uOffset            = blockIdx.x * stride;
     uint64_t dpos               = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     uint64_t dOffset            = dpos * stride;
-    Float w                   = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;    
+    Float w                   = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);    
     pUnit                      += uOffset;
     pDelta                     += uOffset;
     pData                      += dOffset;
@@ -2136,7 +2136,7 @@ kCalculateIndexedHingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint
     uint64_t uOffset            = blockIdx.x * stride;
     uint64_t dpos               = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     uint64_t dOffset            = dpos * stride;
-    Float w                   = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0; 
+    Float w                   = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0); 
     pUnit                      += uOffset;
     pDelta                     += uOffset;
     pData                      += dOffset;
@@ -2158,7 +2158,7 @@ kCalculateIndexedHingeOutputDelta_kernel(uint32_t position, uint32_t batch, uint
     uint64_t uOffset            = blockIdx.x * stride;
     uint64_t dpos               = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     uint64_t dOffset            = dpos * stride;
-    Float w                   = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0; 
+    Float w                   = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0); 
     pUnit                      += uOffset;
     pDelta                     += uOffset;
     pData                      += dOffset;
@@ -2187,7 +2187,7 @@ kCalculateSparseRawSigmoidOutputDelta_kernel(uint32_t position, Float* pDataWeig
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2208,7 +2208,7 @@ kCalculateSparseNonZeroSigmoidOutputDelta_kernel(uint32_t position, uint32_t bat
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2227,8 +2227,8 @@ kCalculateSparseRawTanhOutputDelta_kernel(uint32_t position, Float* pDataWeight,
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2249,7 +2249,7 @@ kCalculateSparseNonZeroTanhOutputDelta_kernel(uint32_t position, uint32_t batch,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2268,8 +2268,8 @@ kCalculateSparseRawLinearOutputDelta_kernel(uint32_t position, Float* pDataWeigh
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2290,7 +2290,7 @@ kCalculateSparseNonZeroLinearOutputDelta_kernel(uint32_t position, uint32_t batc
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2309,8 +2309,8 @@ kCalculateSparseRawRELUOutputDelta_kernel(uint32_t position, Float* pDataWeight,
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2328,8 +2328,8 @@ kCalculateSparseRawLRELUOutputDelta_kernel(uint32_t position, Float* pDataWeight
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2348,8 +2348,8 @@ kCalculateSparseRawELUOutputDelta_kernel(uint32_t position, Float* pDataWeight, 
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2368,8 +2368,8 @@ kCalculateSparseRawSELUOutputDelta_kernel(uint32_t position, Float* pDataWeight,
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2390,7 +2390,7 @@ kCalculateSparseNonZeroRELUOutputDelta_kernel(uint32_t position, uint32_t batch,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2412,7 +2412,7 @@ kCalculateSparseNonZeroLRELUOutputDelta_kernel(uint32_t position, uint32_t batch
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2433,7 +2433,7 @@ kCalculateSparseNonZeroELUOutputDelta_kernel(uint32_t position, uint32_t batch, 
     {
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t end            = pSparseEnd[dpos];
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -2456,7 +2456,7 @@ kCalculateSparseNonZeroSELUOutputDelta_kernel(uint32_t position, uint32_t batch,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2475,8 +2475,8 @@ kCalculateSparseRawSoftMaxOutputDelta_kernel(uint32_t position, Float* pDataWeig
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -2497,7 +2497,7 @@ kCalculateSparseNonZeroSoftMaxOutputDelta_kernel(uint32_t position, uint32_t bat
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos];
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
         pos1                   += threadIdx.x & cData._warpMask;
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -2615,7 +2615,7 @@ kCalculateIndexedSparseNonZeroSigmoidOutputDelta_kernel(uint32_t position, uint3
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2637,7 +2637,7 @@ kCalculateIndexedSparseNonZeroTanhOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2659,7 +2659,7 @@ kCalculateIndexedSparseNonZeroLinearOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2681,7 +2681,7 @@ kCalculateIndexedSparseNonZeroRELUOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2703,7 +2703,7 @@ kCalculateIndexedSparseNonZeroLRELUOutputDelta_kernel(uint32_t position, uint32_
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2725,7 +2725,7 @@ kCalculateIndexedSparseNonZeroELUOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2747,7 +2747,7 @@ kCalculateIndexedSparseNonZeroSELUOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2769,7 +2769,7 @@ kCalculateIndexedSparseNonZeroSoftMaxOutputDelta_kernel(uint32_t position, uint3
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos];
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
         pos1                   += threadIdx.x & cData._warpMask;
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -2888,7 +2888,7 @@ kCalculateSparseAnalogNonZeroSigmoidOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2912,7 +2912,7 @@ kCalculateSparseAnalogNonZeroSigmoidOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2936,7 +2936,7 @@ kCalculateSparseAnalogNonZeroSigmoidOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2960,7 +2960,7 @@ kCalculateSparseAnalogNonZeroTanhOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -2984,7 +2984,7 @@ kCalculateSparseAnalogNonZeroTanhOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3008,7 +3008,7 @@ kCalculateSparseAnalogNonZeroTanhOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3032,7 +3032,7 @@ kCalculateSparseAnalogNonZeroLinearOutputDelta_kernel(uint32_t position, uint32_
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3055,7 +3055,7 @@ kCalculateSparseAnalogNonZeroLinearOutputDelta_kernel(uint32_t position, uint32_
     {
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t end            = pSparseEnd[dpos];
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -3080,7 +3080,7 @@ kCalculateSparseAnalogNonZeroLinearOutputDelta_kernel(uint32_t position, uint32_
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3104,7 +3104,7 @@ kCalculateSparseAnalogNonZeroRELUOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3128,7 +3128,7 @@ kCalculateSparseAnalogNonZeroRELUOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3152,7 +3152,7 @@ kCalculateSparseAnalogNonZeroRELUOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3176,7 +3176,7 @@ kCalculateSparseAnalogNonZeroLRELUOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3200,7 +3200,7 @@ kCalculateSparseAnalogNonZeroLRELUOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3224,7 +3224,7 @@ kCalculateSparseAnalogNonZeroLRELUOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3248,7 +3248,7 @@ kCalculateSparseAnalogNonZeroELUOutputDelta_kernel(uint32_t position, uint32_t b
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3272,7 +3272,7 @@ kCalculateSparseAnalogNonZeroELUOutputDelta_kernel(uint32_t position, uint32_t b
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3296,7 +3296,7 @@ kCalculateSparseAnalogNonZeroELUOutputDelta_kernel(uint32_t position, uint32_t b
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3320,7 +3320,7 @@ kCalculateSparseAnalogNonZeroSELUOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3344,7 +3344,7 @@ kCalculateSparseAnalogNonZeroSELUOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3368,7 +3368,7 @@ kCalculateSparseAnalogNonZeroSELUOutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3392,7 +3392,7 @@ kCalculateSparseAnalogNonZeroSoftMaxOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3416,7 +3416,7 @@ kCalculateSparseAnalogNonZeroSoftMaxOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3440,7 +3440,7 @@ kCalculateSparseAnalogNonZeroSoftMaxOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3560,7 +3560,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3584,7 +3584,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3608,7 +3608,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3632,7 +3632,7 @@ kCalculateIndexedSparseAnalogNonZeroTanhOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3656,7 +3656,7 @@ kCalculateIndexedSparseAnalogNonZeroTanhOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3680,7 +3680,7 @@ kCalculateIndexedSparseAnalogNonZeroTanhOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3704,7 +3704,7 @@ kCalculateIndexedSparseAnalogNonZeroLinearOutputDelta_kernel(uint32_t position, 
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3728,7 +3728,7 @@ kCalculateIndexedSparseAnalogNonZeroLinearOutputDelta_kernel(uint32_t position, 
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3752,7 +3752,7 @@ kCalculateIndexedSparseAnalogNonZeroLinearOutputDelta_kernel(uint32_t position, 
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3776,7 +3776,7 @@ kCalculateIndexedSparseAnalogNonZeroRELUOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3800,7 +3800,7 @@ kCalculateIndexedSparseAnalogNonZeroRELUOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3824,7 +3824,7 @@ kCalculateIndexedSparseAnalogNonZeroRELUOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3848,7 +3848,7 @@ kCalculateIndexedSparseAnalogNonZeroLRELUOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3872,7 +3872,7 @@ kCalculateIndexedSparseAnalogNonZeroLRELUOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3896,7 +3896,7 @@ kCalculateIndexedSparseAnalogNonZeroLRELUOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3920,7 +3920,7 @@ kCalculateIndexedSparseAnalogNonZeroELUOutputDelta_kernel(uint32_t position, uin
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3944,7 +3944,7 @@ kCalculateIndexedSparseAnalogNonZeroELUOutputDelta_kernel(uint32_t position, uin
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3968,7 +3968,7 @@ kCalculateIndexedSparseAnalogNonZeroELUOutputDelta_kernel(uint32_t position, uin
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -3992,7 +3992,7 @@ kCalculateIndexedSparseAnalogNonZeroSELUOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4016,7 +4016,7 @@ kCalculateIndexedSparseAnalogNonZeroSELUOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4040,7 +4040,7 @@ kCalculateIndexedSparseAnalogNonZeroSELUOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4064,7 +4064,7 @@ kCalculateIndexedSparseAnalogNonZeroSoftMaxOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4088,7 +4088,7 @@ kCalculateIndexedSparseAnalogNonZeroSoftMaxOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4112,7 +4112,7 @@ kCalculateIndexedSparseAnalogNonZeroSoftMaxOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4229,7 +4229,7 @@ kCalculateSparseRawSigmoidL2HingeOutputDelta_kernel(uint32_t position, Float* pD
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4250,7 +4250,7 @@ kCalculateSparseNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t position, uint3
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4270,8 +4270,8 @@ kCalculateSparseRawTanhL2HingeOutputDelta_kernel(uint32_t position, Float* pData
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4292,7 +4292,7 @@ kCalculateSparseNonZeroTanhL2HingeOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4312,8 +4312,8 @@ kCalculateSparseRawLinearL2HingeOutputDelta_kernel(uint32_t position, Float* pDa
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4334,7 +4334,7 @@ kCalculateSparseNonZeroLinearL2HingeOutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4354,8 +4354,8 @@ kCalculateSparseRawRELUL2HingeOutputDelta_kernel(uint32_t position, Float* pData
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4373,8 +4373,8 @@ kCalculateSparseRawLRELUL2HingeOutputDelta_kernel(uint32_t position, Float* pDat
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4393,8 +4393,8 @@ kCalculateSparseRawELUL2HingeOutputDelta_kernel(uint32_t position, Float* pDataW
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4414,8 +4414,8 @@ kCalculateSparseRawSELUL2HingeOutputDelta_kernel(uint32_t position, Float* pData
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4436,7 +4436,7 @@ kCalculateSparseNonZeroRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4459,7 +4459,7 @@ kCalculateSparseNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t position, uint32_
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4481,7 +4481,7 @@ kCalculateSparseNonZeroELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t 
     {
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t end            = pSparseEnd[dpos];
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -4505,7 +4505,7 @@ kCalculateSparseNonZeroSELUL2HingeOutputDelta_kernel(uint32_t position, uint32_t
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4525,8 +4525,8 @@ kCalculateSparseRawSoftMaxL2HingeOutputDelta_kernel(uint32_t position, Float* pD
     uint64_t pos                = (blockIdx.x * blockDim.x) + threadIdx.x;
     if (pos < size)
     {
-        Float w               = (Float)1.0;
-        if (pDataWeight != NULL)
+        Float w               = static_cast<Float>(1.0);
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -4547,7 +4547,7 @@ kCalculateSparseNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t position, uint3
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos];
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
         pos1                   += threadIdx.x & cData._warpMask;
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -4666,7 +4666,7 @@ kCalculateIndexedSparseNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t position
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4689,7 +4689,7 @@ kCalculateIndexedSparseNonZeroTanhL2HingeOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4712,7 +4712,7 @@ kCalculateIndexedSparseNonZeroLinearL2HingeOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4735,7 +4735,7 @@ kCalculateIndexedSparseNonZeroRELUL2HingeOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4758,7 +4758,7 @@ kCalculateIndexedSparseNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t position, 
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4781,7 +4781,7 @@ kCalculateIndexedSparseNonZeroELUL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4804,7 +4804,7 @@ kCalculateIndexedSparseNonZeroSELUL2HingeOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4827,7 +4827,7 @@ kCalculateIndexedSparseNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t position
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos];
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
         pos1                   += threadIdx.x & cData._warpMask;
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -4947,7 +4947,7 @@ kCalculateSparseAnalogNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4973,7 +4973,7 @@ kCalculateSparseAnalogNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -4999,7 +4999,7 @@ kCalculateSparseAnalogNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5025,7 +5025,7 @@ kCalculateSparseAnalogNonZeroTanhL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5051,7 +5051,7 @@ kCalculateSparseAnalogNonZeroTanhL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5077,7 +5077,7 @@ kCalculateSparseAnalogNonZeroTanhL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5103,7 +5103,7 @@ kCalculateSparseAnalogNonZeroLinearL2HingeOutputDelta_kernel(uint32_t position, 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5128,7 +5128,7 @@ kCalculateSparseAnalogNonZeroLinearL2HingeOutputDelta_kernel(uint32_t position, 
     {
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t end            = pSparseEnd[dpos];
         uint64_t offset         = pos * stride;
         while (pos1 < end)
@@ -5155,7 +5155,7 @@ kCalculateSparseAnalogNonZeroLinearL2HingeOutputDelta_kernel(uint32_t position, 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5181,7 +5181,7 @@ kCalculateSparseAnalogNonZeroRELUL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5207,7 +5207,7 @@ kCalculateSparseAnalogNonZeroRELUL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5233,7 +5233,7 @@ kCalculateSparseAnalogNonZeroRELUL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5259,7 +5259,7 @@ kCalculateSparseAnalogNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5285,7 +5285,7 @@ kCalculateSparseAnalogNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5311,7 +5311,7 @@ kCalculateSparseAnalogNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t position, u
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5337,7 +5337,7 @@ kCalculateSparseAnalogNonZeroELUL2HingeOutputDelta_kernel(uint32_t position, uin
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5363,7 +5363,7 @@ kCalculateSparseAnalogNonZeroELUL2HingeOutputDelta_kernel(uint32_t position, uin
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5389,7 +5389,7 @@ kCalculateSparseAnalogNonZeroELUL2HingeOutputDelta_kernel(uint32_t position, uin
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5415,7 +5415,7 @@ kCalculateSparseAnalogNonZeroSELUL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5441,7 +5441,7 @@ kCalculateSparseAnalogNonZeroSELUL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5467,7 +5467,7 @@ kCalculateSparseAnalogNonZeroSELUL2HingeOutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5493,7 +5493,7 @@ kCalculateSparseAnalogNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5519,7 +5519,7 @@ kCalculateSparseAnalogNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5545,7 +5545,7 @@ kCalculateSparseAnalogNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t position,
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5667,7 +5667,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t po
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5693,7 +5693,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t po
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5719,7 +5719,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidL2HingeOutputDelta_kernel(uint32_t po
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5745,7 +5745,7 @@ kCalculateIndexedSparseAnalogNonZeroTanhL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5771,7 +5771,7 @@ kCalculateIndexedSparseAnalogNonZeroTanhL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5797,7 +5797,7 @@ kCalculateIndexedSparseAnalogNonZeroTanhL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5823,7 +5823,7 @@ kCalculateIndexedSparseAnalogNonZeroLinearL2HingeOutputDelta_kernel(uint32_t pos
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5849,7 +5849,7 @@ kCalculateIndexedSparseAnalogNonZeroLinearL2HingeOutputDelta_kernel(uint32_t pos
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5875,7 +5875,7 @@ kCalculateIndexedSparseAnalogNonZeroLinearL2HingeOutputDelta_kernel(uint32_t pos
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5901,7 +5901,7 @@ kCalculateIndexedSparseAnalogNonZeroRELUL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5927,7 +5927,7 @@ kCalculateIndexedSparseAnalogNonZeroRELUL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5953,7 +5953,7 @@ kCalculateIndexedSparseAnalogNonZeroRELUL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -5979,7 +5979,7 @@ kCalculateIndexedSparseAnalogNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t posi
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6005,7 +6005,7 @@ kCalculateIndexedSparseAnalogNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t posi
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6031,7 +6031,7 @@ kCalculateIndexedSparseAnalogNonZeroLRELUL2HingeOutputDelta_kernel(uint32_t posi
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6057,7 +6057,7 @@ kCalculateIndexedSparseAnalogNonZeroELUL2HingeOutputDelta_kernel(uint32_t positi
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6083,7 +6083,7 @@ kCalculateIndexedSparseAnalogNonZeroELUL2HingeOutputDelta_kernel(uint32_t positi
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6109,7 +6109,7 @@ kCalculateIndexedSparseAnalogNonZeroELUL2HingeOutputDelta_kernel(uint32_t positi
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6135,7 +6135,7 @@ kCalculateIndexedSparseAnalogNonZeroSELUL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6161,7 +6161,7 @@ kCalculateIndexedSparseAnalogNonZeroSELUL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6187,7 +6187,7 @@ kCalculateIndexedSparseAnalogNonZeroSELUL2HingeOutputDelta_kernel(uint32_t posit
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6213,7 +6213,7 @@ kCalculateIndexedSparseAnalogNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t po
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6239,7 +6239,7 @@ kCalculateIndexedSparseAnalogNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t po
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6265,7 +6265,7 @@ kCalculateIndexedSparseAnalogNonZeroSoftMaxL2HingeOutputDelta_kernel(uint32_t po
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6387,7 +6387,7 @@ kCalculateSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, uint32_t batc
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -6405,7 +6405,7 @@ kCalculateSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, uint32_t batc
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -6423,7 +6423,7 @@ kCalculateSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, uint32_t batc
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -6454,7 +6454,7 @@ kCalculateIndexedSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -6472,7 +6472,7 @@ kCalculateIndexedSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -6490,7 +6490,7 @@ kCalculateIndexedSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, uint32
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * (a - t);      
@@ -6519,7 +6519,7 @@ kCalculateSparseRawSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, Floa
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -6540,7 +6540,7 @@ kCalculateSparseNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32_t position, 
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6597,7 +6597,7 @@ kCalculateIndexedSparseNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32_t pos
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6655,7 +6655,7 @@ kCalculateSparseAnalogNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32_t posi
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6679,7 +6679,7 @@ kCalculateSparseAnalogNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32_t posi
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6703,7 +6703,7 @@ kCalculateSparseAnalogNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32_t posi
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6754,7 +6754,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6779,7 +6779,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
         uint64_t offset         = pos * stride;
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         while (pos1 < end)
         {
             uint32_t pos2       = offset + pSparseIndex[pos1];
@@ -6802,7 +6802,7 @@ kCalculateIndexedSparseAnalogNonZeroSigmoidCrossEntropyOutputDelta_kernel(uint32
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -6853,7 +6853,7 @@ kCalculateSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t position,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float output          = (Float)0.0;
@@ -6876,7 +6876,7 @@ kCalculateSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t position,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float output          = (Float)0.0;
@@ -6900,7 +6900,7 @@ kCalculateSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t position,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float output          = (Float)0.0;
@@ -6924,7 +6924,7 @@ kCalculateSoftMaxScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t position,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float output          = (Float)0.0;
@@ -6947,7 +6947,7 @@ kCalculateSoftMaxScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t position,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float output          = (Float)0.0;
@@ -6971,7 +6971,7 @@ kCalculateSoftMaxScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t position,
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float output          = (Float)0.0;
@@ -7011,7 +7011,7 @@ kCalculateIndexedSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t po
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float output          = (Float)0.0;
@@ -7034,7 +7034,7 @@ kCalculateIndexedSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t po
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float output          = (Float)0.0;
@@ -7058,7 +7058,7 @@ kCalculateIndexedSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t po
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float output          = (Float)0.0;
@@ -7081,7 +7081,7 @@ kCalculateIndexedSoftMaxScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t po
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         Float output          = (Float)0.0;
@@ -7104,7 +7104,7 @@ kCalculateIndexedSoftMaxScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t po
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 256.0);
         Float output          = (Float)0.0;
@@ -7127,7 +7127,7 @@ kCalculateIndexedSoftMaxScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t po
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * (Float)(1.0 / 128.0);
         Float output          = (Float)0.0;
@@ -7164,7 +7164,7 @@ kCalculateSparseRawSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint32_t 
     if (pos < size)
     {
         Float w               = cData._SMCE_zeroScale;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -7188,7 +7188,7 @@ kCalculateSparseNonZeroSigmoidScaledMarginalCrossEntropyOutputDelta_kernel(uint3
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._SMCE_oneScale * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._SMCE_oneScale * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -7228,7 +7228,7 @@ kCalculateSparseNonZeroSoftMaxScaledMarginalCrossEntropyOutputDelta_kernel(uint3
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos];
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._SMCE_oneScale * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1));
+        Float w               = cData._SMCE_oneScale * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1));
         uint64_t offset         = pos * stride;
         pos1                   += threadIdx.x & cData._warpMask;
         while (pos1 < end)
@@ -7290,7 +7290,7 @@ kCalculateIndexedSparseNonZeroSigmoidScaledMarginalCrossEntropyOutputDelta_kerne
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._SMCE_oneScale * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._SMCE_oneScale * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -7315,7 +7315,7 @@ kCalculateIndexedSparseNonZeroSoftMaxScaledMarginalCrossEntropyOutputDelta_kerne
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos];
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0 / (Float)(end - pos1);
         uint64_t offset         = pos * stride;
         pos1                   += threadIdx.x & cData._warpMask;
         while (pos1 < end)
@@ -7505,7 +7505,7 @@ kCalculateSigmoidL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * a * ((Float)1.0 - a);      
@@ -7524,7 +7524,7 @@ kCalculateTanhL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((Float)1.0 - a * a);      
@@ -7542,7 +7542,7 @@ kCalculateLinearL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t);  
@@ -7560,7 +7560,7 @@ kCalculateRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * (a > (Float)0.0);
@@ -7578,7 +7578,7 @@ kCalculateLRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -7596,7 +7596,7 @@ kCalculateELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * (a + alpha));
@@ -7614,7 +7614,7 @@ kCalculateSELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) * lambda + (a <= (Float)0.0) * lambda * alpha * exp(a));
@@ -7632,7 +7632,7 @@ kCalculateSigmoidL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * a * ((Float)1.0 - a);      
@@ -7651,7 +7651,7 @@ kCalculateTanhL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a- t) * ((Float)1.0 - a * a);      
@@ -7669,7 +7669,7 @@ kCalculateLinearL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t); 
@@ -7687,7 +7687,7 @@ kCalculateRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * (a > (Float)0.0);   
@@ -7705,7 +7705,7 @@ kCalculateLRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);      
@@ -7723,7 +7723,7 @@ kCalculateELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * (a + alpha));
@@ -7741,7 +7741,7 @@ kCalculateSELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) * lambda + (a <= (Float)0.0) * lambda * alpha * exp(a));
@@ -7759,7 +7759,7 @@ kCalculateSigmoidL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * a * ((Float)1.0 - a);      
@@ -7777,7 +7777,7 @@ kCalculateTanhL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((Float)1.0 - a * a);      
@@ -7795,7 +7795,7 @@ kCalculateLinearL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t);      
@@ -7813,7 +7813,7 @@ kCalculateRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * (a > (Float)0.0);  
@@ -7831,7 +7831,7 @@ kCalculateLRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -7849,7 +7849,7 @@ kCalculateELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t st
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * (a + alpha));
@@ -7867,7 +7867,7 @@ kCalculateSELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint32_t s
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) * lambda + (a <= (Float)0.0) * lambda * alpha * exp(a));
@@ -7927,7 +7927,7 @@ kCalculateIndexedSigmoidL1OutputDelta_kernel(uint32_t position, uint32_t batch, 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * a * ((Float)1.0 - a);      
@@ -7946,7 +7946,7 @@ kCalculateIndexedTanhL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((Float)1.0 - a * a);      
@@ -7964,7 +7964,7 @@ kCalculateIndexedLinearL1OutputDelta_kernel(uint32_t position, uint32_t batch, u
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t);  
@@ -7982,7 +7982,7 @@ kCalculateIndexedRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * (a > (Float)0.0);
@@ -8000,7 +8000,7 @@ kCalculateIndexedLRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -8018,7 +8018,7 @@ kCalculateIndexedELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * (a + alpha));
@@ -8036,7 +8036,7 @@ kCalculateIndexedSELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = pData[dOffset + pos];
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) * lambda + (a <= (Float)0.0) * lambda * alpha * exp(a));
@@ -8054,7 +8054,7 @@ kCalculateIndexedSigmoidL1OutputDelta_kernel(uint32_t position, uint32_t batch, 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * a * ((Float)1.0 - a);      
@@ -8073,7 +8073,7 @@ kCalculateIndexedTanhL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a- t) * ((Float)1.0 - a * a);      
@@ -8091,7 +8091,7 @@ kCalculateIndexedLinearL1OutputDelta_kernel(uint32_t position, uint32_t batch, u
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t); 
@@ -8109,7 +8109,7 @@ kCalculateIndexedRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * (a > (Float)0.0);   
@@ -8127,7 +8127,7 @@ kCalculateIndexedLRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);      
@@ -8145,7 +8145,7 @@ kCalculateIndexedELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * (a + alpha));
@@ -8163,7 +8163,7 @@ kCalculateIndexedSELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) * lambda + (a <= (Float)0.0) * lambda * alpha * exp(a));
@@ -8181,7 +8181,7 @@ kCalculateIndexedSigmoidL1OutputDelta_kernel(uint32_t position, uint32_t batch, 
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 256.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * a * ((Float)1.0 - a);      
@@ -8199,7 +8199,7 @@ kCalculateIndexedTanhL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((Float)1.0 - a * a);      
@@ -8217,7 +8217,7 @@ kCalculateIndexedLinearL1OutputDelta_kernel(uint32_t position, uint32_t batch, u
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t);      
@@ -8235,7 +8235,7 @@ kCalculateIndexedRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * (a > (Float)0.0);  
@@ -8253,7 +8253,7 @@ kCalculateIndexedLRELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, ui
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * slope);
@@ -8271,7 +8271,7 @@ kCalculateIndexedELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uint
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) + (a <= (Float)0.0) * (a + alpha));
@@ -8289,7 +8289,7 @@ kCalculateIndexedSELUL1OutputDelta_kernel(uint32_t position, uint32_t batch, uin
         uint64_t uOffset        = blockIdx.x * stride;
         uint64_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
         uint64_t dOffset        = dpos * stride;
-        Float w               = (pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0;
+        Float w               = (pDataWeight != nullptr) ? pDataWeight[dpos] : static_cast<Float>(1.0);
         Float a               = pUnit[uOffset + pos];
         Float t               = (Float)pData[dOffset + pos] * Float(1.0 / 128.0);
         pDelta[uOffset + pos]   = w * sgn(a - t) * ((a > (Float)0.0) * lambda + (a <= (Float)0.0) * lambda * alpha * exp(a));
@@ -8346,7 +8346,7 @@ kCalculateSparseRawSigmoidL1OutputDelta_kernel(uint32_t position, Float* pDataWe
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -8367,7 +8367,7 @@ kCalculateSparseNonZeroSigmoidL1OutputDelta_kernel(uint32_t position, uint32_t b
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8387,7 +8387,7 @@ kCalculateSparseRawTanhL1OutputDelta_kernel(uint32_t position, Float* pDataWeigh
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -8408,7 +8408,7 @@ kCalculateSparseNonZeroTanhL1OutputDelta_kernel(uint32_t position, uint32_t batc
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8428,7 +8428,7 @@ kCalculateSparseRawLinearL1OutputDelta_kernel(uint32_t position, Float* pDataWei
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -8449,7 +8449,7 @@ kCalculateSparseNonZeroLinearL1OutputDelta_kernel(uint32_t position, uint32_t ba
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8469,7 +8469,7 @@ kCalculateSparseRawRELUL1OutputDelta_kernel(uint32_t position, Float* pDataWeigh
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -8490,7 +8490,7 @@ kCalculateSparseNonZeroRELUL1OutputDelta_kernel(uint32_t position, uint32_t batc
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8510,7 +8510,7 @@ kCalculateSparseRawELUL1OutputDelta_kernel(uint32_t position, Float* pDataWeight
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -8531,7 +8531,7 @@ kCalculateSparseNonZeroELUL1OutputDelta_kernel(uint32_t position, uint32_t batch
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8551,7 +8551,7 @@ kCalculateSparseRawSELUL1OutputDelta_kernel(uint32_t position, Float* pDataWeigh
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -8572,7 +8572,7 @@ kCalculateSparseNonZeroSELUL1OutputDelta_kernel(uint32_t position, uint32_t batc
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8592,7 +8592,7 @@ kCalculateSparseRawLRELUL1OutputDelta_kernel(uint32_t position, Float* pDataWeig
     if (pos < size)
     {
         Float w               = cData._deltaBoost_zero;
-        if (pDataWeight != NULL)
+        if (pDataWeight != nullptr)
         {
             uint64_t dpos       = (pos / stride) + position;
             dpos                = cData._bShuffleIndices ? cData._pShuffleIndex[dpos] : dpos;
@@ -8613,7 +8613,7 @@ kCalculateSparseNonZeroRawLRELUL1OutputDelta_kernel(uint32_t position, uint32_t 
         uint32_t dpos           = cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos;
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8720,7 +8720,7 @@ kCalculateIndexedSparseNonZeroSigmoidL1OutputDelta_kernel(uint32_t position, uin
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8742,7 +8742,7 @@ kCalculateIndexedSparseNonZeroTanhL1OutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8764,7 +8764,7 @@ kCalculateIndexedSparseNonZeroLinearL1OutputDelta_kernel(uint32_t position, uint
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8786,7 +8786,7 @@ kCalculateIndexedSparseNonZeroRELUL1OutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8808,7 +8808,7 @@ kCalculateIndexedSparseNonZeroELUL1OutputDelta_kernel(uint32_t position, uint32_
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8830,7 +8830,7 @@ kCalculateIndexedSparseNonZeroSELUL1OutputDelta_kernel(uint32_t position, uint32
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
@@ -8852,7 +8852,7 @@ kCalculateIndexedSparseNonZeroRawLRELUL1OutputDelta_kernel(uint32_t position, ui
         uint32_t dpos           = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + pos] : position + pos];
         uint64_t pos1           = pSparseStart[dpos] + (threadIdx.x & cData._warpMask);
         uint64_t end            = pSparseEnd[dpos];
-        Float w               = cData._deltaBoost_one * ((pDataWeight != NULL) ? pDataWeight[dpos] : (Float)1.0);
+        Float w               = cData._deltaBoost_one * ((pDataWeight != nullptr) ? pDataWeight[dpos] : (Float)1.0);
         uint64_t offset         = pos * stride;
         while (pos1 < end)
         {
