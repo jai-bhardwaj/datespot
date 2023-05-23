@@ -5,7 +5,9 @@
 
 class Masking {
 public:
-    void createPaddingMask(const std::vector<float>& input, std::vector<std::vector<float>>& mask);
+    static std::vector<std::vector<float>> createPaddingMask(const std::vector<float>& input);
+private:
+    static float maskingValue_;
 };
 
 #endif // MASKING_H
