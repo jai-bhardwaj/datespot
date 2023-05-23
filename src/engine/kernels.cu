@@ -233,7 +233,7 @@ __global__ void kLoadSparseInputUnit_kernel(uint32_t position, uint32_t batch, u
         pos1 = cData._bShuffleIndices ? cData._pShuffleIndex[pos1] : pos1;
         uint64_t start = pSparseStart[pos1];
         uint64_t end = pSparseEnd[pos1];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos1] : (Float)1.0;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos1] : (Float)1.0;
         uint64_t offset = pos * stride;
         for (uint64_t i = start + threadIdx.x; i < end; i += blockDim.x)
         {
@@ -288,7 +288,7 @@ __global__ void kLoadIndexedSparseInputUnit_kernel(uint32_t position, uint32_t b
         pos1 = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[pos1] : pos1];
         uint64_t start = pSparseStart[pos1];
         uint64_t end = pSparseEnd[pos1];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos1] : (Float)1.0;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos1] : (Float)1.0;
         uint64_t offset = pos * stride;
         for (uint64_t i = start + threadIdx.x; i < end; i += blockDim.x)
         {
@@ -346,7 +346,7 @@ __global__ void kLoadSparseAnalogInputUnit_kernel(uint32_t position, uint32_t ba
         pos1 = cData._bShuffleIndices ? cData._pShuffleIndex[pos1] : pos1;
         uint64_t start = pSparseStart[pos1];
         uint64_t end = pSparseEnd[pos1];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos1] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos1] : static_cast<Float>(1.0);
         uint64_t offset = static_cast<uint64_t>(pos) * static_cast<uint64_t>(stride);
         for (uint64_t i = start + threadIdx.x; i < end; i += blockDim.x)
         {
@@ -408,7 +408,7 @@ __global__ void kLoadIndexedSparseAnalogInputUnit_kernel(uint32_t position, uint
         pos1 = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[pos1] : pos1];
         uint64_t start = pSparseStart[pos1];
         uint64_t end = pSparseEnd[pos1];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos1] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos1] : static_cast<Float>(1.0);
         uint64_t offset = static_cast<uint64_t>(pos) * static_cast<uint64_t>(stride);
         for (uint64_t i = start + threadIdx.x; i < end; i += blockDim.x)
         {
@@ -467,7 +467,7 @@ __global__ void kLoadSparseDenoisedInputUnit_kernel(uint32_t position, uint32_t 
         uint32_t pos1 = cData._bShuffleIndices ? cData._pShuffleIndex[pos + position] : pos + position;
         uint64_t start = pSparseStart[pos1];
         uint64_t end = pSparseEnd[pos1];
-        Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[pos1] : static_cast<Float>(1.0));
+        Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[pos1] : static_cast<Float>(1.0));
         uint64_t offset = static_cast<uint64_t>(pos) * static_cast<uint64_t>(stride);
         for (uint64_t i = start + threadIdx.x; i < end; i += blockDim.x)
         {
@@ -525,7 +525,7 @@ __global__ void kLoadIndexedSparseDenoisedInputUnit_kernel(uint32_t position, ui
         uint32_t pos1 = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[pos + position] : pos + position];
         uint64_t start = pSparseStart[pos1];
         uint64_t end = pSparseEnd[pos1];
-        Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[pos1] : static_cast<Float>(1.0));
+        Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[pos1] : static_cast<Float>(1.0));
         uint64_t offset = static_cast<uint64_t>(pos) * static_cast<uint64_t>(stride);
         for (uint64_t i = start + threadIdx.x; i < end; i += blockDim.x)
         {
@@ -595,7 +595,7 @@ __global__ void kLoadSparseAnalogDenoisedInputUnit_kernel(uint32_t position, uin
         uint64_t end = pSparseEnd[pos1];
 
         // Calculate the weight for denoising
-        Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[pos1] : static_cast<Float>(1.0));
+        Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[pos1] : static_cast<Float>(1.0));
 
         // Calculate the offset for accessing the input unit data
         uint64_t offset = static_cast<uint64_t>(pos) * static_cast<uint64_t>(stride);
@@ -692,7 +692,7 @@ __global__ void kLoadIndexedSparseAnalogDenoisedInputUnit_kernel(uint32_t positi
         uint64_t end = pSparseEnd[pos1];
 
         // Calculate the weight for denoising
-        Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[pos1] : static_cast<Float>(1.0));
+        Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[pos1] : static_cast<Float>(1.0));
 
         // Calculate the offset for accessing the input unit data
         uint64_t offset = static_cast<uint64_t>(pos) * static_cast<uint64_t>(stride);
@@ -1135,7 +1135,7 @@ __global__ void kCalculateSparseZ_kernel(uint32_t position, uint32_t stride, Flo
     position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = (pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0;
+    Float w = (pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0;
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1223,7 +1223,7 @@ __global__ void kCalculateIndexedSparseZ_kernel(uint32_t position, uint32_t stri
     position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = (pDataWeight != NULL) ? pDataWeight[position] : static_cast<Float>(1.0);
+    Float w = (pDataWeight != nullptr) ? pDataWeight[position] : static_cast<Float>(1.0);
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1316,7 +1316,7 @@ __global__ void LAUNCH_BOUNDS256() kCalculateSparseAnalogZ_kernel(uint32_t posit
 
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = (pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0;
+    Float w = (pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0;
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1403,7 +1403,7 @@ __global__ void LAUNCH_BOUNDS256() kCalculateSparseAnalogZ_kernel(uint32_t posit
 
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = (pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0;
+    Float w = (pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0;
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1487,7 +1487,7 @@ __global__ void LAUNCH_BOUNDS256() kCalculateSparseAnalogZ_kernel(uint32_t posit
     position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = (pDataWeight != NULL) ? pDataWeight[position] : 1.0f;
+    Float w = (pDataWeight != nullptr) ? pDataWeight[position] : 1.0f;
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1616,7 +1616,7 @@ __global__ void LAUNCH_BOUNDS256_kCalculateIndexedSparseAnalogZ_kernel(
         for (uint32_t i = threadIdx.x; i < inputs; i += blockDim.x)
         {
             sOffset[i] = pSparseIndex[tstart + i * blockDim.x] * stride;
-            sValue[i] = (pDataWeight != NULL) ? pDataWeight[position] * pSparseData[tstart + i * blockDim.x] : pSparseData[tstart + i * blockDim.x];
+            sValue[i] = (pDataWeight != nullptr) ? pDataWeight[position] * pSparseData[tstart + i * blockDim.x] : pSparseData[tstart + i * blockDim.x];
         }
 
         __syncthreads();
@@ -1666,7 +1666,7 @@ __global__ void LAUNCH_BOUNDS256() kCalculateIndexedSparseAnalogZ_kernel(uint32_
     position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     const uint64_t start = pSparseStart[position];
     const uint64_t end = pSparseEnd[position];
-    const Float w = (pDataWeight != NULL) ? pDataWeight[position] : static_cast<Float>(1.0);
+    const Float w = (pDataWeight != nullptr) ? pDataWeight[position] : static_cast<Float>(1.0);
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1747,7 +1747,7 @@ __global__ void LAUNCH_BOUNDS256() kCalculateIndexedSparseAnalogZ_kernel(uint32_
     position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     const uint64_t start = pSparseStart[position];
     const uint64_t end = pSparseEnd[position];
-    const Float w = (pDataWeight != NULL) ? pDataWeight[position] : static_cast<Float>(1.0);
+    const Float w = (pDataWeight != nullptr) ? pDataWeight[position] : static_cast<Float>(1.0);
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1851,7 +1851,7 @@ kCalculateSparseDenoisedZ_kernel(uint32_t position, uint32_t stride, Float* pWei
     position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0);
+    Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0);
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -1949,7 +1949,7 @@ __global__ void kCalculateIndexedSparseDenoisedZ_kernel(const uint32_t position,
     position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     const uint64_t start = pSparseStart[position];
     const uint64_t end = pSparseEnd[position];
-    const Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0);
+    const Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0);
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -2047,7 +2047,7 @@ __global__ void LAUNCH_BOUNDS256(uint32_t position, uint32_t stride, Float* pWei
     position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0);
+    Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0);
     pUnit += blockIdx.x * stride;
 
     uint32_t inputs = ullmin(end - start, (uint64_t)MAXSPARSEANALOG);
@@ -2129,7 +2129,7 @@ __global__ void LAUNCH_BOUNDS256(uint32_t position, uint32_t stride, Float* pWei
     position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0);
+    Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0);
     pUnit += blockIdx.x * stride;
 
     uint32_t inputs = ullmin(end - start, (uint64_t)MAXSPARSEANALOG);
@@ -2213,7 +2213,7 @@ __global__ void kCalculateSparseAnalogDenoisedZ_kernel(uint32_t position, uint32
     position = cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x;
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0);
+    Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0);
     pUnit += blockIdx.x * stride;
 
     // Load pWeight and pSparseData into shared memory
@@ -2341,7 +2341,7 @@ __global__ void LAUNCH_BOUNDS256(uint32_t stride, Float* pWeight, uint32_t* pInd
     uint32_t position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[blockIdx.x] : blockIdx.x];
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : 1.0);
+    Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : 1.0);
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -2416,7 +2416,7 @@ __global__ void LAUNCH_BOUNDS256(const T position, const T stride, const T* pWei
     position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     const T start = pSparseStart[position];
     const T end = pSparseEnd[position];
-    const T w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : T(1.0));
+    const T w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : T(1.0));
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -2529,7 +2529,7 @@ __global__ void kCalculateIndexedSparseAnalogDenoisedZ_kernel(uint32_t position,
     position = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + blockIdx.x] : position + blockIdx.x];
     uint64_t start = pSparseStart[position];
     uint64_t end = pSparseEnd[position];
-    Float w = cData._denoising_q * ((pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0);
+    Float w = cData._denoising_q * ((pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0);
     pUnit += blockIdx.x * stride;
 
     while (start < end)
@@ -2706,7 +2706,7 @@ __global__ void kCalculateWeightedSparseTransposedMatrix_kernel(uint32_t positio
  * \param pSparseStart Pointer to the start indices of the sparse matrix.
  * \param pSparseEnd Pointer to the end indices of the sparse matrix.
  * \param pSparseIndex Pointer to the indices of the sparse matrix.
- * \param pDataWeight Pointer to the weights of the data. Set to NULL if not used.
+ * \param pDataWeight Pointer to the weights of the data. Set to nullptr if not used.
  * \param pSparseTransposedEnd Pointer to the end indices of the transposed sparse matrix.
  * \param pSparseTransposedIndex Pointer to the indices of the transposed sparse matrix.
  * \param pSparseTransposedData Pointer to the data of the transposed sparse matrix.
@@ -2717,7 +2717,7 @@ void kCalculateSparseTransposedMatrix(uint32_t position, uint32_t batch, uint64_
     uint32_t blockSize = threadsPerBlock;
     uint32_t numBlocks = (batch + blockSize - 1) / blockSize;
     
-    if (pDataWeight == NULL)
+    if (pDataWeight == nullptr)
     {
         kCalculateSparseTransposedMatrix_kernel<<<numBlocks, blockSize>>>(position, batch, pSparseStart, pSparseEnd, pSparseIndex, pSparseTransposedEnd, pSparseTransposedIndex);
         LAUNCHERROR("kCalculateSparseTransposedMatrix_kernel");
@@ -2815,7 +2815,7 @@ void kCalculateIndexedSparseTransposedMatrix(uint32_t position, uint32_t batch, 
     uint32_t threadsPerBlock = getGpu()._warpSize;
     uint32_t numBlocks = (batch + threadsPerBlock - 1) / threadsPerBlock;
     
-    if (pDataWeight == NULL)
+    if (pDataWeight == nullptr)
     {
         kCalculateIndexedSparseTransposedMatrix_kernel<<<numBlocks, threadsPerBlock>>>(position, batch, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pSparseTransposedEnd, pSparseTransposedIndex);
         LAUNCHERROR("kCalculateIndexedSparseTransposedMatrix_kernel");
@@ -2924,7 +2924,7 @@ void kCalculateSparseTransposedDenoisedMatrix(uint32_t position, uint32_t batch,
 
     uint32_t sharedMemSize = 0;  // Assuming no shared memory usage in the kernel
     
-    if (pDataWeight == NULL)
+    if (pDataWeight == nullptr)
     {
         kCalculateSparseTransposedDenoisedMatrix_kernel<<<numBlocks, blockSize, sharedMemSize>>>(position, batch, pSparseStart, pSparseEnd, pSparseIndex, pRandom, pSparseTransposedEnd, pSparseTransposedIndex);
         LAUNCHERROR("kCalculateSparseTransposedDenoisedMatrix_kernel");
@@ -3041,7 +3041,7 @@ void kCalculateIndexedSparseTransposedDenoisedMatrix(uint32_t position, uint32_t
 
     uint32_t sharedMemSize = 0;  // Assuming no shared memory usage in the kernel
     
-    if (pDataWeight == NULL)
+    if (pDataWeight == nullptr)
     {
         kCalculateIndexedSparseTransposedDenoisedMatrix_kernel<<<numBlocks, blockSize, sharedMemSize>>>(position, batch, pIndex, pSparseStart, pSparseEnd, pSparseIndex, pRandom, pSparseTransposedEnd, pSparseTransposedIndex);
         LAUNCHERROR("kCalculateIndexedSparseTransposedDenoisedMatrix_kernel");
@@ -3064,7 +3064,7 @@ void kCalculateIndexedSparseTransposedDenoisedMatrix(uint32_t position, uint32_t
  * @param pSparseStart Pointer to the array of sparse start indices.
  * @param pSparseEnd Pointer to the array of sparse end indices.
  * @param pSparseIndex Pointer to the array of sparse indices.
- * @param pDataWeight Pointer to the array of data weights (optional, can be set to nullptr).
+ * @param pDataWeight Pointer to the array of data weights (optional, can be set to nullptrptr).
  * @param pSparseData Pointer to the array of sparse data.
  * @param pSparseTransposedEnd Pointer to the array of transposed sparse end indices.
  * @param pSparseTransposedIndex Pointer to the array of transposed sparse indices.
@@ -3080,7 +3080,7 @@ __global__ void kCalculateSparseTransposedAnalogMatrix_kernel(uint32_t position,
         position = cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos;
         uint64_t start = pSparseStart[position] + threadIdx.x;
         uint64_t end = pSparseEnd[position];
-        Float w = (pDataWeight != NULL) ? pDataWeight[position] : (Float)1.0;
+        Float w = (pDataWeight != nullptr) ? pDataWeight[position] : (Float)1.0;
         while (start < end)
         {
             uint32_t index = pSparseIndex[start];
@@ -3104,7 +3104,7 @@ __global__ void kCalculateSparseTransposedAnalogMatrix_kernel(uint32_t position,
  * @param pSparseStart Pointer to the array of sparse start indices.
  * @param pSparseEnd Pointer to the array of sparse end indices.
  * @param pSparseIndex Pointer to the array of sparse indices.
- * @param pDataWeight Pointer to the array of data weights (optional, can be set to nullptr).
+ * @param pDataWeight Pointer to the array of data weights (optional, can be set to nullptrptr).
  * @param pSparseData Pointer to the array of sparse data.
  * @param pSparseTransposedEnd Pointer to the array of transposed sparse end indices.
  * @param pSparseTransposedIndex Pointer to the array of transposed sparse indices.
@@ -3152,7 +3152,7 @@ kCalculateIndexedSparseTransposedAnalogMatrix_kernel(uint32_t position, uint32_t
         uint32_t pos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];
         uint64_t start = pSparseStart[pos] + tgx;
         uint64_t end = pSparseEnd[pos];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos] : static_cast<Float>(1.0);
 
         while (start < end)
         {
@@ -3224,7 +3224,7 @@ kCalculateSparseTransposedAnalogDenoisedMatrix_kernel(uint32_t position, uint32_
         position = cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos;
         uint64_t start = pSparseStart[position] + tgx;
         uint64_t end = pSparseEnd[position];
-        Float w = (pDataWeight != NULL) ? pDataWeight[position] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[position] : static_cast<Float>(1.0);
         while (start < end)
         {
             Float rnd = pRandom[start];
@@ -3272,7 +3272,7 @@ kCalculateSparseTransposedAnalogDenoisedMatrix_kernel(uint32_t position, uint32_
         uint32_t pos = cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos;
         uint64_t start = pSparseStart[pos] + tgx;
         uint64_t end = pSparseEnd[pos];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos] : static_cast<Float>(1.0);
 
         while (start < end)
         {
@@ -3321,7 +3321,7 @@ kCalculateSparseTransposedAnalogDenoisedMatrix_kernel(uint32_t position, uint32_
         uint32_t pos = cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos;
         uint64_t start = pSparseStart[pos] + tgx;
         uint64_t end = pSparseEnd[pos];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos] : static_cast<Float>(1.0);
 
         while (start < end)
         {
@@ -3396,7 +3396,7 @@ kCalculateIndexedSparseTransposedAnalogDenoisedMatrix_kernel(uint32_t position, 
         uint32_t pos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];
         uint64_t start = pSparseStart[pos] + tgx;
         uint64_t end = pSparseEnd[pos];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos] : static_cast<Float>(1.0);
 
         while (start < end)
         {
@@ -3447,7 +3447,7 @@ kCalculateIndexedSparseTransposedAnalogDenoisedMatrix_kernel(uint32_t position, 
         uint32_t pos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];
         uint64_t start = pSparseStart[pos] + tgx;
         uint64_t end = pSparseEnd[pos];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos] : static_cast<Float>(1.0);
         while (start < end)
         {
             Float rnd = pRandom[start];
@@ -3496,7 +3496,7 @@ kCalculateIndexedSparseTransposedAnalogDenoisedMatrix_kernel(uint32_t position, 
         uint32_t pos = pIndex[cData._bShuffleIndices ? cData._pShuffleIndex[position + bpos] : position + bpos];
         uint64_t start = pSparseStart[pos] + tgx;
         uint64_t end = pSparseEnd[pos];
-        Float w = (pDataWeight != NULL) ? pDataWeight[pos] : static_cast<Float>(1.0);
+        Float w = (pDataWeight != nullptr) ? pDataWeight[pos] : static_cast<Float>(1.0);
         while (start < end)
         {
             Float rnd = pRandom[start];
@@ -5868,7 +5868,7 @@ size_t kInitSort(uint32_t items, GpuBuffer<KeyType>* pbKey, GpuBuffer<ValueType>
     size_t tempBytes;
     cub::DoubleBuffer<KeyType> d_keys(pbKey->_pDevData, pbKey->_pDevData + itemStride);
     cub::DoubleBuffer<ValueType> d_values(pbValue->_pDevData, pbValue->_pDevData + itemStride);
-    cub::DeviceRadixSort::SortPairs(NULL, tempBytes, d_keys, d_values, items);
+    cub::DeviceRadixSort::SortPairs(nullptr, tempBytes, d_keys, d_values, items);
     return tempBytes;
 }
 
