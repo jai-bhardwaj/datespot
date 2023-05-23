@@ -143,6 +143,18 @@ public:
         }
     }
 
+    void enableLayerNormalization(bool enable) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.enableLayerNormalization(enable);
+        }
+    }
+
+    void enableDropout(bool enable, float dropoutRate = 0.1) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.enableDropout(enable, dropoutRate);
+        }
+    }
+
 private:
     std::vector<float> embeddingLayer(const std::vector<float>& input) {
         const int embeddingSize = 512;
@@ -199,4 +211,5 @@ private:
     std::vector<float> input_;
     std::vector<float> output_;
 };
+
 
