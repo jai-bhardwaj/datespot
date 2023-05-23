@@ -17,6 +17,27 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+      - name: Cache CUDA Toolkit
+        id: cache-cuda-toolkit
+        uses: actions/cache@v2
+        with:
+          path: /var/cuda-repo-ubuntu2204-12-1-local
+          key: ${{ runner.os }}-cuda-toolkit-${{ hashFiles('cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb') }}
+          restore-keys: |
+            ${{ runner.os }}-cuda-toolkit-
+      - name: Install CUDA toolkit
+        run: |
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+          sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+          wget https://developer.download.nvidia.com/compute/cuda/12.1.1/local_installers/cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb
+          if [ -z "${{ steps.cache-cuda-toolkit.outputs.cache-hit }}" ]; then
+            sudo dpkg -i cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb
+          else
+            echo "CUDA Toolkit is already cached."
+          fi
+          sudo cp /var/cuda-repo-ubuntu2204-12-1-local/cuda-*-keyring.gpg /usr/share/keyrings/
+          sudo apt-get update
+          sudo apt-get -y install cuda
       
       - name: Cache CUDA Docker Image
         uses: actions/cache@v2
@@ -50,13 +71,4 @@ jobs:
       - name: Install Google Test Framework
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends cmake
-          if [ -z "${{ steps.cache-gtest.outputs.cache-hit }}" ]; then
-            git clone https://github.com/google/googletest.git ./googletest
-            cd ./googletest
-            cmake .
-            make
-            sudo make install
-          else
-            echo "Google Test Framework is already cached."
-          fi
+          sudo apt-get install -y --
