@@ -221,6 +221,26 @@ public:
         }
     }
 
+    std::vector<float> generateSequence(int maxLength) {
+        std::vector<float> sequence;
+        std::vector<float> prevOutput = input_;
+
+        for (int i = 0; i < maxLength; ++i) {
+            forward(prevOutput);
+            const std::vector<float>& currentOutput = getOutput();
+            sequence.insert(sequence.end(), currentOutput.begin(), currentOutput.end());
+            prevOutput = currentOutput;
+        }
+
+        return sequence;
+    }
+
+    void saveModel(const std::string& filename) {
+    }
+
+    void loadModel(const std::string& filename) {
+    }
+
 private:
     std::vector<float> embeddingLayer(const std::vector<float>& input) {
         const int embeddingSize = 512;
@@ -277,8 +297,3 @@ private:
     std::vector<float> input_;
     std::vector<float> output_;
 };
-
-
-
-
-
