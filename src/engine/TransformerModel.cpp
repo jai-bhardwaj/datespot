@@ -23,7 +23,9 @@ public:
         }
     }
 
-    void forward() {
+    void forward(const std::vector<float>& input) {
+        setInput(input);
+
         std::vector<float> embeddedInput = embeddingLayer(input_);
         std::vector<float> positionalEncodedInput = applyPositionalEncoding(embeddedInput);
 
@@ -47,6 +49,62 @@ public:
         return output_;
     }
 
+    int getNumLayers() const {
+        return transformerEncoderLayers_.size();
+    }
+
+    void setLayerParameters(int layerIndex, int numHeads, int hiddenSize, int feedForwardSize) {
+        if (layerIndex >= 0 && layerIndex < transformerEncoderLayers_.size()) {
+            transformerEncoderLayers_[layerIndex].setParameters(numHeads, hiddenSize, feedForwardSize);
+        }
+    }
+
+    void setAllLayerParameters(int numHeads, int hiddenSize, int feedForwardSize) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setParameters(numHeads, hiddenSize, feedForwardSize);
+        }
+    }
+
+    void reset() {
+        input_.clear();
+        output_.clear();
+
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.reset();
+        }
+    }
+
+    void printOutput() const {
+        std::cout << "Output: ";
+        for (float value : output_) {
+            std::cout << value << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    void printLayerOutputs() const {
+        for (int i = 0; i < transformerEncoderLayers_.size(); ++i) {
+            std::cout << "Layer " << i << " Output: ";
+            const std::vector<float>& layerOutput = transformerEncoderLayers_[i].getOutput();
+            for (float value : layerOutput) {
+                std::cout << value << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    void printModelInfo() const {
+        std::cout << "Transformer Model Info:" << std::endl;
+        std::cout << "Number of Layers: " << transformerEncoderLayers_.size() << std::endl;
+        std::cout << "Input Size: " << input_.size() << std::endl;
+        std::cout << "Output Size: " << output_.size() << std::endl;
+        std::cout << "Transformer Encoder Layer Parameters: " << std::endl;
+        for (int i = 0; i < transformerEncoderLayers_.size(); ++i) {
+            std::cout << "Layer " << i << ": ";
+            transformerEncoderLayers_[i].printLayerInfo();
+        }
+    }
+
 private:
     std::vector<float> embeddingLayer(const std::vector<float>& input) {
         const int embeddingSize = 512;
@@ -55,10 +113,9 @@ private:
         embeddedInput.reserve(input.size() * embeddingSize);
 
         for (float inputValue : input) {
-            std::ranges::transform(std::views::iota(0), std::back_inserter(embeddedInput),
-                [inputValue](int j) {
-                    return inputValue * j;
-                });
+            for (int j = 0; j < embeddingSize; ++j) {
+                embeddedInput.push_back(inputValue * j);
+            }
         }
 
         return embeddedInput;
@@ -68,7 +125,7 @@ private:
         std::vector<float> output(input.size());
         const std::vector<float>& positionalEncoding = positionalEncoding_();
 
-        std::ranges::transform(input, positionalEncoding, output.begin(),
+        std::transform(input.begin(), input.end(), positionalEncoding.begin(), output.begin(),
             [](float inputVal, float positionalEncodingVal) {
                 return inputVal + positionalEncodingVal;
             });
@@ -78,8 +135,6 @@ private:
 
     std::vector<float> layerNormalization(std::vector<float>&& input) {
         const float epsilon = 1e-6;
-
-        std::vector<float> output(input.size());
 
         float mean = std::reduce(std::execution::par, input.begin(), input.end()) / input.size();
         float variance = std::transform_reduce(std::execution::par, input.begin(), input.end(), 0.0f,
@@ -91,13 +146,13 @@ private:
         variance /= input.size();
         float stdDev = std::sqrt(variance);
 
-        std::ranges::transform(input, output.begin(),
+        std::transform(input.begin(), input.end(), input.begin(),
             [mean, stdDev, epsilon](float value) {
                 float normalizedValue = (value - mean) / (stdDev + epsilon);
                 return normalizedValue;
             });
 
-        return output;
+        return std::move(input);
     }
 
 private:
@@ -106,3 +161,4 @@ private:
     std::vector<float> input_;
     std::vector<float> output_;
 };
+
