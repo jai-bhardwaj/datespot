@@ -15,7 +15,24 @@ class LayerDescriptor;
  * @brief Class representing a Layer in a neural network.
  */
 class Layer {
+protected:
+    std::vector<float> input_;
+    std::vector<float> output_;
 public:
+    // @brief Creates a new layer with the given name.
+    Layer(const std::string& name);
+
+    // @brief Initializes the layer. This function must be implemented by derived classes.
+    virtual void initialize() = 0;
+
+    // @brief Performs a forward pass through the layer. This function must be implemented by derived classes.
+    virtual void forward() = 0;
+
+    // @brief Sets the input to the layer.
+    void setInput(const std::vector<float>& input);
+
+    // @brief Gets the output from the layer.
+    const std::vector<float>& getOutput() const;
     /**
      * @brief Friend class declaration for Network.
      *
