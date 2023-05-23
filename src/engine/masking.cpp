@@ -1,16 +1,17 @@
 #include "Masking.h"
 
-std::vector<std::vector<float>> Masking::createPaddingMask(const std::vector<float>& input) {
-    std::vector<std::vector<float>> mask(input.size(), std::vector<float>(input.size(), 1.0f));
+void Masking::createPaddingMask(const std::vector<float>& input, std::vector<std::vector<float>>& mask) {
+    auto size = input.size();
+    mask.clear();
+    mask.reserve(size);
 
-    for (int i = 0; i < input.size(); ++i) {
-        if (input[i] == 0.0f) {
-            for (int j = 0; j < input.size(); ++j) {
-                mask[i][j] = 0.0f;
-                mask[j][i] = 0.0f;
-            }
+    auto i = 0;
+    for (const auto& value : input) {
+        if (value == 0.0f) {
+            mask.emplace_back(size, 0.0f);
+        } else {
+            mask.emplace_back(size, 1.0f);
         }
+        ++i;
     }
-
-    return mask;
 }
