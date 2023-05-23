@@ -54,14 +54,26 @@ public:
         }
     }
 
-    void forward(float* input, int size) {
+    void normalizeInput(const float* input, int size) {
         if (trainingMode_ && !populationStatsMode_) {
             throw std::runtime_error("Batch statistics not calculated. Call calculateBatchStatistics() before normalization.");
         }
 
-        std::transform(input, input + size, mean_.begin(), variance_.begin(), input, [&](float val, float m, float v) {
-            return (val - m) / v;
-        });
+        float mean = 0.0f;
+        float variance = 0.0f;
+        for (int i = 0; i < size; i++) {
+            mean += input[i];
+            variance += input[i] * input[i];
+        }
+        mean /= size;
+        variance /= size;
+
+        std::vector<float> output(size);
+        for (int i = 0; i < size; i++) {
+            output[i] = (input[i] - mean) / std::sqrt(variance);
+        }
+
+        std::copy(output.begin(), output.end(), input);
     }
 
     void calculateBatchStatistics(const float** inputs, int batchSize, int size) {
@@ -114,62 +126,13 @@ public:
         }
     }
 
-    void normalize(float* input, int size) const {
-        if (trainingMode_ && !populationStatsMode_) {
-            throw std::runtime_error("Batch statistics not calculated. Call calculateBatchStatistics() before normalization.");
+    float inverseVariance(const std::vector<float>& data) {
+        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
+        float variance = 0.0f;
+        for (float value : data) {
+            variance += (value - mean) * (value - mean);
         }
-
-        std::transform(input, input + size, mean_.begin(), variance_.begin(), input, [&](float val, float m, float v) {
-            return (val - m) / v;
-        });
-    }
-
-    void normalize(const float* input, int size, float* output) const {
-        if (trainingMode_ && !populationStatsMode_) {
-            throw std::runtime_error("Batch statistics not calculated. Call calculateBatchStatistics() before normalization.");
-        }
-
-        std::transform(input, input + size, mean_.begin(), variance_.begin(), output, [&](float val, float m, float v) {
-            return (val - m) / v;
-        });
-    }
-
-    void batchNormalize(const float** inputs, int batchSize, int size) {
-        if (populationStatsMode_) {
-            throw std::runtime_error("Cannot perform batch normalization in population statistics mode.");
-        }
-
-        if (trainingMode_) {
-            calculateBatchStatistics(inputs, batchSize, size);
-        }
-
-        std::for_each(std::execution::par_unseq, inputs, inputs + batchSize, [&](const float* input) {
-            normalize(const_cast<float*>(input), size);
-        });
-    }
-
-    void batchNormalize(const float** inputs, int batchSize, int size, float** outputs) {
-        if (populationStatsMode_) {
-            throw std::runtime_error("Cannot perform batch normalization in population statistics mode.");
-        }
-
-        if (trainingMode_) {
-            calculateBatchStatistics(inputs, batchSize, size);
-        }
-
-        std::for_each(std::execution::par_unseq, inputs, inputs + batchSize, [&](const float* input) {
-            normalize(input, size, *outputs++);
-        });
-    }
-
-    void inverseNormalize(const float* normalizedInput, int size, float* output) const {
-        if (trainingMode_ && !populationStatsMode_) {
-            throw std::runtime_error("Batch statistics not calculated. Call calculateBatchStatistics() before inverse normalization.");
-        }
-
-        std::transform(normalizedInput, normalizedInput + size, mean_.begin(), variance_.begin(), output, [&](float val, float m, float v) {
-            return (val * v) + m;
-        });
+        return 1.0f / variance;
     }
 
     void setTrainingMode(bool mode) {
@@ -217,14 +180,6 @@ public:
     }
 
     void enableExponentialMovingAverage(float decayRate) {
-    }
-
-    void setCustomEpsilonPerInstance(const std::vector<float>& epsilonValues) {
-        if (epsilonValues.size() != mean_.size()) {
-            throw std::runtime_error("Invalid size of epsilon values.");
-        }
-
-        epsilon_ = epsilonValues;
     }
 
     void serializeModel(const std::string& filePath) const {
