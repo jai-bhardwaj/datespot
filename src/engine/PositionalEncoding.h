@@ -3,9 +3,16 @@
 
 #include <vector>
 
+enum class PositionalEncodingMethod {
+    METHOD_A,
+    METHOD_B
+};
+
 class PositionalEncoding {
 public:
-    PositionalEncoding(int maxSeqLength, int hiddenSize);
+    PositionalEncoding(int sequenceLength, int hiddenSize);
+    const std::vector<float>& operator()();
+    void setMethod(const PositionalEncodingMethod& method);
     std::vector<float> operator()(int position) const;
     int reverseEncoding(const std::vector<float>& encodingVector) const;
     int getMaxSequenceLength() const;
@@ -21,6 +28,8 @@ public:
 
 private:
     std::vector<std::vector<float>> encoding_;
+    std::vector<float> positionalEncoding_;
+    PositionalEncodingMethod method_;
     std::vector<std::vector<float>> generatePositionalEncoding(int maxSeqLength, int hiddenSize);
     float calculateDistance(const std::vector<float>& encodingVector1, const std::vector<float>& encodingVector2) const;
 };
