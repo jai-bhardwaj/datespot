@@ -1,17 +1,45 @@
-#ifndef MULTI_HEAD_ATTENTION_LAYER_H
-#define MULTI_HEAD_ATTENTION_LAYER_H
+#ifndef MULTIHEADATTENTIONLAYER_H
+#define MULTIHEADATTENTIONLAYER_H
 
-#include "Layer.h"
 #include <string>
 #include <vector>
+#include <cmath>
 
-class MultiHeadAttentionLayer : public Layer {
+class MultiHeadAttentionLayer {
+public:
+    MultiHeadAttentionLayer(const std::string& name, const std::vector<std::vector<float>>& queryWeights, const std::vector<float>& queryBiases, const std::vector<std::vector<float>>& keyWeights, const std::vector<float>& keyBiases, const std::vector<std::vector<float>>& valueWeights, const std::vector<float>& valueBiases, int headSize, int numHeads);
+
+    void initialize();
+    void forward();
+    void backward();
+
+    void setQueryWeights(const std::vector<std::vector<float>>& queryWeights);
+    void setQueryBiases(const std::vector<float>& queryBiases);
+    void setKeyWeights(const std::vector<std::vector<float>>& keyWeights);
+    void setKeyBiases(const std::vector<float>& keyBiases);
+    void setValueWeights(const std::vector<std::vector<float>>& valueWeights);
+    void setValueBiases(const std::vector<float>& valueBiases);
+
+    void setHeadSize(int headSize);
+    void setNumHeads(int numHeads);
+
+    std::vector<float> getOutput() const;
+    std::vector<float> getTransformedQueries() const;
+    std::vector<float> getTransformedKeys() const;
+    std::vector<float> getTransformedValues() const;
+    std::vector<float> getInputQueries() const;
+    std::vector<float> getInputKeys() const;
+    std::vector<float> getInputValues() const;
+    int getHeadSize() const;
+    int getNumHeads() const;
+
 private:
+    std::string name;
     std::vector<std::vector<float>> queryWeights;
-    std::vector<std::vector<float>> keyWeights;
-    std::vector<std::vector<float>> valueWeights;
     std::vector<float> queryBiases;
+    std::vector<std::vector<float>> keyWeights;
     std::vector<float> keyBiases;
+    std::vector<std::vector<float>> valueWeights;
     std::vector<float> valueBiases;
     int headSize;
     int numHeads;
@@ -19,33 +47,11 @@ private:
     std::vector<float> inputQueries;
     std::vector<float> inputKeys;
     std::vector<float> inputValues;
+    std::vector<float> output;
+    std::vector<float> transformedQueries;
+    std::vector<float> transformedKeys;
+    std::vector<float> transformedValues;
 
-public:
-    MultiHeadAttentionLayer(const std::string& name, const std::vector<std::vector<float>>& queryWeights, const std::vector<float>& queryBiases, const std::vector<std::vector<float>>& keyWeights, const std::vector<float>& keyBiases, const std::vector<std::vector<float>>& valueWeights, const std::vector<float>& valueBiases, int headSize, int numHeads);
-
-    void initialize() override;
-    void forward() override;
-    void backward(); // Placeholder for backward propagation
-
-    // Additional functionality
-    void setHeadSize(int headSize);
-    void setNumHeads(int numHeads);
-    int getHeadSize() const;
-    int getNumHeads() const;
-
-    void setInputQueries(const std::vector<float>& queries);
-    void setInputKeys(const std::vector<float>& keys);
-    void setInputValues(const std::vector<float>& values);
-    std::vector<float> getInputQueries() const;
-    std::vector<float> getInputKeys() const;
-    std::vector<float> getInputValues() const;
-
-    std::vector<float> getOutput() const;
-    std::vector<float> getTransformedQueries() const;
-    std::vector<float> getTransformedKeys() const;
-    std::vector<float> getTransformedValues() const;
-
-private:
     std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<std::vector<float>>& weights, const std::vector<float>& biases);
     std::vector<float> transpose(const std::vector<std::vector<float>>& matrix);
     std::vector<float> computeAttentionScores(const std::vector<float>& queries, const std::vector<float>& keys, int headSize);
@@ -55,4 +61,4 @@ private:
     std::vector<std::vector<float>> getAttentionMask(int inputSize) const;
 };
 
-#endif // MULTI_HEAD_ATTENTION_LAYER_H
+#endif // MULTIHEADATTENTIONLAYER_H
