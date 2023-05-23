@@ -18,6 +18,47 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+              build-essential \
+              cmake \
+              libatlas-base-dev \
+              libhdf5-dev \
+              libjsoncpp-dev \
+              libnetcdf-c++4-dev \
+              libnetcdf-dev \
+              libopenmpi-dev \
+              pkg-config \
+              python3 \
+              software-properties-common \
+              unzip \
+              wget \
+              zlib1g-dev
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Cache CUDA Toolkit
+        id: cache-cuda-toolkit
+        uses: actions/cache@v2
+        with:
+          path: /usr/local/cuda
+          key: ${{ runner.os }}-cuda-toolkit-${{ hashFiles('cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb') }}
+      
+      - name: Install CUDA toolkit
+        run: |
+          if [ -z "${{ steps.cache-cuda-toolkit.outputs.cache-hit }}" ]; then
+            wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+            sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+            wget https://developer.download.nvidia.com/compute/cuda/12.1.1/local_installers/cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb
+            sudo dpkg -i cuda-repo-ubuntu2204-12-1-local_12.1.1-530.30.02-1_amd64.deb
+            sudo cp /var/cuda-repo-ubuntu2204-12-1-local/cuda-*-keyring.gpg /usr/share/keyrings/
+            sudo apt-get update
+            sudo apt-get -y install cuda
+          else
+            echo "CUDA toolkit is already cached."
+          fi
+      
       - name: Cache CUDA Docker Image
         uses: actions/cache@v2
         with:
@@ -30,4 +71,38 @@ jobs:
         run: docker pull nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
 
       - name: Build CUDA Target
-        run: docker build . --target build
+        run: docker build .
+  
+  test-model:
+    runs-on: ubuntu-latest
+
+    needs: build-model
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      
+      - name: Cache Google Test Framework
+        id: cache-gtest
+        uses: actions/cache@v2
+        with:
+          path: /github/workspace
+          key: ${{ runner.os }}-gtest-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-gtest-
+      
+      - name: Install Google Test Framework
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake
+          if [ -z "${{ steps.cache-gtest.outputs.cache-hit }}" ]; then
+            git clone --depth=1 -b release-1.13.0 https://github.com/google/googletest.git /github/workspace/googletest  # Update with the actual path to clone the framework
+            cd /github/workspace/googletest
+            cmake .
+            make
+            sudo make install
+          else
+            echo "Google Test Framework is already cached."
+          fi
+
+
