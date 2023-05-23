@@ -197,6 +197,30 @@ public:
         }
     }
 
+    void enablePositionwiseFeedForward(bool enable) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.enablePositionwiseFeedForward(enable);
+        }
+    }
+
+    void setPositionwiseFeedForwardParameters(int feedForwardSize, float dropoutRate) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setPositionwiseFeedForwardParameters(feedForwardSize, dropoutRate);
+        }
+    }
+
+    void setResidualConnection(bool enable) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setResidualConnection(enable);
+        }
+    }
+
+    void setResidualConnectionDropoutRate(float dropoutRate) {
+        for (auto& layer : transformerEncoderLayers_) {
+            layer.setResidualConnectionDropoutRate(dropoutRate);
+        }
+    }
+
 private:
     std::vector<float> embeddingLayer(const std::vector<float>& input) {
         const int embeddingSize = 512;
@@ -253,6 +277,7 @@ private:
     std::vector<float> input_;
     std::vector<float> output_;
 };
+
 
 
 
