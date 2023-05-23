@@ -71,11 +71,12 @@ jobs:
       - name: Install CUDA CUBG
         run: |
           if [ -z "${{ steps.cache-cubg.outputs.cache-hit }}" ]; then
-            cd /tmp && \
-            wget https://github.com/NVlabs/cub/archive/2.1.0.zip && \
-            unzip 2.1.0.zip && \
-            sudo cp -rf cub-2.1.0/cub/ /usr/local/include/ && \
-            rm -rf /tmp/*
+            mkdir /tmp/cub
+            cd /tmp/cub
+            wget https://github.com/NVlabs/cub/archive/2.1.0.zip
+            unzip 2.1.0.zip
+            sudo cp -rf cub-2.1.0/cub/ /usr/local/include/
+            rm -rf /tmp
           else
             echo "CUDA CUBG is already cached."
           fi
@@ -120,11 +121,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends cmake
           if [ -z "${{ steps.cache-gtest.outputs.cache-hit }}" ]; then
-            git clone --depth=1 -b release-1.13.0 https://github.com/google/googletest.git /github/workspace/googletest  # Update with the actual path to clone the framework
-            cd /github/workspace/googletest
+            git clone --depth=1 -b release-1.13.0 https://github.com/google/googletest.git ./googletest
+            cd ./googletest
             cmake .
             make
             sudo make install
           else
             echo "Google Test Framework is already cached."
           fi
+      
+      - name: Run Tests
+        run: |
+          cd /github/workspace/tests
+          $(MAKE) run-tests
+
