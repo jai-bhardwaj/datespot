@@ -1,61 +1,66 @@
 #include "TransformerEncoderLayer.h"
 #include <cuda_runtime.h>
+#include <algorithm>
+#include <execution>
 
-__global__ void applyMaskKernel(const float* input, const float* mask, float* maskedInput, int sequenceLength, int hiddenSize) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+void applyMaskKernel(const float* input, const float* mask, float* maskedInput, int sequenceLength, int hiddenSize) {
+    auto idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < sequenceLength * hiddenSize) {
-        int row = idx / hiddenSize;
-        int col = idx % hiddenSize;
+        auto row = idx / hiddenSize;
+        auto col = idx % hiddenSize;
         maskedInput[idx] = input[idx] * mask[row * hiddenSize + col];
     }
 }
 
 void TransformerEncoderLayer::forward(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& mask) {
-    const std::vector<std::vector<float>>& inputBatch = input;
+    const auto& inputBatch = input;
 
-    std::vector<std::vector<float>> positionalEncodedInput = positionalEncodingLayer_.forward(inputBatch);
-    std::vector<std::vector<float>> preprocessedInput = layerNorm1_.forward(positionalEncodedInput);
+    auto positionalEncodedInput = positionalEncodingLayer_.forward(inputBatch);
+    auto preprocessedInput = layerNorm1_.forward(positionalEncodedInput);
 
-    std::vector<std::vector<float>> attentionOutput = multiHeadAttentionLayer_.forward(preprocessedInput, mask);
-    std::vector<std::vector<float>> attentionOutputWithDropout = dropout_.forward(attentionOutput);
-    std::vector<std::vector<float>> attentionOutputResidual = residualConnection(preprocessedInput, attentionOutputWithDropout);
-    std::vector<std::vector<float>> attentionOutputNorm = layerNorm2_.forward(attentionOutputResidual);
+    auto attentionOutput = multiHeadAttentionLayer_.forward(preprocessedInput, mask);
+    auto attentionOutputWithDropout = dropout_.forward(attentionOutput);
+    auto attentionOutputResidual = residualConnection(preprocessedInput, attentionOutputWithDropout);
+    auto attentionOutputNorm = layerNorm2_.forward(attentionOutputResidual);
 
-    std::vector<std::vector<float>> feedForwardOutput = feedForwardNetworkLayer_.forward(attentionOutputNorm, mask);
-    std::vector<std::vector<float>> feedForwardOutputWithDropout = dropout_.forward(feedForwardOutput);
-    std::vector<std::vector<float>> feedForwardOutputResidual = residualConnection(attentionOutputNorm, feedForwardOutputWithDropout);
-    std::vector<std::vector<float>> feedForwardOutputNorm = layerNorm1_.forward(feedForwardOutputResidual);
+    auto feedForwardOutput = feedForwardNetworkLayer_.forward(attentionOutputNorm, mask);
+    auto feedForwardOutputWithDropout = dropout_.forward(feedForwardOutput);
+    auto feedForwardOutputResidual = residualConnection(attentionOutputNorm, feedForwardOutputWithDropout);
+    auto feedForwardOutputNorm = layerNorm1_.forward(feedForwardOutputResidual);
 
     output_ = feedForwardOutputNorm;
 }
 
 std::vector<std::vector<float>> TransformerEncoderLayer::applyMask(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& mask) {
-    const std::vector<std::vector<float>>& inputBatch = input;
-    int batchSize = inputBatch.size();
-    int sequenceLength = inputBatch[0].size();
-    int hiddenSize = inputBatch[0][0].size();
+    const auto& inputBatch = input;
+    auto batchSize = static_cast<int>(inputBatch.size());
+    auto sequenceLength = static_cast<int>(inputBatch[0].size());
+    auto hiddenSize = static_cast<int>(inputBatch[0][0].size());
 
     std::vector<std::vector<float>> maskedInput(batchSize, std::vector<float>(sequenceLength * hiddenSize));
 
-    float* d_input;
-    float* d_mask;
-    float* d_maskedInput;
-    cudaMalloc((void**)&d_input, batchSize * sequenceLength * hiddenSize * sizeof(float));
-    cudaMalloc((void**)&d_mask, batchSize * sequenceLength * hiddenSize * sizeof(float));
-    cudaMalloc((void**)&d_maskedInput, batchSize * sequenceLength * hiddenSize * sizeof(float));
+    static std::unique_ptr<float[]> d_input = nullptr;
+    static std::unique_ptr<float[]> d_mask = nullptr;
+    static std::unique_ptr<float[]> d_maskedInput = nullptr;
+    static bool initialized = false;
 
-    cudaMemcpy(d_input, inputBatch.data(), batchSize * sequenceLength * hiddenSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_mask, mask.data(), batchSize * sequenceLength * hiddenSize * sizeof(float), cudaMemcpyHostToDevice);
+    if (!initialized) {
+        d_input = std::make_unique<float[]>(batchSize * sequenceLength * hiddenSize);
+        d_mask = std::make_unique<float[]>(batchSize * sequenceLength * hiddenSize);
+        d_maskedInput = std::make_unique<float[]>(batchSize * sequenceLength * hiddenSize);
+        initialized = true;
+    }
 
-    int threadsPerBlock = 256;
-    int numBlocks = (batchSize * sequenceLength * hiddenSize + threadsPerBlock - 1) / threadsPerBlock;
-    applyMaskKernel<<<numBlocks, threadsPerBlock>>>(d_input, d_mask, d_maskedInput, sequenceLength, hiddenSize);
+    cudaMemcpyAsync(d_input.get(), inputBatch.data(), batchSize * sequenceLength * hiddenSize * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_mask.get(), mask.data(), batchSize * sequenceLength * hiddenSize * sizeof(float), cudaMemcpyHostToDevice);
+    cudaDeviceSynchronize();
 
-    cudaMemcpy(maskedInput.data(), d_maskedInput, batchSize * sequenceLength * hiddenSize * sizeof(float), cudaMemcpyDeviceToHost);
+    auto threadsPerBlock = 256;
+    auto numBlocks = (batchSize * sequenceLength * hiddenSize + threadsPerBlock - 1) / threadsPerBlock;
+    applyMaskKernel<<<numBlocks, threadsPerBlock>>>(d_input.get(), d_mask.get(), d_maskedInput.get(), sequenceLength, hiddenSize);
 
-    cudaFree(d_input);
-    cudaFree(d_mask);
-    cudaFree(d_maskedInput);
+    cudaMemcpyAsync(maskedInput.data(), d_maskedInput.get(), batchSize * sequenceLength * hiddenSize * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
 
     return maskedInput;
 }
@@ -65,18 +70,18 @@ std::vector<std::vector<float>> TransformerEncoderLayer::getOutput() const {
 }
 
 std::vector<std::vector<float>> TransformerEncoderLayer::applyMask(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& mask) {
-    const std::vector<std::vector<float>>& inputBatch = input;
-    int batchSize = inputBatch.size();
-    int sequenceLength = inputBatch[0].size();
-    int hiddenSize = inputBatch[0][0].size();
+    const auto& inputBatch = input;
+    auto batchSize = static_cast<int>(inputBatch.size());
+    auto sequenceLength = static_cast<int>(inputBatch[0].size());
+    auto hiddenSize = static_cast<int>(inputBatch[0][0].size());
 
     std::vector<std::vector<float>> maskedInput(batchSize, std::vector<float>(sequenceLength * hiddenSize));
 
-    for (int i = 0; i < batchSize; i++) {
-        for (int j = 0; j < sequenceLength; j++) {
-            for (int k = 0; k < hiddenSize; k++) {
-                maskedInput[i][j * hiddenSize + k] = inputBatch[i][j][k] * mask[i][j][k];
-            }
+    #pragma omp parallel for collapse(2)
+    for (auto i = 0; i < batchSize; i++) {
+        for (auto j = 0; j < sequenceLength; j++) {
+            std::transform(std::execution::par, inputBatch[i][j].begin(), inputBatch[i][j].end(), mask[i][j].begin(), maskedInput[i].begin() + (j * hiddenSize),
+                           [](float x, float y) { return x * y; });
         }
     }
 
@@ -84,38 +89,18 @@ std::vector<std::vector<float>> TransformerEncoderLayer::applyMask(const std::ve
 }
 
 std::vector<std::vector<float>> TransformerEncoderLayer::residualConnection(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& output) {
-    const std::vector<std::vector<float>>& inputBatch = input;
-    int batchSize = inputBatch.size();
-    int sequenceLength = inputBatch[0].size();
-    int hiddenSize = inputBatch[0][0].size();
+    const auto& inputBatch = input;
+    auto batchSize = static_cast<int>(inputBatch.size());
+    auto sequenceLength = static_cast<int>(inputBatch[0].size());
+    auto hiddenSize = static_cast<int>(inputBatch[0][0].size());
 
     std::vector<std::vector<float>> residualOutput(batchSize, std::vector<float>(sequenceLength, std::vector<float>(hiddenSize)));
 
-    for (int i = 0; i < batchSize; i++) {
-        for (int j = 0; j < sequenceLength; j++) {
-            for (int k = 0; k < hiddenSize; k++) {
-                residualOutput[i][j][k] = inputBatch[i][j][k] + output[i][j][k];
-            }
-        }
-    }
-
-    return residualOutput;
-}
-
-
-std::vector<std::vector<float>> TransformerEncoderLayer::residualConnection(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& output) {
-    const std::vector<std::vector<float>>& inputBatch = input;
-    int batchSize = inputBatch.size();
-    int sequenceLength = inputBatch[0].size();
-    int hiddenSize = inputBatch[0][0].size();
-
-    std::vector<std::vector<float>> residualOutput(batchSize, std::vector<float>(sequenceLength, std::vector<float>(hiddenSize)));
-
-    for (int i = 0; i < batchSize; i++) {
-        for (int j = 0; j < sequenceLength; j++) {
-            for (int k = 0; k < hiddenSize; k++) {
-                residualOutput[i][j][k] = inputBatch[i][j][k] + output[i][j][k];
-            }
+    #pragma omp parallel for collapse(3)
+    for (auto i = 0; i < batchSize; i++) {
+        for (auto j = 0; j < sequenceLength; j++) {
+            std::transform(std::execution::par, inputBatch[i][j].begin(), inputBatch[i][j].end(), output[i][j].begin(), residualOutput[i][j].begin(),
+                           [](float x, float y) { return x + y; });
         }
     }
 
@@ -152,9 +137,7 @@ void TransformerEncoderLayer::backward(const std::vector<std::vector<float>>& in
     std::vector<std::vector<float>> attentionOutputResidualGrads = residualConnection(preprocessedInput, attentionOutputNormGrads);
 
     std::vector<std::vector<float>> positionalEncodingGrads = positionalEncodingLayer_.backward(attentionOutputResidualGrads, inputGrad);
-
 }
-
 
 std::vector<std::vector<float>> TransformerEncoderLayer::getMultiHeadAttentionParameters() const {
     return multiHeadAttentionLayer_.getParameters();
