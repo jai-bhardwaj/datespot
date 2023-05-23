@@ -176,12 +176,12 @@ public:
     }
 
     std::vector<float> combineAttentionOutput(const std::vector<float>& attentionOutput,
-                                              const std::vector<float>& weightedSum, int numHeads) {
+                                            const std::vector<float>& weightedSum, int numHeads) {
         std::vector<float> combinedOutput(attentionOutput.size(), 0.0f);
         for (int i = 0; i < numHeads; ++i) {
-            if (i == head) {
+            if (i == i) {
                 for (int j = 0; j < weightedSum.size(); ++j) {
-                    combinedOutput[head * weightedSum.size() + j] = weightedSum[j];
+                    combinedOutput[i * weightedSum.size() + j] = weightedSum[j];
                 }
             } else {
                 for (int j = 0; j < attentionOutput.size() / numHeads; ++j) {
