@@ -317,26 +317,26 @@ private:
     /**
      * @brief The weight initialization scale.
      */
-    Float _weightInitScale;
+    float _weightInitScale;
     /**
      * @brief The bias initialization value.
      */
-    Float _biasInit;
+    float _biasInit;
 
     /**
      * @brief The slope for the rectified linear unit (ReLU) activation function.
      */
-    Float _RELUSlope;
+    float _RELUSlope;
 
     /**
      * @brief The alpha value for the exponential linear unit (ELU) activation function.
      */
-    Float _ELUAlpha;
+    float _ELUAlpha;
 
     /**
      * @brief The lambda value for the scaled exponential linear unit (SELU) activation function.
      */
-    Float _SELULambda;
+    float _SELULambda;
 
     /**
      * @brief Indicates whether batch normalization is enabled.
@@ -401,7 +401,7 @@ private:
     /**
      * @brief The dropout probability value.
      */
-    const Float _pDropout;
+    const float _pDropout;
 
     /**
      * @brief Indicates whether the layer is sparse.
@@ -416,12 +416,12 @@ private:
     /**
      * @brief The p value for sparseness penalty.
      */
-    Float _sparsenessPenalty_p;
+    float _sparsenessPenalty_p;
 
     /**
      * @brief The beta value for sparseness penalty.
      */
-    Float _sparsenessPenalty_beta;
+    float _sparsenessPenalty_beta;
 
     /**
      * @brief Indicates whether denoising is enabled.
@@ -431,12 +431,12 @@ private:
     /**
      * @brief The weight normalization value.
      */
-    Float _weightNorm;
+    float _weightNorm;
 
     /**
      * @brief The delta normalization value.
      */
-    Float _deltaNorm;
+    float _deltaNorm;
 
     /**
      * @brief The parallelization type.
@@ -541,117 +541,117 @@ private:
     /**
      * @brief The vector of unit values.
      */
-    std::vector<Float> _vUnit;
+    std::vector<float> _vUnit;
 
     /**
      * @brief The vector of delta values.
      */
-    std::vector<Float> _vDelta;
+    std::vector<float> _vDelta;
 
     /**
      * @brief The first buffer vector.
      */
-    std::vector<Float> _vBuffer1;
+    std::vector<float> _vBuffer1;
 
     /**
      * @brief The second buffer vector.
      */
-    std::vector<Float> _vBuffer2;
+    std::vector<float> _vBuffer2;
 
     /**
      * @brief The unique pointer to the GPU buffer for unit values.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbUnit;
+    std::unique_ptr<GpuBuffer<float>> _pbUnit;
 
     /**
      * @brief The unique pointer to the GPU buffer for delta values.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbDelta;
+    std::unique_ptr<GpuBuffer<float>> _pbDelta;
 
     /**
      * @brief The unique pointer to the GPU buffer for dropout values.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbDropout;
+    std::unique_ptr<GpuBuffer<float>> _pbDropout;
 
     /**
      * @brief The unique pointer to the GPU buffer for buffer1.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbBuffer1;
+    std::unique_ptr<GpuBuffer<float>> _pbBuffer1;
 
     /**
      * @brief The unique pointer to the GPU buffer for buffer2.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbBuffer2;
+    std::unique_ptr<GpuBuffer<float>> _pbBuffer2;
 
     /**
      * @brief The unique pointer to the GPU buffer for delta in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbDeltaBN;
+    std::unique_ptr<GpuBuffer<float>> _pbDeltaBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for scale gradient in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbScaleGradientBN;
+    std::unique_ptr<GpuBuffer<float>> _pbScaleGradientBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for bias gradient in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbBiasGradientBN;
+    std::unique_ptr<GpuBuffer<float>> _pbBiasGradientBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for unit values in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbUnitBN;
+    std::unique_ptr<GpuBuffer<float>> _pbUnitBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for scale values in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbScaleBN;
+    std::unique_ptr<GpuBuffer<float>> _pbScaleBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for bias values in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbBiasBN;
+    std::unique_ptr<GpuBuffer<float>> _pbBiasBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for scale velocity in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbScaleVelocityBN;
+    std::unique_ptr<GpuBuffer<float>> _pbScaleVelocityBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for bias velocity in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbBiasVelocityBN;
+    std::unique_ptr<GpuBuffer<float>> _pbBiasVelocityBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for scale gradient velocity in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbScaleGradientVelocityBN;
+    std::unique_ptr<GpuBuffer<float>> _pbScaleGradientVelocityBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for bias gradient velocity in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbBiasGradientVelocityBN;
+    std::unique_ptr<GpuBuffer<float>> _pbBiasGradientVelocityBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for running mean in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbRuingMeanBN;
+    std::unique_ptr<GpuBuffer<float>> _pbRuingMeanBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for running variance in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbRuingVarianceBN;
+    std::unique_ptr<GpuBuffer<float>> _pbRuingVarianceBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for saving mean in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbSaveMeanBN;
+    std::unique_ptr<GpuBuffer<float>> _pbSaveMeanBN;
 
     /**
      * @brief The unique pointer to the GPU buffer for saving inverse variance in batch normalization.
      */
-    std::unique_ptr<GpuBuffer<Float>> _pbSaveInvVarianceBN;
+    std::unique_ptr<GpuBuffer<float>> _pbSaveInvVarianceBN;
 
     /**
      * @brief The number of batch normalization calls.
@@ -767,7 +767,7 @@ private:
      * @param ef The error function to use.
      * @return The calculated error.
      */
-    Float CalculateError(uint32_t position, uint32_t batch, ErrorFunction ef);
+    float CalculateError(uint32_t position, uint32_t batch, ErrorFunction ef);
 
     /**
      * @brief Performs backpropagation for the layer.
@@ -816,7 +816,7 @@ private:
      * @param mu1 The Nesterov momentum factor.
      * @param t The time step.
      */
-    void UpdateWeights(TrainingMode trainingMode, uint32_t batch, Float alpha, Float lambda, Float lambda1, Float mu, Float mu1, Float t);
+    void UpdateWeights(TrainingMode trainingMode, uint32_t batch, float alpha, float lambda, float lambda1, float mu, float mu1, float t);
 
     /**
      * @brief Generates denoising data for the layer.
@@ -831,7 +831,7 @@ private:
      * @param localStride The local stride value.
      * @param updateCount The update count.
      */
-    void Reduce(uint32_t batch, uint32_t stride, Float* pBuffer, uint32_t localStride, uint32_t updateCount);
+    void Reduce(uint32_t batch, uint32_t stride, float* pBuffer, uint32_t localStride, uint32_t updateCount);
 
     /**
      * @brief Gathers the data for parallelization.
@@ -840,7 +840,7 @@ private:
      * @param pBuffer The data buffer.
      * @param localStride The local stride value.
      */
-    void Gather(uint32_t batch, uint32_t stride, Float* pBuffer, uint32_t localStride);
+    void Gather(uint32_t batch, uint32_t stride, float* pBuffer, uint32_t localStride);
 
     /**
      * @brief Clears the weight updates.
@@ -852,7 +852,7 @@ private:
      * @param fname The filename to dump the data.
      * @param pData The data to be dumped.
      */
-    void Dump(std::string fname, Float* pData);
+    void Dump(std::string fname, float* pData);
 
     /**
      * @brief Writes the layer's data to a netCDF file.
@@ -866,25 +866,25 @@ private:
      * @brief Returns a pointer to the incoming unit buffer.
      * @return A pointer to the incoming unit buffer.
      */
-    Float* GetIncomingUnitBuffer() const;
+    float* GetIncomingUnitBuffer() const;
 
     /**
      * @brief Returns a pointer to the unit buffer.
      * @return A pointer to the unit buffer.
      */
-    Float* GetUnitBuffer() const;
+    float* GetUnitBuffer() const;
 
     /**
      * @brief Returns a pointer to the incoming delta buffer.
      * @return A pointer to the incoming delta buffer.
      */
-    Float* GetIncomingDeltaBuffer() const;
+    float* GetIncomingDeltaBuffer() const;
 
     /**
      * @brief Returns a pointer to the delta buffer.
      * @return A pointer to the delta buffer.
      */
-    Float* GetDeltaBuffer() const;
+    float* GetDeltaBuffer() const;
 
     /**
      * @brief Returns the size of the buffer used by the layer.
@@ -978,42 +978,42 @@ public:
      * @param vUnit The vector to store the unit values.
      * @return True if the unit values were successfully copied, false otherwise.
      */
-    bool GetUnits(std::vector<Float>& vUnit) const;
+    bool GetUnits(std::vector<float>& vUnit) const;
 
     /**
      * @brief Copies the unit values of the layer into an array.
      * @param pUnit The array to store the unit values.
      * @return True if the unit values were successfully copied, false otherwise.
      */
-    bool GetUnits(Float* pUnit) const;
+    bool GetUnits(float* pUnit) const;
 
     /**
      * @brief Sets the unit values of the layer using a vector.
      * @param vUnit The vector containing the new unit values.
      * @return True if the unit values were successfully set, false otherwise.
      */
-    bool SetUnits(const std::vector<Float>& vUnit);
+    bool SetUnits(const std::vector<float>& vUnit);
 
     /**
      * @brief Copies the delta values of the layer into a vector.
      * @param vUnit The vector to store the delta values.
      * @return True if the delta values were successfully copied, false otherwise.
      */
-    bool GetDeltas(std::vector<Float>& vUnit) const;
+    bool GetDeltas(std::vector<float>& vUnit) const;
 
     /**
      * @brief Copies the delta values of the layer into an array.
      * @param pUnit The array to store the delta values.
      * @return True if the delta values were successfully copied, false otherwise.
      */
-    bool GetDeltas(Float* pUnit) const;
+    bool GetDeltas(float* pUnit) const;
 
     /**
      * @brief Sets the delta values of the layer using a vector.
      * @param vUnit The vector containing the new delta values.
      * @return True if the delta values were successfully set, false otherwise.
      */
-    bool SetDeltas(const std::vector<Float>& vUnit);
+    bool SetDeltas(const std::vector<float>& vUnit);
 
 };
 
@@ -1128,12 +1128,12 @@ struct LayerDescriptor
     /**
      * @brief The scale factor for weight initialization.
      */
-    Float _weightInitScale;
+    float _weightInitScale;
 
     /**
      * @brief The bias initialization value.
      */
-    Float _biasInit;
+    float _biasInit;
 
     /**
      * @brief The size of the kernel in the X dimension.
@@ -1188,37 +1188,37 @@ struct LayerDescriptor
     /**
      * @brief The vector of scale values for batch normalization.
      */
-    std::vector<Float> _vScaleBN;
+    std::vector<float> _vScaleBN;
 
     /**
      * @brief The vector of bias values for batch normalization.
      */
-    std::vector<Float> _vBiasBN;
+    std::vector<float> _vBiasBN;
 
     /**
      * @brief The vector of running mean values for batch normalization.
      */
-    std::vector<Float> _vRuingMeanBN;
+    std::vector<float> _vRuingMeanBN;
 
     /**
      * @brief The vector of running variance values for batch normalization.
      */
-    std::vector<Float> _vRuingVarianceBN;
+    std::vector<float> _vRuingVarianceBN;
 
     /**
      * @brief The weight normalization factor.
      */
-    Float _weightNorm;
+    float _weightNorm;
 
     /**
      * @brief The delta normalization factor.
      */
-    Float _deltaNorm;
+    float _deltaNorm;
 
     /**
      * @brief The dropout probability.
      */
-    Float _pDropout;
+    float _pDropout;
 
     /**
      * @brief The activation function.
@@ -1228,12 +1228,12 @@ struct LayerDescriptor
     /**
      * @brief The p parameter for sparseness penalty.
      */
-    Float _sparsenessPenalty_p;
+    float _sparsenessPenalty_p;
 
     /**
      * @brief The beta parameter for sparseness penalty.
      */
-    Float _sparsenessPenalty_beta;
+    float _sparsenessPenalty_beta;
 
     /**
      * @brief The attributes of the layer.
@@ -1243,17 +1243,17 @@ struct LayerDescriptor
     /**
      * @brief The slope for the Leaky ReLU activation function.
      */
-    Float _RELUSlope;
+    float _RELUSlope;
 
     /**
      * @brief The alpha parameter for the ELU activation function.
      */
-    Float _ELUAlpha;
+    float _ELUAlpha;
 
     /**
      * @brief The lambda parameter for the SELU activation function.
      */
-    Float _SELULambda;
+    float _SELULambda;
 
     LayerDescriptor();
 };
