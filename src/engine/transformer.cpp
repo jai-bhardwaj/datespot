@@ -4,11 +4,8 @@
 #include <algorithm>
 #include <random>
 #include <stdexcept>
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 #include "Layer.h"
 #include "Neuron.h"
-#include "FeedForwardNetwork.h"
 
 constexpr int kNumLayers = 6;
 constexpr int kNumHeads = 8;
@@ -84,7 +81,7 @@ private:
         std::vector<float> bias(numHeads);
         if (random) {
             std::random_device rd;
-            std::mt19937 gen(rd());
+           std::mt19937 gen(rd());
             std::normal_distribution<float> distribution(0.0f, std::sqrt(2.0f / kHiddenSize));
 
             for (auto& b : bias) {
@@ -124,7 +121,16 @@ private:
         const int inputSize = queries.size();
         std::vector<float> attentionScores(inputSize, 0.0f);
 
-        // Compute attention scores using CUDA or any other preferred method
+        // Compute attention scores using dot product
+        for (int i = 0; i < inputSize; ++i) {
+            for (int j = 0; j < inputSize; ++j) {
+                float score = 0.0f;
+                for (int k = 0; k < headSize; ++k) {
+                    score += queries[i * headSize + k] * keys[j * headSize + k];
+                }
+                attentionScores[i] += score;
+            }
+        }
 
         return attentionScores;
     }
@@ -303,8 +309,11 @@ public:
     }
 
     std::vector<std::vector<float>> getAttentionMask() const {
-        // Implement the logic to generate the attention mask based on your requirements
-        return std::vector<std::vector<float>>();
+        const std::vector<float>& input = getPrevLayerOutput();
+        const int inputSize = input.size();
+        std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
+
+        return attentionMask;
     }
 };
 
@@ -329,7 +338,7 @@ public:
         const std::vector<float>& input = getInput();
 
         const int inputSize = input.size();
-        std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
+        std::vector<std::vector<float>> attentionMask = getAttentionMask(inputSize);
         std::vector<float> encoderOutput = applyPositionalEncoding(input);
 
         for (auto& layer : transformerEncoderLayers_) {
@@ -361,6 +370,12 @@ public:
     }
 
 private:
+    std::vector<std::vector<float>> getAttentionMask(int inputSize) const {
+        std::vector<std::vector<float>> attentionMask(inputSize, std::vector<float>(inputSize, 1.0f));
+
+        return attentionMask;
+    }
+
     std::vector<float> applyPositionalEncoding(const std::vector<float>& input) const {
         const int inputSize = input.size();
         std::vector<float> output(inputSize);
@@ -373,26 +388,3 @@ private:
         return output;
     }
 };
-
-int main() {
-    std::vector<float> input = {1.0, 2.0, 3.0, 4.0};
-    TransformerModel transformerModel;
-    transformerModel.initialize();
-    transformerModel.setInput(input);
-    transformerModel.forward();
-    transformerModel.printOutput();
-
-    std::vector<float> input2 = {5.0, 6.0, 7.0, 8.0};
-    transformerModel.setInput(input2);
-    transformerModel.forward();
-    transformerModel.printOutput();
-
-    std::vector<float> sum = transformerModel.addVectors(transformerModel.getOutput(), transformerModel.getOutput());
-    for (const auto& val : sum) {
-        std::printf("%f ", val);
-    }
-    std::printf("\n");
-
-    return 0;
-}
-
