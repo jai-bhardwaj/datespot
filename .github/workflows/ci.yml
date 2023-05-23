@@ -21,7 +21,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
               build-essential \
               cmake \
               libatlas-base-dev \
@@ -36,7 +36,7 @@ jobs:
               unzip \
               wget \
               zlib1g-dev
-          rm -rf /var/lib/apt/lists/*
+          sudo rm -rf /var/lib/apt/lists/*
 
       - name: Cache CUDA Toolkit
         id: cache-cuda-toolkit
@@ -58,21 +58,47 @@ jobs:
           else
             echo "CUDA toolkit is already cached."
           fi
-      
-      - name: Cache CUDA Docker Image
+          
+      - name: Cache CUDA CUBG
+        id: cache-cubg
         uses: actions/cache@v2
         with:
-          path: /var/lib/docker
-          key: ${{ runner.os }}-cuda-docker-${{ hashFiles('cuda-docker-image-cache-key.txt') }}
+          path: /usr/local/include/cub
+          key: ${{ runner.os }}-cubg-${{ hashFiles('cub-2.1.0.zip') }}
           restore-keys: |
-            ${{ runner.os }}-cuda-docker-
-
-      - name: Pull Docker Image
-        run: docker pull nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
-
-      - name: Build CUDA Target
-        run: docker build .
+            ${{ runner.os }}-cubg-
+      
+      - name: Install CUDA CUBG
+        run: |
+          if [ -z "${{ steps.cache-cubg.outputs.cache-hit }}" ]; then
+            cd /tmp && \
+            wget https://github.com/NVlabs/cub/archive/2.1.0.zip && \
+            unzip 2.1.0.zip && \
+            sudo cp -rf cub-2.1.0/cub/ /usr/local/include/ && \
+            rm -rf /tmp/*
+          else
+            echo "CUDA CUBG is already cached."
+          fi
   
+      - name: Ensure OpenMPI is available on path
+        run: |
+          echo "export PATH=/usr/local/openmpi/bin/:${PATH}" >> $GITHUB_ENV
+          echo "export LD_LIBRARY_PATH=/usr/local/lib/:/usr/local/openmpi/lib/:${LD_LIBRARY_PATH}" >> $GITHUB_ENV
+      
+      - name: Build latest version of tensorhub from source
+        run: |
+          cp -R . /opt
+          cd /opt
+          make install
+      
+      - name: Cleanup
+        run: |
+          sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+      
+      - name: Add tensorhub binaries to PATH
+        run: |
+          echo "export PATH=/opt/bin/:${PATH}" >> $GITHUB_ENV
+
   test-model:
     runs-on: ubuntu-latest
 
@@ -104,5 +130,3 @@ jobs:
           else
             echo "Google Test Framework is already cached."
           fi
-
-
