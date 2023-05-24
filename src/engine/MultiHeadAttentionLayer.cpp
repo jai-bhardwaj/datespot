@@ -1,4 +1,5 @@
 #include "MultiHeadAttentionLayer.h"
+#include <algorithm>
 #include <cmath>
 #include <ranges>
 #include <numeric>
@@ -74,15 +75,13 @@ public:
     }
 
     void backward() {
-        transformedValuesGrad = linearTransformGrad(inputValues, valueWeights, attentionWeightsGrad);
-        transformedKeysGrad = linearTransformGrad(inputKeys, keyWeights, attentionScoresGrad);
-        transformedQueriesGrad = linearTransformGrad(inputQueries, queryWeights, attentionScoresGrad);
-
+        std::vector<float> transformedValuesGrad = linearTransformGrad(inputValues, valueWeights, attentionScoresGrad);
+        std::vector<float> transformedKeysGrad = linearTransformGrad(inputKeys, keyWeights, attentionScoresGrad);
+        std::vector<float> transformedQueriesGrad = linearTransformGrad(inputQueries, queryWeights, attentionScoresGrad);
         std::vector<float> transposedKeys = transpose(transformedKeys);
-
-        std::vector<float> queriesGrad = linearTransformGrad(transformedQueriesGrad, queryWeights);
-        std::vector<float> keysGrad = linearTransformGrad(transposedKeys, keyWeights);
-        std::vector<float> valuesGrad = linearTransformGrad(transformedValuesGrad, valueWeights);
+        std::vector<float> queriesGrad = linearTransformGrad(transformedQueriesGrad, queryWeights, attentionScoresGrad);
+        std::vector<float> keysGrad = linearTransformGrad(transposedKeys, keyWeights, attentionScoresGrad);
+        std::vector<float> valuesGrad = linearTransformGrad(transformedValuesGrad, valueWeights, attentionScoresGrad);
 
         inputQueriesGrad = queriesGrad;
         inputKeysGrad = keysGrad;
@@ -92,18 +91,20 @@ public:
     std::vector<float> linearTransform(const std::vector<float>& input, const std::vector<std::vector<float>>& weights,
                                        const std::vector<float>& biases) {
         std::vector<float> output(weights.size(), 0.0f);
-        for (int i = 0; i < weights.size(); ++i) {
-            output[i] = std::inner_product(input.begin(), input.end(), weights[i].begin(), biases[i]);
+        for (const auto& weight : weights) {
+            float sum = std::inner_product(input.begin(), input.end(), weight.begin(), 0.0f);
+            output.push_back(sum);
         }
+        std::transform(output.begin(), output.end(), biases.begin(), output.begin(), std::plus<float>());
         return output;
     }
 
     std::vector<float> linearTransformGrad(const std::vector<float>& input, const std::vector<std::vector<float>>& weights,
                                            const std::vector<float>& outputGrad) {
         std::vector<float> inputGrad(input.size(), 0.0f);
-        for (int i = 0; i < weights.size(); ++i) {
-            for (int j = 0; j < input.size(); ++j) {
-                inputGrad[j] += outputGrad[i] * weights[i][j];
+        for (const auto& weight : weights) {
+            for (int i = 0; i < input.size(); ++i) {
+                inputGrad[i] += outputGrad[i] * weight[i];
             }
         }
         return inputGrad;
@@ -127,16 +128,16 @@ public:
 
     std::vector<float> computeAttentionScores(const std::vector<float>& queries, const std::vector<float>& keys,
                                               int headSize) {
-        std::vector<float> attentionScores(queries.size(), 0.0f);
+        std::vector<float> scores(queries.size(), 0.0f);
         for (int head = 0; head < numHeads; ++head) {
             for (int i = 0; i < headSize; ++i) {
                 float score = std::inner_product(queries.begin() + head * headSize,
                                                  queries.begin() + (head + 1) * headSize,
                                                  keys.begin() + head * headSize, 0.0f);
-                attentionScores[head * headSize + i] = score / std::sqrt(static_cast<float>(headSize));
+                scores[head * headSize + i] = score / std::sqrt(static_cast<float>(headSize));
             }
         }
-        return attentionScores;
+        return scores;
     }
 
     std::vector<float> maskedSoftmax(const std::vector<float>& input) {
@@ -149,18 +150,15 @@ public:
             expSum += softmaxOutput[i];
         }
 
-        for (float& value : softmaxOutput) {
-            value /= expSum;
-        }
+        std::transform(softmaxOutput.begin(), softmaxOutput.end(), softmaxOutput.begin(),
+                       [expSum](float value) { return value / expSum; });
 
         return softmaxOutput;
     }
 
     std::vector<float> applyAttentionMask(const std::vector<float>& input, const std::vector<float>& mask) {
         std::vector<float> output(input.size(), 0.0f);
-        for (int i = 0; i < input.size(); ++i) {
-            output[i] = input[i] * mask[i];
-        }
+        std::transform(input.begin(), input.end(), mask.begin(), output.begin(), std::multiplies<float>());
         return output;
     }
 
@@ -176,18 +174,15 @@ public:
     }
 
     std::vector<float> combineAttentionOutput(const std::vector<float>& attentionOutput,
-                                            const std::vector<float>& weightedSum, int numHeads) {
+                                              const std::vector<float>& weightedSum, int numHeads) {
         std::vector<float> combinedOutput(attentionOutput.size(), 0.0f);
         for (int i = 0; i < numHeads; ++i) {
             if (i == i) {
-                for (int j = 0; j < weightedSum.size(); ++j) {
-                    combinedOutput[i * weightedSum.size() + j] = weightedSum[j];
-                }
+                std::copy(weightedSum.begin(), weightedSum.end(), combinedOutput.begin() + i * weightedSum.size());
             } else {
-                for (int j = 0; j < attentionOutput.size() / numHeads; ++j) {
-                    combinedOutput[i * attentionOutput.size() / numHeads + j] =
-                        attentionOutput[i * attentionOutput.size() / numHeads + j];
-                }
+                std::copy(attentionOutput.begin() + i * attentionOutput.size() / numHeads,
+                          attentionOutput.begin() + (i + 1) * attentionOutput.size() / numHeads,
+                          combinedOutput.begin() + i * attentionOutput.size() / numHeads);
             }
         }
         return combinedOutput;
@@ -197,8 +192,6 @@ public:
         std::vector<float> attentionMask(inputSize, 1.0f);
         return attentionMask;
     }
-
-    // Setters and Getters for inputs, outputs, and gradients
 
     void setInputQueries(const std::vector<float>& queries) {
         inputQueries = queries;
@@ -212,19 +205,19 @@ public:
         inputValues = values;
     }
 
-    std::vector<float> getInputQueries() const {
+    const std::vector<float>& getInputQueries() const {
         return inputQueries;
     }
 
-    std::vector<float> getInputKeys() const {
+    const std::vector<float>& getInputKeys() const {
         return inputKeys;
     }
 
-    std::vector<float> getInputValues() const {
+    const std::vector<float>& getInputValues() const {
         return inputValues;
     }
 
-    std::vector<float> getOutput() const {
+    const std::vector<float>& getOutput() const {
         return combinedOutput;
     }
 
@@ -244,15 +237,15 @@ public:
         weightedSumGrad = grad;
     }
 
-    std::vector<float> getInputQueriesGrad() const {
+    const std::vector<float>& getInputQueriesGrad() const {
         return inputQueriesGrad;
     }
 
-    std::vector<float> getInputKeysGrad() const {
+    const std::vector<float>& getInputKeysGrad() const {
         return inputKeysGrad;
     }
 
-    std::vector<float> getInputValuesGrad() const {
+    const std::vector<float>& getInputValuesGrad() const {
         return inputValuesGrad;
     }
 };
