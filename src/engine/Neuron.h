@@ -1,36 +1,54 @@
 #ifndef NEURON_H
 #define NEURON_H
 
-#include "Layer.h"
 #include <string>
+#include <functional>
 
-class Neuron : public Layer {
+class Neuron {
 protected:
-    std::vector<float> weights_;
-    float bias_;
+  std::string name;
+  float weight;
+  float input;
+  float output;
 
 public:
-    Neuron(const std::string& name);
+  Neuron() = default;
+  explicit Neuron(const std::string& name);
 
-    void initialize() override;
+  void setWeight(float weight);
+  [[nodiscard]] float getWeight() const;
+
+  void setInput(float input);
+  [[nodiscard]] float getInput() const;
+
+  [[nodiscard]] float getOutput() const;
+
+  virtual void forward() = 0;
+  virtual void backward(float learningRate) = 0;
 };
 
 class LinearNeuron : public Neuron {
 public:
-    LinearNeuron(const std::string& name);
-
-    void forward() override;
+  using Neuron::Neuron;
+  void forward() override;
+  void backward(float learningRate) override;
 };
 
 class ActivationNeuron : public Neuron {
-public:
-    ActivationNeuron(const std::string& name);
-
-    void forward() override;
-
 private:
-    float activate(float x);
+  std::function<float(float)> activationFunc;
+  float derivative;
+
+public:
+  ActivationNeuron(const std::string& name, std::function<float(float)> activationFunc);
+  void forward() override;
+  void backward(float learningRate) override;
 };
 
-#endif // NEURON_H
+ActivationNeuron::ActivationNeuron(const std::string& name, std::function<float(float)> activationFunc)
+  : Neuron(name), activationFunc(activationFunc) {
+}
 
+[[nodiscard]] float sigmoidActivationFunction(float x);
+
+#endif  // NEURON_H
