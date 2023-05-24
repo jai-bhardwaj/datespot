@@ -25,6 +25,8 @@ public:
     std::vector<float> interpolatePositionalEncoding(int start, int end, int numSteps) const;
     std::vector<std::vector<float>> getSubsequenceEncoding(int start, int end) const;
     std::vector<float> getAverageEncoding() const;
+    std::vector<std::vector<float>> forward(const std::vector<std::vector<float>>& input);
+    std::vector<std::vector<float>> backward(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& grads);
 
 private:
     std::vector<std::vector<float>> encoding_;
