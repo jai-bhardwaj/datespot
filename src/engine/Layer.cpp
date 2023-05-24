@@ -1359,7 +1359,7 @@ Layer::Parallelization Layer::getHiddenParallelization(uint32_t convolutionalInp
     }
 }
 
-void Layer::RefreshState(NNNetwork* pNetwork, TrainingMode trainingMode, bool validate)
+void Layer::RefreshState(Network* pNetwork, TrainingMode trainingMode, bool validate)
 {
     if (_bDirty)
     {
