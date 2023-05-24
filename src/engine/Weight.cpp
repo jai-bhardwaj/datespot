@@ -2,6 +2,7 @@
 #include "NcExcptionWrap.h"
 #include "Types.h"
 #include "kernels.h"
+#define __STDC_FORMAT_MACROS
 #include <cstdint>
 #include <iostream>
 #include <vector>
