@@ -591,4 +591,4 @@ std::ostream& operator<< (std::ostream& out, LayerDescriptor& d);
  */
 uint32_t MPI_Bcast_LayerDescriptor(LayerDescriptor& d);
 
-#endif /* LAYER_H */
+#endif // Layer_H
