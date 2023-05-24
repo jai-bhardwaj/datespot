@@ -154,3 +154,54 @@ void TransformerEncoderLayer::setMultiHeadAttentionParameters(const std::vector<
 void TransformerEncoderLayer::setFeedForwardNetworkParameters(const std::vector<std::vector<float>>& parameters) {
     feedForwardNetworkLayer_.setParameters(parameters);
 }
+
+void TransformerEncoderLayer::forward(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& mask) {
+    // Implementation of the forward pass
+}
+
+void TransformerEncoderLayer::backward(const std::vector<std::vector<float>>& inputGrad, const std::vector<std::vector<float>>& outputGrad) {
+    // Implementation of the backward pass
+}
+
+std::vector<std::vector<float>> TransformerEncoderLayer::getAttentionWeights() const {
+    return multiHeadAttentionLayer_.getAttentionWeights();
+}
+
+std::vector<std::vector<float>> TransformerEncoderLayer::getOutputMask() const {
+    return multiHeadAttentionLayer_.getOutputMask();
+}
+
+std::vector<std::vector<float>> TransformerEncoderLayer::getMultiHeadAttentionParameters() const {
+    return multiHeadAttentionLayer_.getParameters();
+}
+
+std::vector<std::vector<float>> TransformerEncoderLayer::getFeedForwardNetworkParameters() const {
+    return feedForwardNetworkLayer_.getParameters();
+}
+
+void TransformerEncoderLayer::setMultiHeadAttentionParameters(const std::vector<std::vector<float>>& parameters) {
+    multiHeadAttentionLayer_.setParameters(parameters);
+}
+
+void TransformerEncoderLayer::setFeedForwardNetworkParameters(const std::vector<std::vector<float>>& parameters) {
+    feedForwardNetworkLayer_.setParameters(parameters);
+}
+
+std::vector<std::vector<float>> TransformerEncoderLayer::residualConnection(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& output) {
+    const auto& inputBatch = input;
+    auto batchSize = static_cast<int>(inputBatch.size());
+    auto sequenceLength = static_cast<int>(inputBatch[0].size());
+    auto hiddenSize = static_cast<int>(inputBatch[0][0].size());
+
+    std::vector<std::vector<float>> residualOutput(batchSize, std::vector<float>(sequenceLength, std::vector<float>(hiddenSize)));
+
+    #pragma omp parallel for collapse(3)
+    for (auto i = 0; i < batchSize; i++) {
+        for (auto j = 0; j < sequenceLength; j++) {
+            std::transform(std::execution::par, inputBatch[i][j].begin(), inputBatch[i][j].end(), output[i][j].begin(), residualOutput[i][j].begin(),
+                           [](float x, float y) { return x + y; });
+        }
+    }
+
+    return residualOutput;
+
