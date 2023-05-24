@@ -3,6 +3,7 @@
 #include "Types.h"
 #include "kernels.h"
 #include "Utils.h"
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <queue>
 #include <set>
