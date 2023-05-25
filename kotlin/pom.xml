@@ -52,13 +52,6 @@
         <artifactId>guava</artifactId>
         <version>31.1-jre</version>
     </dependency>
-
-    <!-- New dependency -->
-    <dependency>
-      <groupId>com.system.tensorhub</groupId>
-      <artifactId>samver</artifactId>
-      <version>19.0.2+7</version>
-    </dependency>
   </dependencies>
 
   <build>
