@@ -73,6 +73,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       
+      - name: Install Samver
+        run: mvn org.apache.maven.plugins:maven-dependency-plugin:3.2.0:get -Dartifact=com.system.tensorhub:samver:19.0.2+7
+      
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots clean package
 
