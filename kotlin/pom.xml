@@ -55,25 +55,19 @@
   </dependencies>
 
   <build>
-    <!-- ...existing plugins... -->
-
     <plugins>
-      <!-- ...existing plugins... -->
-
       <plugin>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-maven-plugin</artifactId>
         <version>${kotlin.version}</version>
         <executions>
           <execution>
-            <?m2e execute onConfiguration?>
             <id>compile</id>
             <goals>
               <goal>compile</goal>
             </goals>
           </execution>
           <execution>
-            <?m2e execute onConfiguration?>
             <id>test-compile</id>
             <goals>
               <goal>test-compile</goal>
@@ -84,22 +78,18 @@
 
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
         <configuration>
           <source>${maven.compiler.source}</source>
           <target>${maven.compiler.target}</target>
-          <compilerArgs>
-            <arg>-h</arg>
-            <arg>${system-tensorhub.jni.dir}</arg>
-          </compilerArgs>
         </configuration>
       </plugin>
 
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.0.0</version>
         <executions>
-          <!-- ...existing executions... -->
           <execution>
-            <?m2e execute onConfiguration?>
             <id>compile-native</id>
             <phase>process-classes</phase>
             <configuration>
@@ -114,7 +104,6 @@
           </execution>
         </executions>
       </plugin>
-
     </plugins>
   </build>
 </project>
