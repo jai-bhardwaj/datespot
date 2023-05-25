@@ -52,7 +52,7 @@ jobs:
       - name: Build CUDA Target
         run: docker build . --target build
 
-  build-maven-project:
+  build-maven:
     runs-on: ubuntu-latest
 
     steps:
