@@ -69,6 +69,11 @@ jobs:
         run: |
           cd ./kotlin
           mvn dependency:resolve-plugins
+      
+      - name: Install Samver
+        run: |
+          cd ./kotlin
+          mvn org.apache.maven.plugins:maven-dependency-plugin:3.2.0:get -Dartifact=com.example:samver:19.0.2+7
 
       - name: Print Dependency Tree
         run: | 
