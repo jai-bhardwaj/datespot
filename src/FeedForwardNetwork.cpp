@@ -80,7 +80,8 @@ float FeedForwardNetwork::crossEntropyLoss(const std::vector<std::vector<float>>
     return crossEntropy / output.size();
 }
 
-void FeedForwardNetwork::train(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& target, float learning_rate, const std::string& optimizer, float momentum, float decay_rate, float epsilon, float beta1, float beta2) {
+void FeedForwardNetwork::train(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& target, float learning_rate, const std::string& optimizer, float momentum, float decay_rate, float epsilon, float beta1, float beta2, int max_epochs, int patience, float weight_decay)
+{
     std::vector<std::vector<float>> output(num_layers - 1);
     output[0] = input;
 
@@ -90,69 +91,122 @@ void FeedForwardNetwork::train(const std::vector<std::vector<float>>& input, con
     backward(input, target, updatedGrads);
 
     int t = 0;
-    for (int layer = 0; layer < num_layers - 1; ++layer) {
-        auto& layer_weights = weights[layer];
-        auto& layer_biases = biases[layer];
-        const auto& layer_grads = updatedGrads[layer];
+    int best_epoch = 0;
+    float best_validation_loss = std::numeric_limits<float>::max();
+    int num_epochs_without_improvement = 0;
 
-        int input_size = layer_weights.size();
-        int output_size = layer_weights[0].size();
+    std::vector<std::vector<float>> rmsprop_cache(num_layers - 1);
+    std::vector<std::vector<float>> adagrad_cache(num_layers - 1);
+    std::vector<std::vector<float>> adam_m(num_layers - 1);
+    std::vector<std::vector<float>> adam_v(num_layers - 1);
 
-        for (int j = 0; j < output_size; ++j) {
-            for (int i = 0; i < input_size; ++i) {
-                if (optimizer == "SGD") {
-                    layer_weights[i][j] -= learning_rate * layer_grads[i][j];
-                }
-                else if (optimizer == "NAG") {
-                    float prev_weight = layer_weights[i][j];
-                    layer_weights[i][j] -= momentum * learning_rate * prev_weight + learning_rate * layer_grads[i][j];
-                    layer_weights[i][j] -= momentum * learning_rate * (prev_weight - layer_weights[i][j]);
-                }
-                else if (optimizer == "RMSProp") {
-                    if (rmsprop_cache[layer].empty()) {
-                        rmsprop_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+    for (int epoch = 0; epoch < max_epochs; ++epoch)
+    {
+        for (int layer = 0; layer < num_layers - 1; ++layer)
+        {
+            auto& layer_weights = weights[layer];
+            auto& layer_biases = biases[layer];
+            const auto& layer_grads = updatedGrads[layer];
+
+            int input_size = layer_weights.size();
+            int output_size = layer_weights[0].size();
+
+            for (int j = 0; j < output_size; ++j)
+            {
+                for (int i = 0; i < input_size; ++i)
+                {
+                    float weight_decay_term = weight_decay * layer_weights[i][j];
+                    float weight_grad = layer_grads[i][j] + weight_decay_term;
+
+                    if (optimizer == "SGD")
+                    {
+                        layer_weights[i][j] -= learning_rate * weight_grad;
                     }
-
-                    rmsprop_cache[layer][i][j] = decay_rate * rmsprop_cache[layer][i][j] + (1 - decay_rate) * layer_grads[i][j] * layer_grads[i][j];
-                    layer_weights[i][j] -= learning_rate * (layer_grads[i][j] / (std::sqrt(rmsprop_cache[layer][i][j]) + epsilon));
-                }
-                else if (optimizer == "Adagrad") {
-                    if (adagrad_cache[layer].empty()) {
-                        adagrad_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                    else if (optimizer == "NAG")
+                    {
+                        float prev_weight = layer_weights[i][j];
+                        layer_weights[i][j] -= momentum * learning_rate * prev_weight + learning_rate * weight_grad;
+                        layer_weights[i][j] -= momentum * learning_rate * (prev_weight - layer_weights[i][j]);
                     }
+                    else if (optimizer == "RMSProp")
+                    {
+                        if (rmsprop_cache[layer].empty())
+                        {
+                            rmsprop_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                        }
 
-                    adagrad_cache[layer][i][j] += layer_grads[i][j] * layer_grads[i][j];
-                    layer_weights[i][j] -= learning_rate * (layer_grads[i][j] / (std::sqrt(adagrad_cache[layer][i][j]) + epsilon));
-                }
-                else if (optimizer == "Adam") {
-                    if (adam_m[layer].empty()) {
-                        adam_m[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
-                        adam_v[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                        rmsprop_cache[layer][i][j] = decay_rate * rmsprop_cache[layer][i][j] + (1 - decay_rate) * weight_grad * weight_grad;
+                        layer_weights[i][j] -= learning_rate * (weight_grad / (std::sqrt(rmsprop_cache[layer][i][j]) + epsilon));
                     }
+                    else if (optimizer == "Adagrad")
+                    {
+                        if (adagrad_cache[layer].empty())
+                        {
+                            adagrad_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                        }
 
-                    adam_m[layer][i][j] = beta1 * adam_m[layer][i][j] + (1 - beta1) * layer_grads[i][j];
-                    adam_v[layer][i][j] = beta2 * adam_v[layer][i][j] + (1 - beta2) * layer_grads[i][j] * layer_grads[i][j];
-
-                    float m_hat = adam_m[layer][i][j] / (1 - std::pow(beta1, t));
-                    float v_hat = adam_v[layer][i][j] / (1 - std::pow(beta2, t));
-
-                    layer_weights[i][j] -= learning_rate * (m_hat / (std::sqrt(v_hat) + epsilon));
-                }
-                else if (optimizer == "AdaDelta") {
-                    if (rmsprop_cache[layer].empty()) {
-                        rmsprop_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
-                        adadelta_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                        adagrad_cache[layer][i][j] += weight_grad * weight_grad;
+                        layer_weights[i][j] -= learning_rate * (weight_grad / (std::sqrt(adagrad_cache[layer][i][j]) + epsilon));
                     }
+                    else if (optimizer == "Adam")
+                    {
+                        if (adam_m[layer].empty())
+                        {
+                            adam_m[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                            adam_v[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                        }
 
-                    rmsprop_cache[layer][i][j] = decay_rate * rmsprop_cache[layer][i][j] + (1 - decay_rate) * layer_grads[i][j] * layer_grads[i][j];
-                    float delta_weights = -std::sqrt(adadelta_cache[layer][i][j] + epsilon) / std::sqrt(rmsprop_cache[layer][i][j] + epsilon) * layer_grads[i][j];
-                    layer_weights[i][j] += delta_weights;
-                    adadelta_cache[layer][i][j] = decay_rate * adadelta_cache[layer][i][j] + (1 - decay_rate) * delta_weights * delta_weights;
+                        adam_m[layer][i][j] = beta1 * adam_m[layer][i][j] + (1 - beta1) * weight_grad;
+                        adam_v[layer][i][j] = beta2 * adam_v[layer][i][j] + (1 - beta2) * weight_grad * weight_grad;
+
+                        float m_hat = adam_m[layer][i][j] / (1 - std::pow(beta1, t));
+                        float v_hat = adam_v[layer][i][j] / (1 - std::pow(beta2, t));
+
+                        layer_weights[i][j] -= learning_rate * (m_hat / (std::sqrt(v_hat) + epsilon));
+                    }
+                    else if (optimizer == "AdaDelta")
+                    {
+                        if (rmsprop_cache[layer].empty())
+                        {
+                            rmsprop_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                            adadelta_cache[layer].resize(input_size, std::vector<float>(output_size, 0.0f));
+                        }
+
+                        rmsprop_cache[layer][i][j] = decay_rate * rmsprop_cache[layer][i][j] + (1 - decay_rate) * weight_grad * weight_grad;
+                        float delta_weights = -std::sqrt(adadelta_cache[layer][i][j] + epsilon) / std::sqrt(rmsprop_cache[layer][i][j] + epsilon) * weight_grad;
+                        layer_weights[i][j] += delta_weights;
+                        adadelta_cache[layer][i][j] = decay_rate * adadelta_cache[layer][i][j] + (1 - decay_rate) * delta_weights * delta_weights;
+                    }
                 }
+
+                layer_biases[j] -= learning_rate * updatedGrads[layer][j][0];
             }
-            layer_biases[j] -= learning_rate * layer_grads[j][0];
         }
+
+        std::vector<std::vector<float>> validation_output(num_layers - 1);
+        forward(validation_input, validation_output);
+        float validation_loss = crossEntropyLoss(validation_output, validation_target);
+
+        if (validation_loss < best_validation_loss)
+        {
+            best_validation_loss = validation_loss;
+            best_epoch = epoch;
+            num_epochs_without_improvement = 0;
+        }
+        else
+        {
+            ++num_epochs_without_improvement;
+            if (num_epochs_without_improvement >= patience)
+            {
+                std::cout << "Early stopping triggered. No improvement in validation loss for " << patience << " epochs." << std::endl;
+                break;
+            }
+        }
+
+        ++t;
     }
+
+    std::cout << "Training completed. Best validation loss: " << best_validation_loss << " at epoch " << best_epoch << std::endl;
 }
 
 void FeedForwardNetwork::backward(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& target, std::vector<std::vector<float>>& updatedGrads) {
