@@ -9,7 +9,7 @@ FeedForwardNetwork::FeedForwardNetwork(int num_layers, const std::vector<int>& l
     : num_layers(num_layers), layer_sizes(layer_sizes)
 {
     std::random_device rd;
-    std::mt19937_64 gen(std::random_device{});
+    std::mt19937_64 gen(rd());
     std::normal_distribution<float> dist(0.0f, 0.1f);
 
     weights.resize(num_layers - 1);
@@ -23,10 +23,10 @@ FeedForwardNetwork::FeedForwardNetwork(int num_layers, const std::vector<int>& l
         int input_size = layer_sizes[i];
         int output_size = layer_sizes[i + 1];
 
-        weights[i] = std::vector(input_size, std::vector<float>(output_size));
-        biases[i] = std::vector(output_size);
-        gamma[i] = std::vector(output_size, 1.0f);
-        beta[i] = std::vector(output_size, 0.0f);
+        weights[i].resize(input_size, std::vector<float>(output_size));
+        biases[i].resize(output_size);
+        gamma[i].resize(output_size, 1.0f);
+        beta[i].resize(output_size, 0.0f);
 
         float xavier_init = std::sqrt(2.0f / (input_size + output_size));
 
@@ -43,6 +43,8 @@ FeedForwardNetwork::FeedForwardNetwork(int num_layers, const std::vector<int>& l
 }
 
 void FeedForwardNetwork::forward(const std::vector<std::vector<float>>& input, std::vector<std::vector<float>>& output) {
+    const float epsilon = 1e-7f;
+
     for (int layer = 0; layer < num_layers - 1; ++layer) {
         const auto& layer_weights = weights[layer];
         const auto& layer_biases = biases[layer];
@@ -52,11 +54,11 @@ void FeedForwardNetwork::forward(const std::vector<std::vector<float>>& input, s
         int input_size = layer_weights.size();
         int output_size = layer_weights[0].size();
 
-        output[layer].resize(output_size);
+        output.push_back(std::vector<float>(output_size));
 
         std::vector<float> batch_normalized_output(output_size);
-        batch_mean[layer] = std::vector(output_size, 0.0f);
-        batch_variance[layer] = std::vector(output_size, 0.0f);
+        batch_mean[layer] = std::vector<float>(output_size, 0.0f);
+        batch_variance[layer] = std::vector<float>(output_size, 0.0f);
 
         for (int j = 0; j < output_size; ++j) {
             float sum = 0.0f;
@@ -103,9 +105,9 @@ float FeedForwardNetwork::mseLoss(const std::vector<std::vector<float>>& output,
 
 float FeedForwardNetwork::crossEntropyLoss(const std::vector<std::vector<float>>& output, const std::vector<std::vector<float>>& target) {
     float crossEntropy = 0.0;
-    for (const auto& output_row : output) {
-        for (const auto& value : output_row) {
-            crossEntropy -= target[i][j] * std::log(value + 1e-7f) + (1 - target[i][j]) * std::log(1 - value + 1e-7f);
+    for (size_t i = 0; i < output.size(); ++i) {
+        for (size_t j = 0; j < output[i].size(); ++j) {
+            crossEntropy -= target[i][j] * std::log(output[i][j] + epsilon) + (1 - target[i][j]) * std::log(1 - output[i][j] + epsilon);
         }
     }
     return crossEntropy / output.size();
@@ -113,15 +115,15 @@ float FeedForwardNetwork::crossEntropyLoss(const std::vector<std::vector<float>>
 
 void FeedForwardNetwork::train(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& target, float learning_rate, const std::string& optimizer, float momentum, float decay_rate, float epsilon, float beta1, float beta2, int max_epochs, int patience, float weight_decay)
 {
-    std::vector<std::vector<float>> output(num_layers - 1);
-    output[0] = input;
+    std::vector<std::vector<float>> output;
+    output.push_back(input[0]); // Initialize output with input data
 
     std::vector<float> learning_rates = { learning_rate, 0.01f, 0.001f };
     std::vector<int> layer_sizes = { 128, 256, 512 };
     std::vector<std::string> optimizers = { "SGD", "RMSProp", "Adam" };
 
     std::random_device rd;
-    std::mt19937 gen(std::random_device{});
+    std::mt19937 gen(rd());
 
     std::uniform_int_distribution<int> learning_rate_dist(0, learning_rates.size() - 1);
     std::uniform_int_distribution<int> layer_size_dist(0, layer_sizes.size() - 1);
@@ -134,10 +136,7 @@ void FeedForwardNetwork::train(const std::vector<std::vector<float>>& input, con
     float best_validation_loss = std::numeric_limits<float>::max();
     int num_epochs_without_improvement = 0;
 
-    std::vector<std::vector<float>> rmsprop_cache(num_layers - 1);
-    std::vector<std::vector<float>> adagrad_cache(num_layers - 1);
-    std::vector<std::vector<float>> adam_m(num_layers - 1);
-    std::vector<std::vector<float>> adam_v(num_layers - 1);
+    std::vector<std::vector<std::vector<float>>> updatedGrads(num_layers - 1);
 
     for (int epoch = 0; epoch < max_epochs; ++epoch)
     {
@@ -145,30 +144,81 @@ void FeedForwardNetwork::train(const std::vector<std::vector<float>>& input, con
         int sampled_layer_size = layer_sizes[best_layer_size_index];
         std::string sampled_optimizer = optimizers[best_optimizer_index];
 
-        int input_size = layer_weights.size();
-        int output_size = layer_weights[0].size();
+        // Forward pass
+        forward(input, output);
 
-        for (int j = 0; j < output_size; ++j)
-        {
-            for (int i = 0; i < input_size; ++i)
-            {
-                float weight_decay_term = weight_decay * layer_weights[i][j];
-                float weight_grad = layer_grads[i][j] + weight_decay_term;
+        // Calculate loss
+        float loss;
+        if (sampled_optimizer == "SGD")
+            loss = mseLoss(output, target);
+        else
+            loss = crossEntropyLoss(output, target);
 
-        std::vector<std::vector<float>> validation_output(num_layers - 1);
-        forward(validation_input, validation_output);
-        float validation_loss = crossEntropyLoss(validation_output, validation_target);
+        // Backward pass
+        backward(output, target, updatedGrads);
 
-        if (validation_loss < best_validation_loss)
-        {
+        // Update weights and biases
+        for (int layer = 0; layer < num_layers - 1; ++layer) {
+            const auto& layer_weights = weights[layer];
+            const auto& layer_biases = biases[layer];
+
+            for (int i = 0; i < layer_weights.size(); ++i) {
+                for (int j = 0; j < layer_weights[i].size(); ++j) {
+                    if (sampled_optimizer == "SGD") {
+                        // Stochastic Gradient Descent
+                        layer_weights[i][j] -= sampled_learning_rate * updatedGrads[layer][i][j];
+                    } else if (sampled_optimizer == "RMSProp") {
+                        // RMSProp
+                        float& rmsprop_cache_value = rmsprop_cache[layer][i][j];
+                        rmsprop_cache_value = decay_rate * rmsprop_cache_value + (1 - decay_rate) * (updatedGrads[layer][i][j] * updatedGrads[layer][i][j]);
+                        layer_weights[i][j] -= sampled_learning_rate * updatedGrads[layer][i][j] / (std::sqrt(rmsprop_cache_value) + epsilon);
+                    } else if (sampled_optimizer == "Adam") {
+                        // Adam
+                        float& adam_m_value = adam_m[layer][i][j];
+                        float& adam_v_value = adam_v[layer][i][j];
+                        adam_m_value = beta1 * adam_m_value + (1 - beta1) * updatedGrads[layer][i][j];
+                        adam_v_value = beta2 * adam_v_value + (1 - beta2) * (updatedGrads[layer][i][j] * updatedGrads[layer][i][j]);
+                        float m_hat = adam_m_value / (1 - std::pow(beta1, epoch + 1));
+                        float v_hat = adam_v_value / (1 - std::pow(beta2, epoch + 1));
+                        layer_weights[i][j] -= sampled_learning_rate * m_hat / (std::sqrt(v_hat) + epsilon);
+                    }
+                }
+            }
+
+            for (int j = 0; j < layer_biases.size(); ++j) {
+                if (sampled_optimizer == "SGD") {
+                    layer_biases[j] -= sampled_learning_rate * updatedGrads[layer][layer_weights.size()][j];
+                } else if (sampled_optimizer == "RMSProp") {
+                    float& rmsprop_cache_value = rmsprop_cache[layer][layer_weights.size()][j];
+                    rmsprop_cache_value = decay_rate * rmsprop_cache_value + (1 - decay_rate) * (updatedGrads[layer][layer_weights.size()][j] * updatedGrads[layer][layer_weights.size()][j]);
+                    layer_biases[j] -= sampled_learning_rate * updatedGrads[layer][layer_weights.size()][j] / (std::sqrt(rmsprop_cache_value) + epsilon);
+                } else if (sampled_optimizer == "Adam") {
+                    float& adam_m_value = adam_m[layer][layer_weights.size()][j];
+                    float& adam_v_value = adam_v[layer][layer_weights.size()][j];
+                    adam_m_value = beta1 * adam_m_value + (1 - beta1) * updatedGrads[layer][layer_weights.size()][j];
+                    adam_v_value = beta2 * adam_v_value + (1 - beta2) * (updatedGrads[layer][layer_weights.size()][j] * updatedGrads[layer][layer_weights.size()][j]);
+                    float m_hat = adam_m_value / (1 - std::pow(beta1, epoch + 1));
+                    float v_hat = adam_v_value / (1 - std::pow(beta2, epoch + 1));
+                    layer_biases[j] -= sampled_learning_rate * m_hat / (std::sqrt(v_hat) + epsilon);
+                }
+            }
+        }
+
+        // Validate the network
+        std::vector<std::vector<float>> validation_output;
+        forward(input, validation_output);
+        float validation_loss;
+        if (sampled_optimizer == "SGD")
+            validation_loss = mseLoss(validation_output, target);
+        else
+            validation_loss = crossEntropyLoss(validation_output, target);
+
+        if (validation_loss < best_validation_loss) {
             best_validation_loss = validation_loss;
             num_epochs_without_improvement = 0;
-        }
-        else
-        {
+        } else {
             ++num_epochs_without_improvement;
-            if (num_epochs_without_improvement >= patience)
-            {
+            if (num_epochs_without_improvement >= patience) {
                 std::cout << "Early stopping triggered. No improvement in validation loss for " << patience << " epochs." << std::endl;
                 break;
             }
@@ -182,20 +232,15 @@ void FeedForwardNetwork::train(const std::vector<std::vector<float>>& input, con
     std::cout << "Training completed. Best validation loss: " << best_validation_loss << std::endl;
 }
 
-void FeedForwardNetwork::backward(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& target, std::vector<std::vector<float>>& updatedGrads) {
-    for (int layer = 0; layer < num_layers - 1; ++layer) {
-        const auto& layer_weights = weights[layer];
-        int input_size = layer_weights.size();
-        int output_size = layer_weights[0].size();
-        updatedGrads[layer] = std::vector(input_size, std::vector<float>(output_size, 0.0f));
-    }
+void FeedForwardNetwork::backward(const std::vector<std::vector<float>>& input, const std::vector<std::vector<float>>& target, std::vector<std::vector<std::vector<float>>>& updatedGrads) {
+    updatedGrads.resize(num_layers - 1);
 
     int last_layer = num_layers - 2;
     for (int j = 0; j < layer_sizes[last_layer + 1]; ++j) {
-        float output = output[last_layer][j];
+        float output = input[last_layer][j];
         float error = (output - target[last_layer][j]) * output * (1.0f - output);
         for (int i = 0; i < layer_sizes[last_layer]; ++i) {
-            updatedGrads[last_layer][i][j] = error * output[last_layer - 1][i];
+            updatedGrads[last_layer][i][j] = error * input[last_layer - 1][i];
         }
         updatedGrads[last_layer][layer_sizes[last_layer]][j] = error;
     }
@@ -206,14 +251,14 @@ void FeedForwardNetwork::backward(const std::vector<std::vector<float>>& input, 
         int output_size = layer_weights[0].size();
 
         for (int i = 0; i < input_size; ++i) {
-            float output = output[layer][i];
+            float output = input[layer][i];
             float sum = 0.0f;
             for (int j = 0; j < output_size; ++j) {
                 sum += layer_weights[i][j] * updatedGrads[layer + 1][i][j];
             }
             float error = sum * output * (1.0f - output);
             for (int j = 0; j < output_size; ++j) {
-                updatedGrads[layer][i][j] = error * output[layer - 1][i];
+                updatedGrads[layer][i][j] = error * input[layer - 1][i];
             }
             updatedGrads[layer][input_size][i] = error;
         }
