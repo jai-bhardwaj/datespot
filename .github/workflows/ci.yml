@@ -66,8 +66,12 @@ jobs:
           distribution: 'adopt'
       
       - name: Check for plugin updates
-        run: mvn dependency:resolve-plugins
+        run: |
+          cd ./kotlin
+          mvn dependency:resolve-plugins
 
       - name: Print Dependency Tree
-        run: mvn dependency:tree
+        run: | 
+          cd ./kotlin
+          mvn dependency:tree
 
