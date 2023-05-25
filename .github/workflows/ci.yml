@@ -59,10 +59,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       
-      - name: Set up JDK 1.10
+      - name: Set up JDK
         uses: actions/setup-java@v2
         with:
-          java-version: 1.10
+          java-version: 18
           distribution: 'adopt'
       
       - name: Cache Maven Dependencies
